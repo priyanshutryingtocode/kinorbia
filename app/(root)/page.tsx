@@ -1,55 +1,34 @@
-import { Film } from "lucide-react";
-import Link from "next/link"; // <--- 1. IMPORT THIS
-
-async function getTrendingMovies() {
-  const res = await fetch(
-    `https://api.themoviedb.org/3/trending/movie/day?api_key=${process.env.TMDB_API_KEY}`,
-    { 
-      next: { revalidate: 3600 } 
-    }
-  );
-
-  if (!res.ok) {
-    console.error("TMDB API Error:", res.status, res.statusText);
-    throw new Error("Failed to fetch data");
-  }
-
-  return res.json();
-}
+import MovieCard, { MovieProp } from "@/components/MovieCard";
+import LoadMore from "@/components/LoadMore";
+import { fetchMovies } from "../actions"; // Re-use the action for initial load
 
 export default async function Home() {
-  const data = await getTrendingMovies();
-  const movies = data.results.slice(0, 10); 
+  // 1. Fetch Page 1 on the server (Instant load)
+  const movies: MovieProp[] = await fetchMovies(1);
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white p-10">
-      <header className="flex items-center gap-2 mb-8">
-        <Film className="text-red-500 w-8 h-8" />
-        <h1 className="text-4xl font-bold tracking-tighter">KinOrbia</h1>
-      </header>
+    <main className="min-h-screen bg-neutral-950 pt-24 px-6 pb-20">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Hero / Header Section */}
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold text-white tracking-tighter mb-2">
+            Popular <span className="text-red-600">Now</span>
+          </h1>
+          <p className="text-neutral-400">Trending movies from around the globe.</p>
+        </div>
 
-      <section>
-        <h2 className="text-xl font-semibold mb-4 text-neutral-400">Trending Now</h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {movies.map((movie: any) => (
-            /* 2. CHANGE 'div' TO 'Link' HERE */
-            <Link 
-              href={`/movie/${movie.id}`} // <--- This makes it clickable
-              key={movie.id} 
-              className="group relative block"
-            >
-              <img
-                src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                alt={movie.title}
-                className="rounded-lg shadow-lg group-hover:opacity-75 transition"
-              />
-              <p className="mt-2 text-sm font-medium truncate group-hover:text-red-500 transition-colors">
-                {movie.title}
-              </p>
-            </Link>
+        {/* 2. Initial Grid (Page 1) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {movies.map((movie, index) => (
+            <MovieCard key={movie.id} movie={movie} index={index} />
           ))}
         </div>
-      </section>
+
+        {/* 3. The Infinite Scroll Trigger */}
+        <LoadMore />
+
+      </div>
     </main>
   );
 }

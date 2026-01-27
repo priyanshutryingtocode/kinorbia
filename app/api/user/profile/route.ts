@@ -11,9 +11,7 @@ export async function PUT(req: Request) {
     }
 
     const { name, bio } = await req.json();
-
-    console.log("👉 API Received:", { name, bio });
-
+    
     await dbConnect();
 
     // Update the user
@@ -22,8 +20,6 @@ export async function PUT(req: Request) {
       { name, bio },                 // Update these fields
       { new: true }                  // Return the updated document
     );
-
-    console.log("👉 MongoDB Updated:", updatedUser);
 
     return NextResponse.json({ user: updatedUser, message: "Profile updated" });
   } catch (error) {
