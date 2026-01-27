@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Film, Mail, Lock, Chrome } from "lucide-react";
+import { signIn } from "next-auth/react"; // Import the Auth hook
 
 export default function LoginPage() {
   return (
@@ -36,8 +39,11 @@ export default function LoginPage() {
           {/* Login Form Stack */}
           <div className="w-full max-w-xs space-y-4">
             
-            {/* Google Login Button (Visual placeholder for now) */}
-            <button className="w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg py-3 px-4 transition-all group">
+            {/* Google Login Button (With Logic Added) */}
+            <button 
+              onClick={() => signIn("google", { callbackUrl: "/" })}
+              className="w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg py-3 px-4 transition-all group"
+            >
               <Chrome className="w-5 h-5 text-neutral-300 group-hover:text-red-400 transition" />
               <span className="text-sm font-medium">Continue with Google</span>
             </button>

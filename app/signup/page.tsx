@@ -76,7 +76,7 @@ export default function SignupPage() {
           <p className="text-white mb-6 text-sm font-bold uppercase tracking-widest">Join the Orbit</p>
 
           <button 
-            onClick={() => signIn("google")}
+            onClick={() => signIn("google", { callbackUrl: "/" })}
             type="button"
             className="w-full flex items-center justify-center gap-3 bg-neutral-900/50 hover:bg-neutral-800 border border-white/10 rounded-xl py-3 px-4 transition-all group backdrop-blur-md"
           >
