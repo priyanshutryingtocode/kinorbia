@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css"; 
-import Navbar from "@/components/Navbar"; 
-import Footer from "@/components/Footer";
+import "./globals.css";
+import { Providers } from "./providers"; // Assuming you added Auth Providers earlier
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,12 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-neutral-950 text-neutral-100`}>
-        <Navbar /> 
-        <div className="pt-20"> 
+      <body className={`${inter.className} bg-neutral-950 text-neutral-100 flex flex-col min-h-screen`}>
+        <Providers>
           {children}
-        </div>
-        <Footer />
+        </Providers>
       </body>
     </html>
   );
