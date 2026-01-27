@@ -79,6 +79,17 @@ export default function Navbar() {
 
                   {/* Menu Items */}
                   <div className="py-1">
+                    
+                    {/* Link to Profile Page */}
+                    <Link 
+                      href="/profile" 
+                      className="w-full text-left px-4 py-3 text-sm text-neutral-300 hover:bg-white/5 hover:text-white transition flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" />
+                      Profile
+                    </Link>
+
+                    {/* Sign Out Button */}
                     <button 
                       onClick={() => signOut({ callbackUrl: "/" })}
                       className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition flex items-center gap-2"

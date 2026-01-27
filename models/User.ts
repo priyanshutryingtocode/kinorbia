@@ -17,6 +17,11 @@ const UserSchema = new mongoose.Schema({
   image: {
     type: String,
   },
+  bio: {
+    type: String,
+    default: "", 
+    maxLength: [160, "Bio cannot be more than 160 characters"],
+  },
   provider: {
     type: String,
     default: "credentials", // 'google' or 'credentials'
