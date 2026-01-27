@@ -3,30 +3,40 @@ import mongoose from "mongoose";
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, "Please provide a name"],
+    required: true,
   },
   email: {
     type: String,
-    required: [true, "Please provide an email"],
+    required: true,
     unique: true,
   },
   password: {
     type: String,
-    select: false, // Don't return password by default in queries
+    select: false,
   },
   image: {
     type: String,
   },
   bio: {
     type: String,
-    default: "", 
-    maxLength: [160, "Bio cannot be more than 160 characters"],
+    default: "",
+    maxLength: 160,
   },
   provider: {
     type: String,
-    default: "credentials", // 'google' or 'credentials'
+    default: "credentials",
   },
+  // 👇 THIS IS THE CRITICAL PART
+  favorites: [
+    {
+      movieId: { type: String, required: true },
+      title: { type: String, required: true },
+      posterPath: { type: String },
+      voteAverage: { type: Number },
+      addedAt: { type: Date, default: Date.now },
+    },
+  ],
 }, { timestamps: true });
 
-// Prevent recompiling the model if it already exists (Next.js Hot Reload fix)
-export default mongoose.models.User || mongoose.model("User", UserSchema);
+// This prevents "Model already compiled" errors in Next.js
+export default mongoose.models?.User || mongoose.model("User", UserSchema);
