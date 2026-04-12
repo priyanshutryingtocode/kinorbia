@@ -6,6 +6,8 @@ import User from "@/models/User";
 import ProfileActions from "@/components/profileActions";
 import MovieCard from "@/components/MovieCard"; // Import the card component
 import Link from "next/link";
+import ProfileFavorites from "@/components/ProfileFavorites";
+
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -100,29 +102,15 @@ export default async function ProfilePage() {
 
           {userData.favorites.length > 0 ? (
             // === RENDER FAVORITES GRID ===
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {userData.favorites.map((fav: any, index: number) => (
-                <MovieCard 
-                  key={fav.movieId} 
-                  index={index}
-                  movie={{
-                    id: fav.movieId,
-                    title: fav.title,
-                    poster_path: fav.posterPath, // Map DB 'posterPath' to Component 'poster_path'
-                    vote_average: fav.voteAverage,
-                    release_date: "" // We didn't save release date, so leave blank or modify schema later
-                  }} 
-                />
-              ))}
-            </div>
+            <ProfileFavorites initialFavorites={userData.favorites} />
           ) : (
-            // === EMPTY STATE ===
+            // === EMPTY STATE ===    
             <div className="h-64 rounded-2xl border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center text-neutral-500 gap-4">
                <Film className="w-12 h-12 opacity-20" />
-               <p>You haven't added any favorites yet.</p>
-               <Link href="/" className="text-red-500 hover:text-red-400 text-sm hover:underline">
-                 Browse Movies
-               </Link>
+               <p>You haven't added any favorites yet.</p>      
+                <Link href="/" className="text-red-500 hover:text-red-400 text-sm hover:underline">
+                    Browse Movies
+                </Link>
             </div>
           )}
         </div>

@@ -33,6 +33,7 @@ const UserSchema = new mongoose.Schema({
       title: { type: String, required: true },
       posterPath: { type: String },
       voteAverage: { type: Number },
+      personalRating: { type: Number, default: 0 },
       addedAt: { type: Date, default: Date.now },
     },
   ],
