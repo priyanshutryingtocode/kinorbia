@@ -1,19 +1,28 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 
+// 1. The Data Interface
 export interface MovieProp {
   id: number;
   title: string;
   poster_path: string;
-  release_date: string;
+  release_date?: string;
   vote_average: number;
   personalRating?: number;
 }
 
-export default function MovieCard({ movie, index }: { movie: MovieProp; index: number; onRateClick?: (movie: MovieProp) => void}) {
+// 2. The Component Function (Notice onRateClick is added here 👇)
+export default function MovieCard({ 
+  movie, 
+  index, 
+  onRateClick 
+}: { 
+  movie: MovieProp; 
+  index: number;
+  onRateClick?: (movie: MovieProp) => void; 
+}) {
+  
   return (
-    // We change this from a <Link> to a <div> wrapper to prevent 
-    // the whole card from navigating if we click the rating button
     <div className="group relative bg-neutral-900 border border-white/5 rounded-xl overflow-hidden shadow-lg hover:shadow-red-900/20 transition-all hover:-translate-y-1 flex flex-col">
       
       {/* Clickable Image -> Goes to Movie Page */}
@@ -42,6 +51,7 @@ export default function MovieCard({ movie, index }: { movie: MovieProp; index: n
           {movie.personalRating !== undefined ? (
              // IF ON PROFILE PAGE: Make it a clickable button if onRateClick exists
              <button 
+               // 3. And it is used here 👇
                onClick={() => onRateClick && onRateClick(movie)}
                className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md transition-colors ${
                  movie.personalRating > 0 
