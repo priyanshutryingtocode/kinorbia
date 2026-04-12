@@ -11,7 +11,7 @@ export default function LoginPage() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 bg-red-900/20 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
 
       {/* === THE 3D ORB CONTAINER === */}
-      <div className="relative w-full max-w-125 aspect-square">
+      <div className="relative w-full max-w-130 aspect-square">
         
         {/* Layer 1: Outer Glow */}
         <div className="absolute inset-0 rounded-full shadow-[0_0_100px_-20px_rgba(220,38,38,0.3)] bg-neutral-950"></div>
@@ -33,7 +33,6 @@ export default function LoginPage() {
             </span>
           </Link>
 
-          <h2 className="text-lg font-medium text-neutral-300 tracking-wide mb-8">Enter the Sphere</h2>
 
           {/* Login Form Stack */}
           <div className="w-full max-w-70 space-y-5">
