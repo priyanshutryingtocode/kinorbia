@@ -26,18 +26,17 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: "credentials",
   },
-  // 👇 THIS IS THE CRITICAL PART
   favorites: [
     {
       movieId: { type: String, required: true },
       title: { type: String, required: true },
       posterPath: { type: String },
       voteAverage: { type: Number },
+      releaseDate: { type: String },
       personalRating: { type: Number, default: 0 },
       addedAt: { type: Date, default: Date.now },
     },
   ],
 }, { timestamps: true });
 
-// This prevents "Model already compiled" errors in Next.js
 export default mongoose.models?.User || mongoose.model("User", UserSchema);

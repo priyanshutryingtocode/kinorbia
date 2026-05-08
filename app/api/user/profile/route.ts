@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth"; // Your auth helper
+import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 
@@ -14,15 +14,14 @@ export async function PUT(req: Request) {
     
     await dbConnect();
 
-    // Update the user
     const updatedUser = await User.findOneAndUpdate(
-      { email: session.user.email }, // Find by email
-      { name, bio },                 // Update these fields
-      { new: true }                  // Return the updated document
+      { email: session.user.email },
+      { name, bio },
+      { new: true }
     );
 
     return NextResponse.json({ user: updatedUser, message: "Profile updated" });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ message: "Error updating profile" }, { status: 500 });
   }
 }

@@ -9,7 +9,6 @@ export default function MainLayout({
   return (
     <>
       <Navbar />
-      {/* Add margin-top to prevent content from hiding behind fixed navbar */}
       <main className="relative z-0 mt-20 flex-1">
         {children}
       </main>

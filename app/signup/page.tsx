@@ -1,31 +1,70 @@
 "use client";
 
+import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { Film, Mail, Lock, Chrome, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Film, Mail, Lock, Chrome, User, Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 
 export default function SignUpPage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    setLoading(true);
+
+    const response = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      setLoading(false);
+      setError(data.message || "Could not create account.");
+      return;
+    }
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    setLoading(false);
+
+    if (result?.error) {
+      setError("Account created, but sign in failed. Try logging in.");
+      return;
+    }
+
+    router.push("/");
+    router.refresh();
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background glowing blob */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 bg-red-900/20 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
 
-      {/* === THE 3D ORB CONTAINER === */}
       <div className="relative w-full max-w-150 aspect-square mt-8">
-        
-        {/* Layer 1: Outer Glow */}
         <div className="absolute inset-0 rounded-full shadow-[0_0_100px_-20px_rgba(220,38,38,0.3)] bg-neutral-950"></div>
-        
-        {/* Layer 2: Plasma Texture */}
         <div className="absolute inset-1 rounded-full orb-plasma overflow-hidden opacity-80"></div>
-
-        {/* Layer 3: Inner Rim Light */}
         <div className="absolute inset-0 rounded-full shadow-[inset_0_0_60px_15px_rgba(0,0,0,0.8),inset_0_4px_10px_rgba(255,255,255,0.1)] border border-white/5"></div>
-        
-        {/* Layer 4: Content */}
+
         <div className="absolute inset-0 flex flex-col items-center justify-center p-10 z-10 text-center backdrop-blur-sm rounded-full">
-          
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group mb-6 hover:scale-105 transition-transform">
             <Film className="w-8 h-8 text-red-500" />
             <span className="text-3xl font-bold tracking-tighter text-white">
@@ -33,11 +72,9 @@ export default function SignUpPage() {
             </span>
           </Link>
 
-          {/* Sign Up Form Stack */}
           <div className="w-full max-w-70 space-y-4">
-            
-            {/* Google Sign Up Button */}
-            <button 
+            <button
+              type="button"
               onClick={() => signIn("google", { callbackUrl: "/" })}
               className="w-full flex items-center justify-center gap-3 bg-white/3 hover:bg-white/8 border border-white/10 rounded-xl py-3.5 px-4 transition-all duration-300 group shadow-lg"
             >
@@ -45,54 +82,73 @@ export default function SignUpPage() {
               <span className="text-sm font-medium text-neutral-200 group-hover:text-white transition-colors">Sign up with Google</span>
             </button>
 
-            {/* Divider */}
             <div className="flex items-center gap-4 my-2">
               <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1"></div>
               <span className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">Or</span>
               <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1"></div>
             </div>
-            
-            {/* Name Input */}
-            <div className="relative group">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 group-focus-within:text-red-400 transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Full Name" 
-                className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all shadow-inner" 
-              />
-            </div>
 
-            {/* Email Input */}
-            <div className="relative group">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 group-focus-within:text-red-400 transition-colors" />
-              <input 
-                type="email" 
-                placeholder="Email address" 
-                className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all shadow-inner" 
-              />
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="relative group">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 group-focus-within:text-red-400 transition-colors" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Full Name"
+                  required
+                  autoComplete="name"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all shadow-inner"
+                />
+              </div>
 
-             {/* Password Input */}
-             <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 group-focus-within:text-red-400 transition-colors" />
-              <input 
-                type="password" 
-                placeholder="Password" 
-                className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all shadow-inner" 
-              />
-            </div>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 group-focus-within:text-red-400 transition-colors" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Email address"
+                  required
+                  autoComplete="email"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all shadow-inner"
+                />
+              </div>
 
-            {/* Sign Up Button */}
-            <button className="w-full bg-red-600 hover:bg-red-500 text-white font-semibold text-sm py-3.5 rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] hover:shadow-[0_0_25px_rgba(220,38,38,0.6)] hover:-translate-y-0.5 transition-all duration-300">
-               Create Account
-            </button>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 group-focus-within:text-red-400 transition-colors" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Password"
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all shadow-inner"
+                />
+              </div>
 
+              {error && (
+                <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-70 disabled:hover:bg-red-600 text-white font-semibold text-sm py-3.5 rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] hover:shadow-[0_0_25px_rgba(220,38,38,0.6)] hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Create Account
+              </button>
+            </form>
           </div>
 
           <p className="mt-8 text-xs text-neutral-500">
             Already have an account? <Link href="/login" className="text-red-400 font-medium hover:text-red-300 hover:underline transition-all">Sign in</Link>
           </p>
-
         </div>
       </div>
     </div>

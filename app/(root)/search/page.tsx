@@ -1,7 +1,13 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Film } from "lucide-react";
+import type { MovieSummary } from "@/types";
 
-async function searchMovies(query: string) {
+type SearchResponse = {
+  results?: MovieSummary[];
+};
+
+async function searchMovies(query: string): Promise<SearchResponse> {
   const res = await fetch(
     `https://api.themoviedb.org/3/search/movie?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(query)}`
   );
@@ -21,23 +27,26 @@ export default async function SearchPage({
   return (
     <div className="min-h-screen bg-neutral-950 text-white p-10">
       <h1 className="text-3xl font-bold mb-8">
-        Results for "<span className="text-red-500">{q}</span>"
+        Results for <span className="text-red-500">{q}</span>
       </h1>
 
       {movies.length === 0 ? (
         <p className="text-neutral-400">No movies found.</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {movies.map((movie: any) => (
+          {movies.map((movie) => (
             <Link
               key={movie.id}
               href={`/movie/${movie.id}`}
               className="group relative block"
             >
               {movie.poster_path ? (
-                <img
+                <Image
                   src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                   alt={movie.title}
+                  width={500}
+                  height={750}
+                  sizes="(min-width: 768px) 20vw, 50vw"
                   className="rounded-lg shadow-lg group-hover:opacity-75 transition"
                 />
               ) : (

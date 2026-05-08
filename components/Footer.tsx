@@ -5,8 +5,6 @@ export default function Footer() {
   return (
     <footer className="border-t border-white/10 bg-neutral-950 text-neutral-400 py-12 mt-20">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
-        
-        {/* Column 1: Brand */}
         <div className="space-y-4">
           <Link href="/" className="flex items-center gap-2 group">
             <Film className="w-6 h-6 text-red-500" />
@@ -15,11 +13,10 @@ export default function Footer() {
             </span>
           </Link>
           <p className="text-sm leading-relaxed">
-            The social network for film lovers. Track what you watch, tell your friends what’s good.
+            The social network for film lovers. Track what you watch, tell your friends what is good.
           </p>
         </div>
 
-        {/* Column 2: Navigation */}
         <div>
           <h3 className="text-white font-semibold mb-4">Explore</h3>
           <ul className="space-y-2 text-sm">
@@ -30,7 +27,6 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Column 3: Legal/About */}
         <div>
           <h3 className="text-white font-semibold mb-4">Community</h3>
           <ul className="space-y-2 text-sm">
@@ -41,7 +37,6 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Column 4: Socials */}
         <div>
           <h3 className="text-white font-semibold mb-4">Follow Us</h3>
           <div className="flex gap-4">
@@ -53,10 +48,9 @@ export default function Footer() {
             </a>
           </div>
           <p className="mt-6 text-xs text-neutral-600">
-            © {new Date().getFullYear()} KinOrbia. <br/> Data provided by TMDB. <br/> Made by Priyanshu Srivastava
+            &copy; {new Date().getFullYear()} KinOrbia. <br/> Data provided by TMDB. <br/> Made by Priyanshu Srivastava
           </p>
         </div>
-
       </div>
     </footer>
   );

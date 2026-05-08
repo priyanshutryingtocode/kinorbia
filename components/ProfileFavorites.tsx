@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import MovieCard, { MovieProp } from "./MovieCard";
-import { Film, X, Star, Loader2 } from "lucide-react";
+import { Film, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { FavoriteMovie } from "@/types";
 
-export default function ProfileFavorites({ initialFavorites }: { initialFavorites: any[] }) {
+export default function ProfileFavorites({ initialFavorites }: { initialFavorites: FavoriteMovie[] }) {
   const [selectedMovie, setSelectedMovie] = useState<MovieProp | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
         setSelectedMovie(null); // Close modal
         router.refresh();       // Tell Next.js to re-fetch the server page
       }
-    } catch (error) {
+    } catch {
       console.error("Failed to rate");
     } finally {
       setLoading(false);
@@ -37,7 +38,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
     return (
       <div className="h-64 rounded-2xl border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center text-neutral-500 gap-4">
          <Film className="w-12 h-12 opacity-20" />
-         <p>You haven't added any favorites yet.</p>
+         <p>You have not added any favorites yet.</p>
          <Link href="/" className="text-red-500 hover:text-red-400 text-sm hover:underline">
            Browse Movies
          </Link>
@@ -47,12 +48,10 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
 
   return (
     <>
-      {/* The Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {initialFavorites.map((fav: any, index: number) => (
+        {initialFavorites.map((fav) => (
           <MovieCard 
             key={fav.movieId} 
-            index={index}
             movie={{
               id: fav.movieId,
               title: fav.title,
@@ -61,12 +60,11 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
               release_date: fav.releaseDate,
               personalRating: fav.personalRating || 0 
             }} 
-            onRateClick={setSelectedMovie} // Passes the movie to state, opening modal
+            onRateClick={setSelectedMovie}
           />
         ))}
       </div>
 
-      {/* The Rating Modal */}
       {selectedMovie && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !loading && setSelectedMovie(null)}></div>
@@ -83,7 +81,6 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
             <h3 className="text-xl font-bold text-white mb-2">Rate Movie</h3>
             <p className="text-sm text-neutral-400 mb-6">{selectedMovie.title}</p>
 
-            {/* 10 Star Buttons */}
             <div className="flex flex-wrap justify-center gap-2 mb-6">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                 <button

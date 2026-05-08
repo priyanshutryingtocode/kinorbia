@@ -15,22 +15,17 @@ export default function ProfileActions({ user }: { user: UserData }) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   
-  // Form State
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio || "");
 
   const router = useRouter();
 
-  // Handle Copy Link
   const handleShare = () => {
-    // Currently copies the generic profile link. 
-    // In the future, this would be /user/[id]
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000); // Reset after 2s
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  // Handle Save Profile
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -42,9 +37,9 @@ export default function ProfileActions({ user }: { user: UserData }) {
 
       if (res.ok) {
         setIsEditing(false);
-        router.refresh(); // Reloads the page to show new data
+        router.refresh();
       }
-    } catch (error) {
+    } catch {
       console.error("Failed to save");
     } finally {
       setLoading(false);
@@ -53,7 +48,6 @@ export default function ProfileActions({ user }: { user: UserData }) {
 
   return (
     <>
-      {/* === The Buttons === */}
       <div className="flex gap-3 mt-4 md:mt-0">
         <button 
           onClick={() => setIsEditing(true)}
@@ -72,17 +66,13 @@ export default function ProfileActions({ user }: { user: UserData }) {
         </button>
       </div>
 
-      {/* === The Edit Modal === */}
       {isEditing && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-          
-          {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onClick={() => setIsEditing(false)}
           ></div>
 
-          {/* Modal Content */}
           <div className="relative w-full max-w-md bg-neutral-900 border border-white/10 rounded-2xl p-6 shadow-2xl">
             
             <div className="flex items-center justify-between mb-6">

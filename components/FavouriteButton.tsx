@@ -8,8 +8,9 @@ interface FavButtonProps {
   movie: {
     id: string;
     title: string;
-    poster_path: string;
+    poster_path: string | null;
     vote_average: number;
+    release_date?: string;
   };
   initialIsFavorite: boolean;
 }
@@ -30,6 +31,7 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
           title: movie.title,
           posterPath: movie.poster_path,
           voteAverage: movie.vote_average,
+          releaseDate: movie.release_date,
         }),
       });
 
@@ -43,7 +45,7 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
         setIsFavorite(data.isFavorite); // Update state based on server response
         router.refresh(); // Refresh so Profile page updates in background
       }
-    } catch (error) {
+    } catch {
       console.error("Failed to toggle favorite");
     } finally {
       setLoading(false);

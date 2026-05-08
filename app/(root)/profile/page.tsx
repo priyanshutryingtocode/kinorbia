@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { Film, Heart, List, Calendar, User as UserIcon } from "lucide-react";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import ProfileActions from "@/components/profileActions";
-import MovieCard from "@/components/MovieCard"; // Import the card component
 import Link from "next/link";
 import ProfileFavorites from "@/components/ProfileFavorites";
 
@@ -16,24 +16,21 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  // 1. Fetch FRESH data from DB
   await dbConnect();
   const dbUser = await User.findOne({ email: session.user.email });
 
-  // 2. Prepare User Data
   const userData = {
     name: dbUser?.name || session.user.name || "User",
     bio: dbUser?.bio || "",
     email: dbUser?.email || "",
     image: dbUser?.image || session.user.image,
     createdAt: dbUser?.createdAt,
-    favorites: dbUser?.favorites || [], // Get the favorites list
+    favorites: dbUser?.favorites || [],
   };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-20">
       
-      {/* Header Banner */}
       <div className="h-64 w-full bg-linear-to-r from-neutral-900 via-red-950/30 to-neutral-900 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
         <div className="absolute bottom-0 left-0 w-full h-24 bg-linear-to-t from-neutral-950 to-transparent"></div>
@@ -41,14 +38,17 @@ export default async function ProfilePage() {
 
       <div className="max-w-5xl mx-auto px-6 -mt-24 relative z-10">
         
-        {/* User Info Section */}
         <div className="flex flex-col md:flex-row items-center md:items-end gap-6 mb-12">
-          
-          {/* Avatar */}
           <div className="relative group">
              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-neutral-950 bg-neutral-800 overflow-hidden shadow-2xl">
                {userData.image ? (
-                 <img src={userData.image} alt={userData.name} className="w-full h-full object-cover" />
+                 <Image
+                   src={userData.image}
+                   alt={userData.name}
+                   width={160}
+                   height={160}
+                   className="w-full h-full object-cover"
+                 />
                ) : (
                  <div className="w-full h-full flex items-center justify-center text-neutral-500">
                     <UserIcon className="w-16 h-16" />
@@ -57,7 +57,6 @@ export default async function ProfilePage() {
              </div>
           </div>
 
-          {/* Name & Bio */}
           <div className="text-center md:text-left flex-1">
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{userData.name}</h1>
             
@@ -75,15 +74,12 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <ProfileActions user={{ name: userData.name, bio: userData.bio, email: userData.email }} />
           
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
            <StatCard icon={<Film className="w-5 h-5 text-blue-400" />} label="Movies Watched" value="0" />
-           {/* Update the Favorites Count dynamically */}
            <StatCard 
              icon={<Heart className="w-5 h-5 text-red-500" />} 
              label="Favorites" 
@@ -93,7 +89,6 @@ export default async function ProfilePage() {
            <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Following" value="0" />
         </div>
 
-        {/* Favorites Section */}
         <div className="border-t border-white/10 pt-10">
           <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
             <Heart className="w-5 h-5 text-red-500 fill-current" /> 
@@ -101,13 +96,11 @@ export default async function ProfilePage() {
           </h3>
 
           {userData.favorites.length > 0 ? (
-            // === RENDER FAVORITES GRID ===
             <ProfileFavorites initialFavorites={userData.favorites} />
           ) : (
-            // === EMPTY STATE ===    
             <div className="h-64 rounded-2xl border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center text-neutral-500 gap-4">
                <Film className="w-12 h-12 opacity-20" />
-               <p>You haven't added any favorites yet.</p>      
+               <p>You have not added any favorites yet.</p>      
                 <Link href="/" className="text-red-500 hover:text-red-400 text-sm hover:underline">
                     Browse Movies
                 </Link>
