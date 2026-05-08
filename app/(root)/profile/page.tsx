@@ -7,7 +7,32 @@ import User from "@/models/User";
 import ProfileActions from "@/components/profileActions";
 import Link from "next/link";
 import ProfileFavorites from "@/components/ProfileFavorites";
+import type { FavoriteMovie } from "@/types";
 
+type RawFavoriteMovie = FavoriteMovie & {
+  _id?: { toString: () => string };
+  addedAt?: Date;
+};
+
+type ProfileUser = {
+  name?: string;
+  bio?: string;
+  email?: string;
+  image?: string;
+  createdAt?: Date;
+  favorites?: RawFavoriteMovie[];
+};
+
+function serializeFavorites(favorites: RawFavoriteMovie[] = []): FavoriteMovie[] {
+  return favorites.map((favorite) => ({
+    movieId: favorite.movieId,
+    title: favorite.title,
+    posterPath: favorite.posterPath || null,
+    voteAverage: favorite.voteAverage || 0,
+    releaseDate: favorite.releaseDate,
+    personalRating: favorite.personalRating || 0,
+  }));
+}
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -17,7 +42,8 @@ export default async function ProfilePage() {
   }
 
   await dbConnect();
-  const dbUser = await User.findOne({ email: session.user.email });
+  const dbUser = await User.findOne({ email: session.user.email }).lean<ProfileUser | null>();
+  const favorites = serializeFavorites(dbUser?.favorites);
 
   const userData = {
     name: dbUser?.name || session.user.name || "User",
@@ -25,7 +51,7 @@ export default async function ProfilePage() {
     email: dbUser?.email || "",
     image: dbUser?.image || session.user.image,
     createdAt: dbUser?.createdAt,
-    favorites: dbUser?.favorites || [],
+    favorites,
   };
 
   return (

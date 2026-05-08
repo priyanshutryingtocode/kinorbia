@@ -3,6 +3,7 @@ import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import FavoriteButton from "@/components/FavouriteButton";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import { Calendar, Clock, Star } from "lucide-react";
 import type { FavoriteMovie, TmdbMovieDetails } from "@/types";
 
@@ -11,30 +12,46 @@ async function getMovie(id: string): Promise<TmdbMovieDetails> {
     `https://api.themoviedb.org/3/movie/${id}?api_key=${process.env.TMDB_API_KEY}`,
     { next: { revalidate: 3600 } }
   );
-  if (!res.ok) throw new Error("Movie not found");
+
+  if (res.status === 404) {
+    notFound();
+  }
+
+  if (!res.ok) {
+    throw new Error("Failed to load movie");
+  }
+
   return res.json();
 }
 
 type Props = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }> | { id: string };
 };
 
 export default async function MoviePage({ params }: Props) {
-  const { id } = await params;
+  const { id } = await Promise.resolve(params);
   const movie = await getMovie(id);
   const session = await auth();
 
   let isFavorite = false;
   if (session?.user?.email) {
     await dbConnect();
-    const user = await User.findOne({ email: session.user.email });
+    const user = await User.findOne({ email: session.user.email }).lean<{
+      favorites?: FavoriteMovie[];
+    } | null>();
+
     if (user?.favorites) {
-      isFavorite = user.favorites.some((fav: FavoriteMovie) => fav.movieId === id.toString());
+      isFavorite = user.favorites.some((fav) => fav.movieId === id.toString());
     }
   }
 
-  const hours = Math.floor(movie.runtime / 60);
-  const minutes = movie.runtime % 60;
+  const releaseYear = movie.release_date ? movie.release_date.split("-")[0] : "TBA";
+  const runtime = typeof movie.runtime === "number" ? movie.runtime : 0;
+  const hours = Math.floor(runtime / 60);
+  const minutes = runtime % 60;
+  const runtimeLabel = runtime > 0 ? `${hours}h ${minutes}m` : "Runtime TBA";
+  const ratingLabel =
+    typeof movie.vote_average === "number" ? movie.vote_average.toFixed(1) : "N/A";
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-20">
@@ -70,23 +87,25 @@ export default async function MoviePage({ params }: Props) {
           <h1 className="text-5xl font-bold tracking-tighter mb-2 text-white">
             {movie.title}
             <span className="text-neutral-500 font-normal ml-4 text-4xl">
-              ({movie.release_date.split("-")[0]})
+              ({releaseYear})
             </span>
           </h1>
-          <p className="text-xl text-neutral-400 italic mb-6">{movie.tagline}</p>
+          {movie.tagline && (
+            <p className="text-xl text-neutral-400 italic mb-6">{movie.tagline}</p>
+          )}
 
           <div className="flex items-center gap-6 text-sm font-medium text-neutral-300 mb-8">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
               <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-              <span>{movie.vote_average.toFixed(1)}</span>
+              <span>{ratingLabel}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
               <Clock className="w-5 h-5 text-neutral-400" />
-              <span>{hours}h {minutes}m</span>
+              <span>{runtimeLabel}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
               <Calendar className="w-5 h-5 text-neutral-400" />
-              <span>{movie.release_date}</span>
+              <span>{movie.release_date || "Release date TBA"}</span>
             </div>
           </div>
 
@@ -98,7 +117,7 @@ export default async function MoviePage({ params }: Props) {
                    id: movie.id.toString(),
                    title: movie.title,
                    poster_path: movie.poster_path,
-                   vote_average: movie.vote_average,
+                   vote_average: movie.vote_average || 0,
                    release_date: movie.release_date
                  }}
                  initialIsFavorite={isFavorite}
@@ -108,7 +127,7 @@ export default async function MoviePage({ params }: Props) {
 
           <h3 className="text-lg font-semibold mb-2 text-neutral-200">Overview</h3>
           <p className="text-neutral-400 leading-relaxed max-w-2xl text-lg">
-            {movie.overview}
+            {movie.overview || "No overview is available for this movie yet."}
           </p>
         </div>
       </div>

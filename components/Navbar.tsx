@@ -51,13 +51,19 @@ export default function Navbar() {
              <div className="w-9 h-9 rounded-full bg-neutral-800 animate-pulse border border-white/5"></div>
           ) : session?.user ? (
             <div className="relative group cursor-pointer h-9 flex items-center">
-              <Image
-                src={session.user.image || "/default-avatar.png"} 
-                alt="Profile" 
-                width={36}
-                height={36}
-                className="w-9 h-9 rounded-full border border-white/10 group-hover:border-red-500 transition-all object-cover"
-              />
+              {session.user.image ? (
+                <Image
+                  src={session.user.image}
+                  alt="Profile"
+                  width={36}
+                  height={36}
+                  className="w-9 h-9 rounded-full border border-white/10 group-hover:border-red-500 transition-all object-cover"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full border border-white/10 group-hover:border-red-500 transition-all bg-white/5 flex items-center justify-center text-neutral-400">
+                  <User className="w-5 h-5" />
+                </div>
+              )}
               
               <div className="absolute right-0 top-full pt-3 w-56 hidden group-hover:block">
                 <div className="bg-neutral-900 border border-white/10 rounded-xl shadow-2xl shadow-black overflow-hidden ring-1 ring-white/5">
