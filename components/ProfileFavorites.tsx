@@ -24,8 +24,8 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
       });
 
       if (res.ok) {
-        setSelectedMovie(null); // Close modal
-        router.refresh();       // Tell Next.js to re-fetch the server page
+        setSelectedMovie(null); 
+        router.refresh();       
       }
     } catch {
       console.error("Failed to rate");

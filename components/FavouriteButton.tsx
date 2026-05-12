@@ -36,14 +36,14 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
       });
 
       if (res.status === 401) {
-        router.push("/login"); // Send to login if not authenticated
+        router.push("/login"); 
         return;
       }
 
       if (res.ok) {
         const data = await res.json();
-        setIsFavorite(data.isFavorite); // Update state based on server response
-        router.refresh(); // Refresh so Profile page updates in background
+        setIsFavorite(data.isFavorite); 
+        router.refresh(); 
       }
     } catch {
       console.error("Failed to toggle favorite");

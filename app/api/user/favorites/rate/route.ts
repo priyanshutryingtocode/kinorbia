@@ -13,7 +13,6 @@ export async function POST(req: Request) {
     const { movieId, rating } = await req.json();
     await dbConnect();
 
-    // The $ syntax updates the specific item matched in the array
     await User.updateOne(
       { 
         email: session.user.email, 
