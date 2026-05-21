@@ -1,7 +1,9 @@
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
+import JournalEntry from "@/models/JournalEntry";
 import FavoriteButton from "@/components/FavouriteButton";
+import WatchedButton from "@/components/WatchedButton";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Calendar, Clock, Star } from "lucide-react";
@@ -34,6 +36,8 @@ export default async function MoviePage({ params }: Props) {
   const session = await auth();
 
   let isFavorite = false;
+  let isWatched = false;
+  let personalRating = 0;
   if (session?.user?.email) {
     await dbConnect();
     const user = await User.findOne({ email: session.user.email }).lean<{
@@ -41,8 +45,18 @@ export default async function MoviePage({ params }: Props) {
     } | null>();
 
     if (user?.favorites) {
-      isFavorite = user.favorites.some((fav) => fav.movieId === id.toString());
+      const favorite = user.favorites.find((fav) => fav.movieId === id.toString());
+      isFavorite = Boolean(favorite);
+      personalRating = favorite?.personalRating || 0;
     }
+
+    const journalEntry = await JournalEntry.findOne({
+      userEmail: session.user.email,
+      movieId: id.toString(),
+    }).lean<{ rating?: number } | null>();
+
+    isWatched = Boolean(journalEntry);
+    personalRating = personalRating || journalEntry?.rating || 0;
   }
 
   const releaseYear = movie.release_date ? movie.release_date.split("-")[0] : "TBA";
@@ -107,9 +121,15 @@ export default async function MoviePage({ params }: Props) {
               <Calendar className="w-5 h-5 text-neutral-400" />
               <span>{movie.release_date || "Release date TBA"}</span>
             </div>
+            {personalRating > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 rounded-lg border border-yellow-500/20 text-yellow-300">
+                <Star className="w-5 h-5 fill-current" />
+                <span>Your rating: {personalRating}/10</span>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-4 mb-8">
+          <div className="flex flex-wrap items-center gap-6 mb-8">
             <div className="flex items-center gap-3">
                <span className="text-sm font-medium text-neutral-400 uppercase tracking-widest">Add to Favorites</span>
                <FavoriteButton 
@@ -121,6 +141,18 @@ export default async function MoviePage({ params }: Props) {
                    release_date: movie.release_date
                  }}
                  initialIsFavorite={isFavorite}
+               />
+            </div>
+
+            <div className="flex items-center gap-3">
+               <span className="text-sm font-medium text-neutral-400 uppercase tracking-widest">Mark Watched</span>
+               <WatchedButton
+                 movie={{
+                   id: movie.id.toString(),
+                   title: movie.title,
+                   poster_path: movie.poster_path,
+                 }}
+                 initialIsWatched={isWatched}
                />
             </div>
           </div>

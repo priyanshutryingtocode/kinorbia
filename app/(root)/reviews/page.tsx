@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { MessageSquare, Star } from "lucide-react";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
@@ -16,11 +16,13 @@ type RawReview = Omit<ReviewItem, "_id" | "createdAt"> & {
 function serializeReview(review: RawReview): ReviewItem {
   return {
     _id: review._id.toString(),
+    userEmail: review.userEmail,
     userName: review.userName,
     movieTitle: review.movieTitle,
     posterPath: review.posterPath,
     rating: review.rating,
     body: review.body,
+    visibility: review.visibility || "public",
     createdAt: review.createdAt.toISOString(),
   };
 }
@@ -31,17 +33,27 @@ function posterUrl(path?: string | null) {
 
 export default async function ReviewsPage() {
   const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
   await dbConnect();
 
-  const rawReviews = await Review.find({})
+  const rawReviews = await Review.find({
+    $or: [
+      { visibility: "public" },
+      { visibility: { $exists: false } },
+      { userEmail: session.user.email },
+    ],
+  })
     .sort({ createdAt: -1 })
     .limit(24)
     .lean<RawReview[]>();
   const reviews = rawReviews.map(serializeReview);
 
-  const user = session?.user?.email
-    ? await User.findOne({ email: session.user.email })
-    : null;
+  const user = await User.findOne({ email: session.user.email }).lean<{
+    favorites?: FavoriteMovie[];
+  } | null>();
   const favorites = (user?.favorites || []) as FavoriteMovie[];
 
   return (
@@ -68,8 +80,7 @@ export default async function ReviewsPage() {
               <h2 className="font-bold text-lg">Write a Review</h2>
             </div>
 
-            {session?.user ? (
-              <form action={createReview} className="space-y-4">
+            <form action={createReview} className="space-y-4">
                 {favorites.length > 0 && (
                   <div>
                     <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
@@ -130,18 +141,37 @@ export default async function ReviewsPage() {
                   />
                 </div>
 
+                <fieldset>
+                  <legend className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                    Visibility
+                  </legend>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
+                      <input
+                        type="radio"
+                        name="visibility"
+                        value="public"
+                        defaultChecked
+                        className="accent-red-600"
+                      />
+                      Public
+                    </label>
+                    <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
+                      <input
+                        type="radio"
+                        name="visibility"
+                        value="private"
+                        className="accent-red-600"
+                      />
+                      Private
+                    </label>
+                  </div>
+                </fieldset>
+
                 <button className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition">
                   Publish Review
                 </button>
               </form>
-            ) : (
-              <div className="text-sm text-neutral-400">
-                <p className="mb-4">Sign in to publish reviews and build your film voice.</p>
-                <Link href="/login" className="text-red-400 hover:text-red-300 font-medium">
-                  Sign in
-                </Link>
-              </div>
-            )}
           </aside>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -173,8 +203,17 @@ export default async function ReviewsPage() {
                     </div>
                     <h3 className="text-lg font-bold text-white truncate">{review.movieTitle}</h3>
                     <p className="text-xs text-neutral-500 mt-1">
-                      by {review.userName} · {new Date(review.createdAt).toLocaleDateString()}
+                      by {review.userName} - {new Date(review.createdAt).toLocaleDateString()}
                     </p>
+                    <span
+                      className={`inline-flex mt-3 text-[11px] font-bold uppercase tracking-wider rounded-full px-2 py-1 ${
+                        review.visibility === "private"
+                          ? "bg-white/10 text-neutral-300 border border-white/10"
+                          : "bg-red-500/10 text-red-300 border border-red-500/20"
+                      }`}
+                    >
+                      {review.visibility}
+                    </span>
                     <p className="text-sm text-neutral-300 leading-relaxed mt-4 line-clamp-5">
                       {review.body}
                     </p>

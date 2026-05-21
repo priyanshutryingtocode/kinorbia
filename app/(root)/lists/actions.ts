@@ -21,6 +21,7 @@ export async function createMovieList(formData: FormData) {
 
   const title = getRequiredString(formData, "title");
   const description = getRequiredString(formData, "description");
+  const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
   const movieIds = formData.getAll("movieIds").filter((value): value is string => {
     return typeof value === "string" && value.length > 0;
   });
@@ -40,6 +41,7 @@ export async function createMovieList(formData: FormData) {
     title,
     description,
     movies: selectedMovies,
+    visibility,
   });
 
   revalidatePath("/lists");

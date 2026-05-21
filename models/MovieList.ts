@@ -46,6 +46,12 @@ const MovieListSchema = new mongoose.Schema({
     type: [ListMovieSchema],
     default: [],
   },
+  visibility: {
+    type: String,
+    enum: ["public", "private"],
+    default: "public",
+    index: true,
+  },
 }, { timestamps: true });
 
 export default mongoose.models?.MovieList || mongoose.model("MovieList", MovieListSchema);

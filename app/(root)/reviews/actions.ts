@@ -24,6 +24,7 @@ export async function createReview(formData: FormData) {
   const body = getRequiredString(formData, "body");
   let movieId = getRequiredString(formData, "movieId");
   let posterPath = getRequiredString(formData, "posterPath");
+  const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
   const rating = Number(formData.get("rating"));
 
   await dbConnect();
@@ -51,6 +52,7 @@ export async function createReview(formData: FormData) {
     posterPath: posterPath || undefined,
     rating: Math.min(10, Math.max(1, rating)),
     body,
+    visibility,
   });
 
   revalidatePath("/reviews");

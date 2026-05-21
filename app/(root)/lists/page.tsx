@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ListPlus, ListVideo, Plus } from "lucide-react";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
@@ -16,10 +17,12 @@ type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
 function serializeList(list: RawMovieList): MovieListItem {
   return {
     _id: list._id.toString(),
+    userEmail: list.userEmail,
     userName: list.userName,
     title: list.title,
     description: list.description,
     movies: list.movies,
+    visibility: list.visibility || "public",
     createdAt: list.createdAt.toISOString(),
   };
 }
@@ -30,17 +33,27 @@ function posterUrl(path?: string | null) {
 
 export default async function ListsPage() {
   const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
   await dbConnect();
 
-  const rawLists = await MovieList.find({})
+  const rawLists = await MovieList.find({
+    $or: [
+      { visibility: "public" },
+      { visibility: { $exists: false } },
+      { userEmail: session.user.email },
+    ],
+  })
     .sort({ createdAt: -1 })
     .limit(18)
     .lean<RawMovieList[]>();
   const lists = rawLists.map(serializeList);
 
-  const user = session?.user?.email
-    ? await User.findOne({ email: session.user.email })
-    : null;
+  const user = await User.findOne({ email: session.user.email }).lean<{
+    favorites?: FavoriteMovie[];
+  } | null>();
   const favorites = (user?.favorites || []) as FavoriteMovie[];
 
   return (
@@ -65,8 +78,7 @@ export default async function ListsPage() {
               <h2 className="font-bold text-lg">Create a List</h2>
             </div>
 
-            {session?.user ? (
-              favorites.length > 0 ? (
+            {favorites.length > 0 ? (
                 <form action={createMovieList} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
@@ -116,6 +128,33 @@ export default async function ListsPage() {
                     </div>
                   </div>
 
+                  <fieldset>
+                    <legend className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                      Visibility
+                    </legend>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
+                        <input
+                          type="radio"
+                          name="visibility"
+                          value="public"
+                          defaultChecked
+                          className="accent-red-600"
+                        />
+                        Public
+                      </label>
+                      <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
+                        <input
+                          type="radio"
+                          name="visibility"
+                          value="private"
+                          className="accent-red-600"
+                        />
+                        Private
+                      </label>
+                    </div>
+                  </fieldset>
+
                   <button className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
                     <Plus className="w-4 h-4" />
                     Create List
@@ -128,14 +167,6 @@ export default async function ListsPage() {
                     Browse movies
                   </Link>
                 </div>
-              )
-            ) : (
-              <div className="text-sm text-neutral-400">
-                <p className="mb-4">Sign in to create lists from your favorites.</p>
-                <Link href="/login" className="text-red-400 hover:text-red-300 font-medium">
-                  Sign in
-                </Link>
-              </div>
             )}
           </aside>
 
@@ -147,11 +178,20 @@ export default async function ListsPage() {
                     <div>
                       <h3 className="text-xl font-bold text-white">{list.title}</h3>
                       <p className="text-xs text-neutral-500 mt-1">
-                        by {list.userName} · {new Date(list.createdAt).toLocaleDateString()}
+                        by {list.userName} - {new Date(list.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <span className="shrink-0 text-xs text-neutral-400 bg-white/5 border border-white/10 rounded-full px-3 py-1">
                       {list.movies.length} films
+                    </span>
+                    <span
+                      className={`shrink-0 text-[11px] font-bold uppercase tracking-wider rounded-full px-3 py-1 ${
+                        list.visibility === "private"
+                          ? "bg-white/10 text-neutral-300 border border-white/10"
+                          : "bg-red-500/10 text-red-300 border border-red-500/20"
+                      }`}
+                    >
+                      {list.visibility}
                     </span>
                   </div>
 

@@ -26,20 +26,24 @@ export type TmdbMovieDetails = MovieSummary & {
 
 export type ReviewItem = {
   _id: string;
+  userEmail: string;
   userName: string;
   movieTitle: string;
   posterPath?: string | null;
   rating: number;
   body: string;
+  visibility: "public" | "private";
   createdAt: string;
 };
 
 export type MovieListItem = {
   _id: string;
+  userEmail: string;
   userName: string;
   title: string;
   description?: string;
   movies: FavoriteMovie[];
+  visibility: "public" | "private";
   createdAt: string;
 };
 

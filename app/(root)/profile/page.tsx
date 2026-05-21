@@ -4,6 +4,8 @@ import Image from "next/image";
 import { Film, Heart, List, Calendar, User as UserIcon } from "lucide-react";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
+import JournalEntry from "@/models/JournalEntry";
+import MovieList from "@/models/MovieList";
 import ProfileActions from "@/components/profileActions";
 import Link from "next/link";
 import ProfileFavorites from "@/components/ProfileFavorites";
@@ -44,6 +46,10 @@ export default async function ProfilePage() {
   await dbConnect();
   const dbUser = await User.findOne({ email: session.user.email }).lean<ProfileUser | null>();
   const favorites = serializeFavorites(dbUser?.favorites);
+  const [watchedMovieIds, listsCreated] = await Promise.all([
+    JournalEntry.distinct("movieId", { userEmail: session.user.email }),
+    MovieList.countDocuments({ userEmail: session.user.email }),
+  ]);
 
   const userData = {
     name: dbUser?.name || session.user.name || "User",
@@ -105,13 +111,13 @@ export default async function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-           <StatCard icon={<Film className="w-5 h-5 text-blue-400" />} label="Movies Watched" value="0" />
+           <StatCard icon={<Film className="w-5 h-5 text-blue-400" />} label="Movies Watched" value={watchedMovieIds.length.toString()} />
            <StatCard 
              icon={<Heart className="w-5 h-5 text-red-500" />} 
              label="Favorites" 
              value={userData.favorites.length.toString()} 
            />
-           <StatCard icon={<List className="w-5 h-5 text-yellow-400" />} label="Lists Created" value="0" />
+           <StatCard icon={<List className="w-5 h-5 text-yellow-400" />} label="Lists Created" value={listsCreated.toString()} />
            <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Following" value="0" />
         </div>
 

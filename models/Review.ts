@@ -31,6 +31,12 @@ const ReviewSchema = new mongoose.Schema({
     required: true,
     maxLength: 1200,
   },
+  visibility: {
+    type: String,
+    enum: ["public", "private"],
+    default: "public",
+    index: true,
+  },
 }, { timestamps: true });
 
 export default mongoose.models?.Review || mongoose.model("Review", ReviewSchema);
