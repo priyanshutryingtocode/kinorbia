@@ -46,3 +46,47 @@ export async function createMovieList(formData: FormData) {
 
   revalidatePath("/lists");
 }
+
+export async function updateMovieList(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
+  const listId = getRequiredString(formData, "listId");
+  const title = getRequiredString(formData, "title");
+  const description = getRequiredString(formData, "description");
+  const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
+
+  if (!listId || !title) {
+    return;
+  }
+
+  await dbConnect();
+  await MovieList.updateOne(
+    { _id: listId, userEmail: session.user.email },
+    { $set: { title, description, visibility } }
+  );
+
+  revalidatePath("/lists");
+  revalidatePath(`/lists/${listId}`);
+  revalidatePath("/profile");
+}
+
+export async function deleteMovieList(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
+  const listId = getRequiredString(formData, "listId");
+  if (!listId) {
+    return;
+  }
+
+  await dbConnect();
+  await MovieList.deleteOne({ _id: listId, userEmail: session.user.email });
+
+  revalidatePath("/lists");
+  revalidatePath("/profile");
+}

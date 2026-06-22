@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
-import { createJournalEntry } from "./actions";
+import { createJournalEntry, deleteJournalEntry, updateJournalEntry } from "./actions";
 import type { FavoriteMovie, JournalItem } from "@/types";
 
 type RawJournalEntry = Omit<JournalItem, "_id" | "createdAt" | "watchedAt"> & {
@@ -32,6 +32,10 @@ function posterUrl(path?: string | null) {
 
 function todayInputValue() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function dateInputValue(date: string) {
+  return new Date(date).toISOString().slice(0, 10);
 }
 
 export default async function JournalPage() {
@@ -190,6 +194,48 @@ export default async function JournalPage() {
                     {entry.note && (
                       <p className="text-sm text-neutral-300 leading-relaxed mt-3">{entry.note}</p>
                     )}
+                    <details className="mt-4 border-t border-white/10 pt-4">
+                      <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white">
+                        Manage
+                      </summary>
+                      <form action={updateJournalEntry} className="mt-4 space-y-3">
+                        <input type="hidden" name="entryId" value={entry._id} />
+                        <div className="grid grid-cols-2 gap-3">
+                          <input
+                            name="watchedAt"
+                            type="date"
+                            required
+                            defaultValue={dateInputValue(entry.watchedAt)}
+                            className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                          />
+                          <input
+                            name="rating"
+                            type="number"
+                            min="1"
+                            max="10"
+                            defaultValue={entry.rating}
+                            placeholder="Rating"
+                            className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                          />
+                        </div>
+                        <textarea
+                          name="note"
+                          maxLength={1000}
+                          rows={3}
+                          defaultValue={entry.note}
+                          className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 resize-none"
+                        />
+                        <button className="w-full bg-white/10 hover:bg-white/15 text-white font-bold py-2 rounded-lg transition">
+                          Save Entry
+                        </button>
+                      </form>
+                      <form action={deleteJournalEntry} className="mt-2">
+                        <input type="hidden" name="entryId" value={entry._id} />
+                        <button className="w-full border border-red-500/30 text-red-300 hover:bg-red-500/10 font-bold py-2 rounded-lg transition">
+                          Delete Entry
+                        </button>
+                      </form>
+                    </details>
                   </div>
                 </article>
               ))

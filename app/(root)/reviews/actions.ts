@@ -57,3 +57,52 @@ export async function createReview(formData: FormData) {
 
   revalidatePath("/reviews");
 }
+
+export async function updateReview(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
+  const reviewId = getRequiredString(formData, "reviewId");
+  const body = getRequiredString(formData, "body");
+  const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
+  const rating = Number(formData.get("rating"));
+
+  if (!reviewId || !body || !Number.isFinite(rating)) {
+    return;
+  }
+
+  await dbConnect();
+  await Review.updateOne(
+    { _id: reviewId, userEmail: session.user.email },
+    {
+      $set: {
+        rating: Math.min(10, Math.max(1, rating)),
+        body,
+        visibility,
+      },
+    }
+  );
+
+  revalidatePath("/reviews");
+  revalidatePath("/profile");
+}
+
+export async function deleteReview(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
+  const reviewId = getRequiredString(formData, "reviewId");
+  if (!reviewId) {
+    return;
+  }
+
+  await dbConnect();
+  await Review.deleteOne({ _id: reviewId, userEmail: session.user.email });
+
+  revalidatePath("/reviews");
+  revalidatePath("/profile");
+}

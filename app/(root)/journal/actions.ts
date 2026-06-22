@@ -64,3 +64,53 @@ export async function createJournalEntry(formData: FormData) {
 
   revalidatePath("/journal");
 }
+
+export async function updateJournalEntry(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
+  const entryId = getRequiredString(formData, "entryId");
+  const note = getRequiredString(formData, "note");
+  const watchedAtValue = getRequiredString(formData, "watchedAt");
+  const ratingValue = formData.get("rating");
+  const rating = ratingValue ? Number(ratingValue) : undefined;
+
+  if (!entryId || !watchedAtValue) {
+    return;
+  }
+
+  await dbConnect();
+  await JournalEntry.updateOne(
+    { _id: entryId, userEmail: session.user.email },
+    {
+      $set: {
+        watchedAt: new Date(watchedAtValue),
+        note,
+        rating: Number.isFinite(rating) ? Math.min(10, Math.max(1, rating as number)) : undefined,
+      },
+    }
+  );
+
+  revalidatePath("/journal");
+  revalidatePath("/profile");
+}
+
+export async function deleteJournalEntry(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
+  const entryId = getRequiredString(formData, "entryId");
+  if (!entryId) {
+    return;
+  }
+
+  await dbConnect();
+  await JournalEntry.deleteOne({ _id: entryId, userEmail: session.user.email });
+
+  revalidatePath("/journal");
+  revalidatePath("/profile");
+}

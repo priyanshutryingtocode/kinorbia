@@ -4,6 +4,7 @@ import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
 import FavoriteButton from "@/components/FavouriteButton";
 import WatchedButton from "@/components/WatchedButton";
+import MovieRatingControl from "@/components/MovieRatingControl";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Calendar, Clock, Star } from "lucide-react";
@@ -155,6 +156,19 @@ export default async function MoviePage({ params }: Props) {
                  initialIsWatched={isWatched}
                />
             </div>
+          </div>
+
+          <div className="mb-8">
+            <MovieRatingControl
+              movie={{
+                id: movie.id.toString(),
+                title: movie.title,
+                poster_path: movie.poster_path,
+                vote_average: movie.vote_average || 0,
+                release_date: movie.release_date,
+              }}
+              initialRating={personalRating}
+            />
           </div>
 
           <h3 className="text-lg font-semibold mb-2 text-neutral-200">Overview</h3>

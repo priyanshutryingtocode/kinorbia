@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import MovieList from "@/models/MovieList";
-import { createMovieList } from "./actions";
+import { createMovieList, deleteMovieList, updateMovieList } from "./actions";
 import type { FavoriteMovie, MovieListItem } from "@/types";
 
 type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
@@ -36,6 +36,7 @@ export default async function ListsPage() {
   if (!session?.user?.email) {
     redirect("/login");
   }
+  const currentUserEmail = session.user.email;
 
   await dbConnect();
 
@@ -43,7 +44,7 @@ export default async function ListsPage() {
     $or: [
       { visibility: "public" },
       { visibility: { $exists: false } },
-      { userEmail: session.user.email },
+      { userEmail: currentUserEmail },
     ],
   })
     .sort({ createdAt: -1 })
@@ -51,7 +52,7 @@ export default async function ListsPage() {
     .lean<RawMovieList[]>();
   const lists = rawLists.map(serializeList);
 
-  const user = await User.findOne({ email: session.user.email }).lean<{
+  const user = await User.findOne({ email: currentUserEmail }).lean<{
     favorites?: FavoriteMovie[];
   } | null>();
   const favorites = (user?.favorites || []) as FavoriteMovie[];
@@ -176,7 +177,9 @@ export default async function ListsPage() {
                 <article key={list._id} className="bg-neutral-900/50 border border-white/10 rounded-xl p-5">
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
-                      <h3 className="text-xl font-bold text-white">{list.title}</h3>
+                      <Link href={`/lists/${list._id}`} className="text-xl font-bold text-white hover:text-red-400 transition">
+                        {list.title}
+                      </Link>
                       <p className="text-xs text-neutral-500 mt-1">
                         by {list.userName} - {new Date(list.createdAt).toLocaleDateString()}
                       </p>
@@ -218,6 +221,47 @@ export default async function ListsPage() {
                       </div>
                     ))}
                   </div>
+                  {list.userEmail === currentUserEmail && (
+                    <details className="mt-4 border-t border-white/10 pt-4">
+                      <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white">
+                        Manage
+                      </summary>
+                      <form action={updateMovieList} className="mt-4 space-y-3">
+                        <input type="hidden" name="listId" value={list._id} />
+                        <input
+                          name="title"
+                          required
+                          maxLength={80}
+                          defaultValue={list.title}
+                          className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                        />
+                        <textarea
+                          name="description"
+                          maxLength={300}
+                          rows={3}
+                          defaultValue={list.description}
+                          className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 resize-none"
+                        />
+                        <select
+                          name="visibility"
+                          defaultValue={list.visibility}
+                          className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                        >
+                          <option value="public">Public</option>
+                          <option value="private">Private</option>
+                        </select>
+                        <button className="w-full bg-white/10 hover:bg-white/15 text-white font-bold py-2 rounded-lg transition">
+                          Save List
+                        </button>
+                      </form>
+                      <form action={deleteMovieList} className="mt-2">
+                        <input type="hidden" name="listId" value={list._id} />
+                        <button className="w-full border border-red-500/30 text-red-300 hover:bg-red-500/10 font-bold py-2 rounded-lg transition">
+                          Delete List
+                        </button>
+                      </form>
+                    </details>
+                  )}
                 </article>
               ))
             ) : (

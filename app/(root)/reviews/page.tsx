@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import Review from "@/models/Review";
 import User from "@/models/User";
-import { createReview } from "./actions";
+import { createReview, deleteReview, updateReview } from "./actions";
 import type { FavoriteMovie, ReviewItem } from "@/types";
 
 type RawReview = Omit<ReviewItem, "_id" | "createdAt"> & {
@@ -36,6 +36,7 @@ export default async function ReviewsPage() {
   if (!session?.user?.email) {
     redirect("/login");
   }
+  const currentUserEmail = session.user.email;
 
   await dbConnect();
 
@@ -43,7 +44,7 @@ export default async function ReviewsPage() {
     $or: [
       { visibility: "public" },
       { visibility: { $exists: false } },
-      { userEmail: session.user.email },
+      { userEmail: currentUserEmail },
     ],
   })
     .sort({ createdAt: -1 })
@@ -51,7 +52,7 @@ export default async function ReviewsPage() {
     .lean<RawReview[]>();
   const reviews = rawReviews.map(serializeReview);
 
-  const user = await User.findOne({ email: session.user.email }).lean<{
+  const user = await User.findOne({ email: currentUserEmail }).lean<{
     favorites?: FavoriteMovie[];
   } | null>();
   const favorites = (user?.favorites || []) as FavoriteMovie[];
@@ -217,6 +218,50 @@ export default async function ReviewsPage() {
                     <p className="text-sm text-neutral-300 leading-relaxed mt-4 line-clamp-5">
                       {review.body}
                     </p>
+                    {review.userEmail === currentUserEmail && (
+                      <details className="mt-4 border-t border-white/10 pt-4">
+                        <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white">
+                          Manage
+                        </summary>
+                        <form action={updateReview} className="mt-4 space-y-3">
+                          <input type="hidden" name="reviewId" value={review._id} />
+                          <input
+                            name="rating"
+                            type="number"
+                            min="1"
+                            max="10"
+                            required
+                            defaultValue={review.rating}
+                            className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                          />
+                          <textarea
+                            name="body"
+                            required
+                            maxLength={1200}
+                            rows={4}
+                            defaultValue={review.body}
+                            className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 resize-none"
+                          />
+                          <select
+                            name="visibility"
+                            defaultValue={review.visibility}
+                            className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                          >
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                          </select>
+                          <button className="w-full bg-white/10 hover:bg-white/15 text-white font-bold py-2 rounded-lg transition">
+                            Save Review
+                          </button>
+                        </form>
+                        <form action={deleteReview} className="mt-2">
+                          <input type="hidden" name="reviewId" value={review._id} />
+                          <button className="w-full border border-red-500/30 text-red-300 hover:bg-red-500/10 font-bold py-2 rounded-lg transition">
+                            Delete Review
+                          </button>
+                        </form>
+                      </details>
+                    )}
                   </div>
                 </article>
               ))
