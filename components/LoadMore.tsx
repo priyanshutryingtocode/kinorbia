@@ -1,25 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { fetchMovies } from "@/app/actions";
 import MovieCard, { MovieProp } from "./MovieCard";
 import { Loader2 } from "lucide-react";
 
-export default function LoadMore() {
+interface LoadMoreProps {
+  genre?: string;
+}
+
+export default function LoadMore({ genre }: LoadMoreProps) {
   const [movies, setMovies] = useState<MovieProp[]>([]);
   const [page, setPage] = useState(2);
+  const [loading, setLoading] = useState(false);
   
-  const { ref, inView } = useInView();
-
-  useEffect(() => {
-    if (inView) {
-      fetchMovies(page).then((res) => {
-        setMovies([...movies, ...res]);
-        setPage(page + 1);
-      });
-    }
-  }, [inView, page, movies]);
+  // By using onChange, we completely bypass the need for a useEffect
+  const { ref } = useInView({
+    onChange: (inView) => {
+      if (inView && !loading) {
+        setLoading(true);
+        
+        fetchMovies(page, genre).then((res) => {
+          setMovies((prevMovies) => [...prevMovies, ...res]);
+          setPage((prevPage) => prevPage + 1);
+          setLoading(false);
+        });
+      }
+    },
+  });
 
   return (
     <>
@@ -29,8 +38,8 @@ export default function LoadMore() {
         ))}
       </div>
 
-      <div ref={ref} className="flex justify-center items-center py-10 w-full">
-        <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
+      <div ref={ref} className="flex justify-center items-center py-10 w-full min-h-25">
+        {loading && <Loader2 className="w-8 h-8 text-red-600 animate-spin" />}
       </div>
     </>
   );
