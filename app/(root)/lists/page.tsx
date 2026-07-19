@@ -8,6 +8,7 @@ import User from "@/models/User";
 import MovieList from "@/models/MovieList";
 import { createMovieList, deleteMovieList, updateMovieList } from "./actions";
 import type { FavoriteMovie, MovieListItem } from "@/types";
+import SubmitButton from "@/components/SubmitButton";
 
 type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
@@ -156,10 +157,10 @@ export default async function ListsPage() {
                     </div>
                   </fieldset>
 
-                  <button className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
+                  <SubmitButton pendingLabel="Creating..." className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
                     <Plus className="w-4 h-4" />
                     Create List
-                  </button>
+                  </SubmitButton>
                 </form>
               ) : (
                 <div className="text-sm text-neutral-400">
@@ -242,6 +243,34 @@ export default async function ListsPage() {
                           defaultValue={list.description}
                           className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 resize-none"
                         />
+                        <div>
+                          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-500">
+                            Movies in list
+                          </p>
+                          {favorites.length > 0 ? (
+                            <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
+                              {favorites.map((movie) => (
+                                <label
+                                  key={movie.movieId}
+                                  className="flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-neutral-200"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    name="movieIds"
+                                    value={movie.movieId}
+                                    defaultChecked={list.movies.some((item) => item.movieId === movie.movieId)}
+                                    className="accent-red-600"
+                                  />
+                                  <span className="truncate">{movie.title}</span>
+                                </label>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="rounded-lg border border-dashed border-white/10 p-3 text-xs text-neutral-500">
+                              Add favorites first to edit movies in this list.
+                            </p>
+                          )}
+                        </div>
                         <select
                           name="visibility"
                           defaultValue={list.visibility}
@@ -250,15 +279,15 @@ export default async function ListsPage() {
                           <option value="public">Public</option>
                           <option value="private">Private</option>
                         </select>
-                        <button className="w-full bg-white/10 hover:bg-white/15 text-white font-bold py-2 rounded-lg transition">
+                        <SubmitButton pendingLabel="Saving..." className="w-full bg-white/10 hover:bg-white/15 text-white font-bold py-2 rounded-lg transition">
                           Save List
-                        </button>
+                        </SubmitButton>
                       </form>
                       <form action={deleteMovieList} className="mt-2">
                         <input type="hidden" name="listId" value={list._id} />
-                        <button className="w-full border border-red-500/30 text-red-300 hover:bg-red-500/10 font-bold py-2 rounded-lg transition">
+                        <SubmitButton pendingLabel="Deleting..." className="w-full border border-red-500/30 text-red-300 hover:bg-red-500/10 font-bold py-2 rounded-lg transition">
                           Delete List
-                        </button>
+                        </SubmitButton>
                       </form>
                     </details>
                   )}

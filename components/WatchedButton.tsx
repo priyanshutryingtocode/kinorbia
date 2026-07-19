@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Eye, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToast } from "./ToastProvider";
 
 type WatchedButtonProps = {
   movie: {
@@ -17,6 +18,7 @@ export default function WatchedButton({ movie, initialIsWatched }: WatchedButton
   const [isWatched, setIsWatched] = useState(initialIsWatched);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { showToast } = useToast();
 
   const handleClick = async () => {
     if (isWatched) {
@@ -37,14 +39,20 @@ export default function WatchedButton({ movie, initialIsWatched }: WatchedButton
       });
 
       if (res.status === 401) {
+        showToast("Sign in to mark movies as watched.", "info");
         router.push("/login");
         return;
       }
 
       if (res.ok) {
         setIsWatched(true);
+        showToast("Marked as watched.", "success");
         router.refresh();
+      } else {
+        showToast("Could not mark this movie as watched.", "error");
       }
+    } catch {
+      showToast("Could not mark this movie as watched.", "error");
     } finally {
       setLoading(false);
     }

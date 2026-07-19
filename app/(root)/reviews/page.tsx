@@ -7,6 +7,7 @@ import Review from "@/models/Review";
 import User from "@/models/User";
 import { createReview, deleteReview, updateReview } from "./actions";
 import type { FavoriteMovie, ReviewItem } from "@/types";
+import SubmitButton from "@/components/SubmitButton";
 
 type RawReview = Omit<ReviewItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
@@ -169,9 +170,9 @@ export default async function ReviewsPage() {
                   </div>
                 </fieldset>
 
-                <button className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition">
+                <SubmitButton pendingLabel="Publishing..." className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition">
                   Publish Review
-                </button>
+                </SubmitButton>
               </form>
           </aside>
 
@@ -250,15 +251,15 @@ export default async function ReviewsPage() {
                             <option value="public">Public</option>
                             <option value="private">Private</option>
                           </select>
-                          <button className="w-full bg-white/10 hover:bg-white/15 text-white font-bold py-2 rounded-lg transition">
+                          <SubmitButton pendingLabel="Saving..." className="w-full bg-white/10 hover:bg-white/15 text-white font-bold py-2 rounded-lg transition">
                             Save Review
-                          </button>
+                          </SubmitButton>
                         </form>
                         <form action={deleteReview} className="mt-2">
                           <input type="hidden" name="reviewId" value={review._id} />
-                          <button className="w-full border border-red-500/30 text-red-300 hover:bg-red-500/10 font-bold py-2 rounded-lg transition">
+                          <SubmitButton pendingLabel="Deleting..." className="w-full border border-red-500/30 text-red-300 hover:bg-red-500/10 font-bold py-2 rounded-lg transition">
                             Delete Review
-                          </button>
+                          </SubmitButton>
                         </form>
                       </details>
                     )}

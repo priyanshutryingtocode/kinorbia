@@ -57,15 +57,24 @@ export async function updateMovieList(formData: FormData) {
   const title = getRequiredString(formData, "title");
   const description = getRequiredString(formData, "description");
   const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
+  const movieIds = formData.getAll("movieIds").filter((value): value is string => {
+    return typeof value === "string" && value.length > 0;
+  });
 
   if (!listId || !title) {
     return;
   }
 
   await dbConnect();
+  const user = await User.findOne({ email: session.user.email }).lean<{
+    favorites?: FavoriteMovie[];
+  } | null>();
+  const favorites = user?.favorites || [];
+  const selectedMovies = favorites.filter((movie) => movieIds.includes(movie.movieId));
+
   await MovieList.updateOne(
     { _id: listId, userEmail: session.user.email },
-    { $set: { title, description, visibility } }
+    { $set: { title, description, visibility, movies: selectedMovies } }
   );
 
   revalidatePath("/lists");

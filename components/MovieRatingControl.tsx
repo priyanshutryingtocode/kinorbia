@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToast } from "./ToastProvider";
 
 type MovieRatingControlProps = {
   movie: {
@@ -19,6 +20,7 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
   const [rating, setRating] = useState(initialRating);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { showToast } = useToast();
 
   const rateMovie = async (nextRating: number) => {
     setLoading(true);
@@ -38,14 +40,20 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
       });
 
       if (res.status === 401) {
+        showToast("Sign in to rate movies.", "info");
         router.push("/login");
         return;
       }
 
       if (res.ok) {
         setRating(nextRating);
+        showToast(`Rated ${nextRating}/10.`, "success");
         router.refresh();
+      } else {
+        showToast("Could not save your rating.", "error");
       }
+    } catch {
+      showToast("Could not save your rating.", "error");
     } finally {
       setLoading(false);
     }

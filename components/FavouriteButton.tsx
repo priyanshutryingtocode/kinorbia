@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Heart, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToast } from "./ToastProvider";
 
 interface FavButtonProps {
   movie: {
@@ -19,6 +20,7 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { showToast } = useToast();
 
   const handleToggle = async () => {
     setLoading(true);
@@ -36,6 +38,7 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
       });
 
       if (res.status === 401) {
+        showToast("Sign in to save favorites.", "info");
         router.push("/login"); 
         return;
       }
@@ -43,10 +46,13 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
       if (res.ok) {
         const data = await res.json();
         setIsFavorite(data.isFavorite); 
+        showToast(data.isFavorite ? "Added to favorites." : "Removed from favorites.", "success");
         router.refresh(); 
+      } else {
+        showToast("Could not update favorites.", "error");
       }
     } catch {
-      console.error("Failed to toggle favorite");
+      showToast("Could not update favorites.", "error");
     } finally {
       setLoading(false);
     }
