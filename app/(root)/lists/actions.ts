@@ -88,5 +88,6 @@ export async function deleteMovieList(formData: FormData) {
   await MovieList.deleteOne({ _id: listId, userEmail: session.user.email });
 
   revalidatePath("/lists");
+  revalidatePath(`/lists/${listId}`);
   revalidatePath("/profile");
 }

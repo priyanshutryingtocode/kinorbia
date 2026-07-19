@@ -7,7 +7,17 @@ export default function SearchHistory({ query }: { query: string }) {
   const [recent, setRecent] = useState<string[]>([]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("kinorbia:recent-searches") || "[]") as string[];
+    let stored: string[] = [];
+
+    try {
+      const parsed = JSON.parse(localStorage.getItem("kinorbia:recent-searches") || "[]");
+      stored = Array.isArray(parsed)
+        ? parsed.filter((item): item is string => typeof item === "string")
+        : [];
+    } catch {
+      localStorage.removeItem("kinorbia:recent-searches");
+    }
+
     const next = query
       ? [query, ...stored.filter((item) => item.toLowerCase() !== query.toLowerCase())].slice(0, 6)
       : stored.slice(0, 6);

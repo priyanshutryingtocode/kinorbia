@@ -22,33 +22,49 @@ export async function POST(req: Request) {
     const clampedRating = Math.min(10, Math.max(1, numericRating));
 
     await dbConnect();
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ message: "User record not found" }, { status: 404 });
-    }
-
-    if (!user.favorites) {
-      user.favorites = [];
-    }
-
-    const favorite = user.favorites.find(
-      (item: { movieId: string }) => item.movieId === normalizedMovieId
+    const updateFavorite = await User.updateOne(
+      {
+        email: session.user.email,
+        "favorites.movieId": normalizedMovieId,
+      },
+      {
+        $set: {
+          "favorites.$.personalRating": clampedRating,
+          "favorites.$.title": movieTitle,
+          "favorites.$.posterPath": posterPath,
+          "favorites.$.voteAverage": voteAverage,
+          "favorites.$.releaseDate": releaseDate,
+        },
+      }
     );
 
-    if (favorite) {
-      favorite.personalRating = clampedRating;
-    } else {
-      user.favorites.push({
-        movieId: normalizedMovieId,
-        title: movieTitle,
-        posterPath,
-        voteAverage,
-        releaseDate,
-        personalRating: clampedRating,
-      });
-    }
+    if (updateFavorite.matchedCount === 0) {
+      const addFavorite = await User.updateOne(
+        {
+          email: session.user.email,
+          "favorites.movieId": { $ne: normalizedMovieId },
+        },
+        {
+          $push: {
+            favorites: {
+              movieId: normalizedMovieId,
+              title: movieTitle,
+              posterPath,
+              voteAverage,
+              releaseDate,
+              personalRating: clampedRating,
+            },
+          },
+        }
+      );
 
-    await user.save();
+      if (addFavorite.matchedCount === 0) {
+        const userExists = await User.exists({ email: session.user.email });
+        if (!userExists) {
+          return NextResponse.json({ message: "User record not found" }, { status: 404 });
+        }
+      }
+    }
 
     await JournalEntry.updateOne(
       { userEmail: session.user.email, movieId: normalizedMovieId },

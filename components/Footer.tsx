@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Film, Twitter, Instagram } from "lucide-react";
+import { Film } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -35,15 +35,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="text-white font-semibold mb-4">Follow Us</h3>
-          <div className="flex gap-4">
-            <a href="#" className="p-2 bg-neutral-900 rounded-full hover:bg-red-600 hover:text-white transition">
-              <Twitter className="w-5 h-5" />
-            </a>
-            <a href="#" className="p-2 bg-neutral-900 rounded-full hover:bg-red-600 hover:text-white transition">
-              <Instagram className="w-5 h-5" />
-            </a>
-          </div>
+          <h3 className="text-white font-semibold mb-4">Credits</h3>
           <p className="mt-6 text-xs text-neutral-600">
             &copy; {new Date().getFullYear()} KinOrbia. <br/> Data provided by TMDB. <br/> Made by Priyanshu Srivastava
           </p>
