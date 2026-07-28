@@ -65,7 +65,7 @@ export default async function ListsPage() {
           <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
             Collections
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Community Lists</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">Community Lists</h1>
           <p className="text-neutral-400 mt-3 max-w-2xl">
             Build themed shelves from your favorites: comfort watches, sharp thrillers, date-night picks, or anything in between.
           </p>

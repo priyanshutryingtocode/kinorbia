@@ -61,7 +61,7 @@ export default async function JournalPage() {
           <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
             Personal
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Watch Journal</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">Watch Journal</h1>
           <p className="text-neutral-400 mt-3 max-w-2xl">
             Log what you watched, when you watched it, and the small notes that are easy to forget later.
           </p>

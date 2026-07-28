@@ -30,12 +30,10 @@ type Props = {
 };
 
 export default async function Home({ searchParams }: Props) {
-  // 1. Await search params for Next.js 15 compatibility
   const { genre } = await searchParams;
 
   const session = await auth();
   
-  // 2. Pass the genre to your fetch action
   const movies: MovieProp[] = await fetchMovies(1, genre);
   
   let recommendations: MovieProp[] = [];
@@ -55,17 +53,16 @@ export default async function Home({ searchParams }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 pt-24 px-6 pb-20">
+    <main className="min-h-screen px-6 pt-24 pb-20">
       <div className="max-w-7xl mx-auto">
         
-        {/* Only show personalized recommendations if NO genre is selected */}
         {!genre && recommendations.length > 0 && (
           <section className="mb-14">
-            <div className="mb-6">
-              <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-2">
+            <div className="mb-6 flex flex-col gap-2">
+              <p className="text-sm font-bold uppercase tracking-widest text-red-400">
                 Recommended
               </p>
-              <h2 className="text-3xl font-bold text-white tracking-tighter">
+              <h2 className="text-3xl font-bold text-white md:text-4xl">
                 Because you liked {recommendationSource}
               </h2>
             </div>
@@ -77,16 +74,18 @@ export default async function Home({ searchParams }: Props) {
           </section>
         )}
         
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white tracking-tighter mb-2">
-            {genre ? "Discover" : "Popular"} <span className="text-red-600">Now</span>
+        <div className="mb-8 max-w-3xl">
+          <p className="mb-3 text-sm font-bold uppercase tracking-widest text-red-400">
+            KinOrbia Picks
+          </p>
+          <h1 className="mb-3 text-4xl font-bold text-white md:text-5xl">
+            {genre ? "Discover" : "Popular"} <span className="text-red-500">Now</span>
           </h1>
-          <p className="text-neutral-400">
+          <p className="text-base leading-7 text-neutral-400">
             {genre ? "Explore movies in your selected genre." : "Trending movies from around the globe."}
           </p>
         </div>
 
-        {/* 3. Insert the Genre Filter Component */}
         <GenreFilter />
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
@@ -95,7 +94,6 @@ export default async function Home({ searchParams }: Props) {
           ))}
         </div>
 
-        {/* 4. Pass the genre to LoadMore so infinite scroll loads the correct category */}
         <LoadMore key={genre || "all"} genre={genre} />
 
       </div>

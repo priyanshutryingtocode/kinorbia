@@ -100,10 +100,10 @@ export default function MovieAssistant() {
   return (
     <div className="fixed bottom-5 right-5 z-100">
       {open && (
-        <div className="mb-4 w-[calc(100vw-2.5rem)] max-w-md overflow-hidden rounded-2xl border border-white/15 bg-neutral-950/75 text-white shadow-2xl shadow-black/60 backdrop-blur-2xl">
-          <div className="flex items-center justify-between border-b border-white/10 bg-white/5 px-4 py-3">
+        <div className="premium-surface mb-4 w-[calc(100vw-2.5rem)] max-w-md overflow-hidden rounded-xl text-white ring-1 ring-white/5">
+          <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-4 py-3">
             <div className="flex items-center gap-3">
-              <div className="rounded-full bg-red-500/15 p-2 text-red-300">
+              <div className="rounded-lg border border-red-500/20 bg-red-500/12 p-2 text-red-300 shadow-[0_0_28px_rgba(220,38,38,0.12)]">
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>
@@ -114,7 +114,7 @@ export default function MovieAssistant() {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-full p-2 text-neutral-400 transition hover:bg-white/10 hover:text-white"
+              className="kin-focus rounded-full p-2 text-neutral-400 transition hover:bg-white/10 hover:text-white"
               aria-label="Close assistant"
             >
               <X className="h-4 w-4" />
@@ -127,7 +127,7 @@ export default function MovieAssistant() {
                 <div
                   className={`inline-block max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     message.role === "user"
-                      ? "bg-red-600 text-white"
+                      ? "bg-red-600 text-white shadow-[0_14px_32px_-22px_rgba(220,38,38,0.9)]"
                       : "border border-white/10 bg-white/8 text-neutral-100"
                   }`}
                 >
@@ -139,14 +139,14 @@ export default function MovieAssistant() {
                     {message.movies.map((movie) => (
                       <div
                         key={movie.id}
-                        className="rounded-xl border border-white/10 bg-black/25 p-2 transition hover:border-red-500/50 hover:bg-white/8"
+                        className="rounded-lg border border-white/10 bg-black/25 p-2 transition hover:border-red-500/50 hover:bg-white/8"
                       >
                         <Link
                           href={`/movie/${movie.id}`}
                           onClick={() => setOpen(false)}
                           className="flex gap-3"
                         >
-                          <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-neutral-900">
+                          <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-md bg-neutral-900">
                             {movie.poster_path ? (
                               <Image
                                 src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
@@ -191,7 +191,7 @@ export default function MovieAssistant() {
                   key={starter}
                   type="button"
                   onClick={() => sendMessage(starter)}
-                  className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-neutral-300 transition hover:border-red-500/50 hover:text-white"
+                  className="kin-focus shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-neutral-300 transition hover:border-red-500/50 hover:bg-red-500/10 hover:text-white"
                 >
                   {starter}
                 </button>
@@ -204,12 +204,12 @@ export default function MovieAssistant() {
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 placeholder="What do you want to watch?"
-                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:border-red-500/60 focus:outline-none"
+                className="kin-focus min-w-0 flex-1 rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:border-red-500/60"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-xl bg-red-600 px-4 text-white transition hover:bg-red-500 disabled:opacity-60"
+                className="kin-focus rounded-lg bg-red-600 px-4 text-white transition hover:bg-red-500 disabled:opacity-60"
                 aria-label="Send message"
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
@@ -225,7 +225,7 @@ export default function MovieAssistant() {
           setOpen((value) => !value);
           window.setTimeout(() => inputRef.current?.focus(), 50);
         }}
-        className="ml-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-red-600/90 text-white shadow-2xl shadow-red-950/50 backdrop-blur-xl transition hover:scale-105 hover:bg-red-500"
+        className="kin-focus ml-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-red-600/90 text-white shadow-[0_24px_55px_-24px_rgba(220,38,38,0.9)] backdrop-blur-xl transition hover:scale-105 hover:bg-red-500"
         aria-label="Open movie assistant"
       >
         {open ? <X className="h-6 w-6" /> : <Bot className="h-6 w-6" />}

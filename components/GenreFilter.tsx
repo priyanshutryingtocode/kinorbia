@@ -3,9 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
-// Standard TMDB Movie Genres and their exact IDs
 const GENRES = [
-  { id: "", name: "All Movies" }, // Empty string clears the filter
+  { id: "", name: "All Movies" },
   { id: "28", name: "Action" },
   { id: "12", name: "Adventure" },
   { id: "16", name: "Animation" },
@@ -21,11 +20,8 @@ const GENRES = [
 export default function GenreFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
-  // Get the current genre ID from the URL (defaults to empty string if none)
   const currentGenre = searchParams.get("genre") || "";
 
-  // Helper to update the URL without refreshing the page
   const createQueryString = useCallback(
     (name: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -40,7 +36,7 @@ export default function GenreFilter() {
   );
 
   return (
-    <div className="w-full flex overflow-x-auto gap-3 py-4 hide-scrollbar snap-x mb-8 border-b border-white/5">
+    <div className="mb-9 flex w-full snap-x gap-3 overflow-x-auto border-y border-white/5 bg-white/[0.02] px-1 py-4 hide-scrollbar">
       {GENRES.map((genre) => {
         const isActive = currentGenre === genre.id;
         
@@ -51,10 +47,10 @@ export default function GenreFilter() {
               const queryString = createQueryString("genre", genre.id);
               router.push(`?${queryString}`, { scroll: false }); 
             }}
-            className={`snap-start shrink-0 px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 border ${
+            className={`kin-focus snap-start shrink-0 rounded-full border px-5 py-2 text-sm font-medium transition-all duration-300 ${
               isActive 
-                ? "bg-red-600 border-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]" 
-                : "bg-white/3 border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 hover:border-white/20"
+                ? "border-red-500/60 bg-red-600 text-white shadow-[0_16px_34px_-22px_rgba(220,38,38,0.95)]" 
+                : "border-white/10 bg-white/[0.03] text-neutral-400 hover:border-white/20 hover:bg-white/10 hover:text-white"
             }`}
           >
             {genre.name}

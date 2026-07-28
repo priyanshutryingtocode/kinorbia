@@ -8,7 +8,7 @@ export default function AboutPage() {
           <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
             About
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">KinOrbia</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">KinOrbia</h1>
           <p className="text-neutral-400 mt-4 max-w-3xl text-lg leading-relaxed">
             KinOrbia is a personal film space for finding movies, saving favorites, logging what
             you watch, writing reviews, and building lists that can stay private or be shared with

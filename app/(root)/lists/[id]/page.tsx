@@ -81,7 +81,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
               {list.visibility}
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">{list.title}</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">{list.title}</h1>
           <p className="text-xs text-neutral-500 mt-3">
             by {list.userName} - {new Date(list.createdAt).toLocaleDateString()}
           </p>

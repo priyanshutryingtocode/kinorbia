@@ -47,7 +47,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
             Search
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Find a Movie</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">Find a Movie</h1>
           <p className="text-neutral-400 mt-3 max-w-2xl">
             Search TMDB by title, then open a movie to view details or add it to your favorites.
           </p>

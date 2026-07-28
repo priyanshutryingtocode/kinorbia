@@ -47,7 +47,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 flex flex-col items-center justify-center p-10 z-10 text-center backdrop-blur-sm rounded-full">
           <Link href="/" className="flex items-center gap-2 group mb-6 hover:scale-105 transition-transform">
             <Film className="w-8 h-8 text-red-500" />
-            <span className="text-3xl font-bold tracking-tighter text-white">
+            <span className="text-3xl font-bold text-white">
               Kin<span className="text-red-500">Orbia</span>
             </span>
           </Link>
