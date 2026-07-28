@@ -18,11 +18,15 @@ type MovieRatingControlProps = {
 
 export default function MovieRatingControl({ movie, initialRating }: MovieRatingControlProps) {
   const [rating, setRating] = useState(initialRating);
+  const [draftStars, setDraftStars] = useState(initialRating > 0 ? initialRating / 2 : 2.5);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { showToast } = useToast();
+  const savedStars = rating > 0 ? rating / 2 : 0;
+  const stars = [1, 2, 3, 4, 5];
 
-  const rateMovie = async (nextRating: number) => {
+  const rateMovie = async (nextStars: number) => {
+    const nextRating = Math.round(nextStars * 2);
     setLoading(true);
 
     try {
@@ -47,7 +51,8 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
 
       if (res.ok) {
         setRating(nextRating);
-        showToast(`Rated ${nextRating}/10.`, "success");
+        setDraftStars(nextStars);
+        showToast(`Rated ${nextStars.toFixed(1)} stars.`, "success");
         router.refresh();
       } else {
         showToast("Could not save your rating.", "error");
@@ -60,31 +65,58 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Star className="w-5 h-5 text-yellow-400 fill-current" />
+    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-2">
+      <div className="flex shrink-0 items-center gap-2">
+        <Star className="h-4 w-4 fill-current text-yellow-400" />
         <span className="text-sm font-medium text-neutral-300">
-          {rating > 0 ? `Your rating: ${rating}/10` : "Rate this movie"}
+          {rating > 0 ? `${savedStars.toFixed(1)} stars` : "Rate"}
         </span>
-        {loading && <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />}
+        {loading && <Loader2 className="h-4 w-4 animate-spin text-yellow-400" />}
       </div>
-      <div className="flex flex-wrap gap-2">
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => rateMovie(value)}
-            disabled={loading}
-            className={`w-9 h-9 rounded-full border text-xs font-bold transition ${
-              rating === value
-                ? "bg-yellow-500 border-yellow-400 text-black"
-                : "bg-white/5 border-white/10 text-neutral-400 hover:border-yellow-500 hover:text-yellow-400"
-            }`}
-          >
-            {value}
-          </button>
-        ))}
+
+      <div className="relative h-8 w-36 shrink-0">
+        <div className="flex h-full items-center gap-1">
+          {stars.map((star) => {
+            const fillPercent = Math.max(0, Math.min(1, draftStars - (star - 1))) * 100;
+
+            return (
+              <span key={star} className="relative h-6 w-6 text-neutral-700">
+                <Star className="h-6 w-6 fill-current" />
+                <span
+                  className="absolute inset-y-0 left-0 overflow-hidden text-yellow-400"
+                  style={{ width: `${fillPercent}%` }}
+                >
+                  <Star className="h-6 w-6 fill-current" />
+                </span>
+              </span>
+            );
+          })}
+        </div>
+        <input
+          type="range"
+          min="0.5"
+          max="5"
+          step="0.5"
+          value={draftStars}
+          onChange={(event) => setDraftStars(Number(event.target.value))}
+          disabled={loading}
+          className="kin-focus absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+          aria-label="Choose your star rating"
+        />
       </div>
+
+      <span className="shrink-0 rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-sm font-bold text-yellow-300">
+        {draftStars.toFixed(1)}
+      </span>
+
+      <button
+        type="button"
+        onClick={() => rateMovie(draftStars)}
+        disabled={loading || Math.round(draftStars * 2) === rating}
+        className="kin-focus shrink-0 rounded-full border border-white/10 bg-white/7 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Save
+      </button>
     </div>
   );
 }

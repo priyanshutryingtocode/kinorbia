@@ -63,19 +63,19 @@ export default function WatchedButton({ movie, initialIsWatched }: WatchedButton
       type="button"
       onClick={handleClick}
       disabled={loading || isWatched}
-      className={`p-3 rounded-full border transition-all flex items-center justify-center group ${
+      className={`kin-focus flex h-11 w-11 items-center justify-center rounded-full border transition-all group ${
         isWatched
-          ? "bg-emerald-600 border-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.35)]"
-          : "bg-white/10 border-white/10 text-white hover:bg-white/20 hover:scale-105"
+          ? "border-emerald-500 bg-emerald-600 text-white shadow-[0_14px_30px_-18px_rgba(16,185,129,0.8)]"
+          : "border-white/10 bg-white/7 text-white hover:bg-white/12"
       }`}
       aria-label={isWatched ? "Movie marked as watched" : "Mark movie as watched"}
     >
       {loading ? (
-        <Loader2 className="w-6 h-6 animate-spin" />
+        <Loader2 className="h-5 w-5 animate-spin" />
       ) : isWatched ? (
-        <Check className="w-6 h-6" />
+        <Check className="h-5 w-5" />
       ) : (
-        <Eye className="w-6 h-6 transition-transform group-active:scale-75" />
+        <Eye className="h-5 w-5 transition-transform group-active:scale-75" />
       )}
     </button>
   );

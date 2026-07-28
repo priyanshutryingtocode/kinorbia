@@ -28,20 +28,21 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
     <div className="relative group">
       <button 
         onClick={() => scroll("left")}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-30 bg-black/80 text-white p-3 rounded-full border border-white/10 opacity-0 group-hover:opacity-100 hover:bg-red-600 hover:scale-110 hover:border-red-500 transition-all duration-300 disabled:opacity-0 shadow-[0_0_15px_rgba(0,0,0,0.5)] backdrop-blur-sm hidden md:flex"
+        className="kin-focus absolute left-0 top-1/2 z-30 hidden -translate-x-4 -translate-y-1/2 rounded-full border border-white/10 bg-black/70 p-2.5 text-white opacity-0 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.9)] backdrop-blur-md transition-all duration-300 hover:border-white/20 hover:bg-white/10 group-hover:opacity-100 md:flex"
         aria-label="Scroll left"
       >
-        <ChevronLeft className="w-6 h-6" />
+        <ChevronLeft className="h-5 w-5" />
       </button>
       <div 
         ref={scrollRef}
-        className="flex overflow-x-auto gap-5 pb-6 snap-x snap-mandatory hide-scrollbar scroll-smooth"
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-6 hide-scrollbar scroll-smooth sm:gap-5"
       >
         {movies.map((movie) => (
           <Link 
             key={movie.id} 
             href={`/movie/${movie.id}`}
-            className="snap-start shrink-0 w-36 md:w-48 group/card relative rounded-xl overflow-hidden bg-white/3 border border-white/5 hover:border-red-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_20px_-10px_rgba(220,38,38,0.3)]"
+            className="kin-focus group/card relative w-32 shrink-0 snap-start overflow-hidden rounded-lg border border-white/8 bg-neutral-950 transition-all duration-300 hover:-translate-y-1 hover:border-white/18 hover:shadow-[0_24px_60px_-42px_rgba(220,38,38,0.45)] sm:w-36 md:w-44"
+            aria-label={movie.title}
           >
             <div className="aspect-2/3 relative bg-neutral-900 flex items-center justify-center overflow-hidden">
               {movie.poster_path ? (
@@ -50,22 +51,15 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
                   alt={movie.title}
                   fill
                   sizes="(max-width: 768px) 144px, 192px"
-                  className="object-cover group-hover/card:scale-105 transition-transform duration-500"
+                  className="object-cover transition duration-500 group-hover/card:scale-[1.025] group-hover/card:saturate-110"
                 />
               ) : (
                 <ImageIcon className="w-10 h-10 text-neutral-700" />
               )}
-              
-              <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-transparent to-transparent opacity-80 z-10 pointer-events-none"></div>
-            </div>
-
-            <div className="absolute bottom-0 left-0 w-full p-3 z-20">
-              <h3 className="text-white text-sm font-medium line-clamp-1 group-hover/card:text-red-400 transition-colors">
-                {movie.title}
-              </h3>
-              <p className="text-neutral-500 text-xs mt-0.5">
+              <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover/card:bg-black/8" />
+              <div className="absolute top-2 left-2 rounded-full border border-white/10 bg-black/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md">
                 {movie.release_date ? movie.release_date.substring(0, 4) : "TBD"}
-              </p>
+              </div>
             </div>
           </Link>
         ))}
@@ -73,10 +67,10 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
 
       <button 
         onClick={() => scroll("right")}
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-30 bg-black/80 text-white p-3 rounded-full border border-white/10 opacity-0 group-hover:opacity-100 hover:bg-red-600 hover:scale-110 hover:border-red-500 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] backdrop-blur-sm hidden md:flex"
+        className="kin-focus absolute right-0 top-1/2 z-30 hidden translate-x-4 -translate-y-1/2 rounded-full border border-white/10 bg-black/70 p-2.5 text-white opacity-0 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.9)] backdrop-blur-md transition-all duration-300 hover:border-white/20 hover:bg-white/10 group-hover:opacity-100 md:flex"
         aria-label="Scroll right"
       >
-        <ChevronRight className="w-6 h-6" />
+        <ChevronRight className="h-5 w-5" />
       </button>
     </div>
   );

@@ -18,10 +18,9 @@ export default async function SimilarMovies({ movieId }: SimilarMoviesProps) {
   if (movies.length === 0) return null;
 
   return (
-    <section className="mt-16 border-t border-white/10 pt-10 px-4 md:px-0">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-1 h-6 bg-red-600 rounded-full shadow-[0_0_10px_rgba(220,38,38,0.8)]"></div>
-        <h2 className="text-2xl font-bold text-white tracking-wide">More Like This</h2>
+    <section className="mt-14 border-t border-white/10 pt-8">
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold text-white">More Like This</h2>
       </div>
 
       <MovieCarousel movies={movies} />

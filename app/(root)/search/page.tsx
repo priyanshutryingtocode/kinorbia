@@ -62,7 +62,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               name="q"
               type="search"
               defaultValue={query}
-              placeholder="Search for Oppenheimer, Dune, Parasite..."
+              placeholder="Search..."
               className="w-full bg-neutral-950 border border-white/10 rounded-xl py-4 pl-12 pr-32 text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40"
             />
             <button

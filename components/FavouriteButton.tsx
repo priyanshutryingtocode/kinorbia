@@ -62,17 +62,18 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
     <button
       onClick={handleToggle}
       disabled={loading}
-      className={`p-3 rounded-full border transition-all flex items-center justify-center group ${
+      className={`kin-focus flex h-11 w-11 items-center justify-center rounded-full border transition-all group ${
         isFavorite
-          ? "bg-red-600 border-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]"
-          : "bg-white/10 border-white/10 text-white hover:bg-white/20 hover:scale-105"
+          ? "border-red-500 bg-red-600 text-white shadow-[0_14px_30px_-18px_rgba(220,38,38,0.9)]"
+          : "border-white/10 bg-white/7 text-white hover:bg-white/12"
       }`}
+      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
     >
       {loading ? (
-        <Loader2 className="w-6 h-6 animate-spin" />
+        <Loader2 className="h-5 w-5 animate-spin" />
       ) : (
         <Heart
-          className={`w-6 h-6 transition-transform group-active:scale-75 ${
+          className={`h-5 w-5 transition-transform group-active:scale-75 ${
             isFavorite ? "fill-current" : ""
           }`}
         />

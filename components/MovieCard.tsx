@@ -35,12 +35,12 @@ export default function MovieCard({
           </div>
         )}
         <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/8" />
-        <div className="absolute top-2 left-2 rounded-full border border-white/10 bg-black/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md">
+        <div className="absolute top-1.5 left-1.5 rounded-full border border-white/10 bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-md sm:top-2 sm:left-2 sm:px-2.5 sm:py-1 sm:text-xs">
           {releaseYear}
         </div>
-        <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full border border-white/10 bg-black/55 px-2.5 py-1 backdrop-blur-md">
-          <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-          <span className="text-xs font-medium text-white">{movie.vote_average.toFixed(1)}</span>
+        <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 rounded-full border border-white/10 bg-black/55 px-2 py-0.5 backdrop-blur-md sm:top-2 sm:right-2 sm:gap-1 sm:px-2.5 sm:py-1">
+          <Star className="h-2.5 w-2.5 fill-yellow-500 text-yellow-500 sm:h-3 sm:w-3" />
+          <span className="text-[10px] font-medium text-white sm:text-xs">{movie.vote_average.toFixed(1)}</span>
         </div>
       </Link>
 
