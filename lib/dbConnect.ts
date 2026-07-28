@@ -1,10 +1,12 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGO_MONGODB_URI!;
+const mongoUri = process.env.MONGO_MONGODB_URI || process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+if (!mongoUri) {
+  throw new Error("Please define MONGODB_URI or MONGO_MONGODB_URI inside .env.local.");
 }
+
+const MONGODB_URI = mongoUri;
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -41,6 +43,16 @@ async function dbConnect() {
     cached!.conn = await cached!.promise;
   } catch (e) {
     cached!.promise = null;
+
+    if (e instanceof Error && ("code" in e || e.message.includes("querySrv"))) {
+      const code = "code" in e ? String(e.code) : "";
+      if (code === "ENOTFOUND" || code === "ETIMEOUT" || e.message.includes("querySrv")) {
+        throw new Error(
+          "Could not resolve the MongoDB Atlas host. Check that your MongoDB URI is current, the Atlas cluster still exists, and your network/DNS can resolve mongodb+srv records."
+        );
+      }
+    }
+
     throw e;
   }
 

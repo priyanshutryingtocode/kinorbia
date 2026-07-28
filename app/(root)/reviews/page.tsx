@@ -8,6 +8,7 @@ import User from "@/models/User";
 import { createReview, deleteReview, updateReview } from "./actions";
 import type { FavoriteMovie, ReviewItem } from "@/types";
 import SubmitButton from "@/components/SubmitButton";
+import SocialActionButton from "@/components/SocialActionButton";
 
 type RawReview = Omit<ReviewItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
@@ -24,6 +25,9 @@ function serializeReview(review: RawReview): ReviewItem {
     rating: review.rating,
     body: review.body,
     visibility: review.visibility || "public",
+    movieId: review.movieId,
+    likedBy: review.likedBy || [],
+    savedBy: review.savedBy || [],
     createdAt: review.createdAt.toISOString(),
   };
 }
@@ -219,6 +223,26 @@ export default async function ReviewsPage() {
                     <p className="text-sm text-neutral-300 leading-relaxed mt-4 line-clamp-5">
                       {review.body}
                     </p>
+                    {review.visibility === "public" && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <SocialActionButton
+                          type="review"
+                          id={review._id}
+                          action="like"
+                          count={review.likedBy?.length || 0}
+                          active={Boolean(review.likedBy?.includes(currentUserEmail.toLowerCase()))}
+                          path="/reviews"
+                        />
+                        <SocialActionButton
+                          type="review"
+                          id={review._id}
+                          action="save"
+                          count={review.savedBy?.length || 0}
+                          active={Boolean(review.savedBy?.includes(currentUserEmail.toLowerCase()))}
+                          path="/reviews"
+                        />
+                      </div>
+                    )}
                     {review.userEmail === currentUserEmail && (
                       <details className="mt-4 border-t border-white/10 pt-4">
                         <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white">

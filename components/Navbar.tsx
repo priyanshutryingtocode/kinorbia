@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { name: "Reviews", href: "/reviews" },
   { name: "Lists", href: "/lists" },
   { name: "Journal", href: "/journal" },
+  { name: "Activity", href: "/activity" },
 ];
 
 export default function Navbar() {

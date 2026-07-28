@@ -9,6 +9,7 @@ import MovieList from "@/models/MovieList";
 import { createMovieList, deleteMovieList, updateMovieList } from "./actions";
 import type { FavoriteMovie, MovieListItem } from "@/types";
 import SubmitButton from "@/components/SubmitButton";
+import SocialActionButton from "@/components/SocialActionButton";
 
 type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
@@ -24,6 +25,8 @@ function serializeList(list: RawMovieList): MovieListItem {
     description: list.description,
     movies: list.movies,
     visibility: list.visibility || "public",
+    likedBy: list.likedBy || [],
+    savedBy: list.savedBy || [],
     createdAt: list.createdAt.toISOString(),
   };
 }
@@ -201,6 +204,27 @@ export default async function ListsPage() {
 
                   {list.description && (
                     <p className="text-sm text-neutral-300 leading-relaxed mb-4">{list.description}</p>
+                  )}
+
+                  {list.visibility === "public" && (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      <SocialActionButton
+                        type="list"
+                        id={list._id}
+                        action="like"
+                        count={list.likedBy?.length || 0}
+                        active={Boolean(list.likedBy?.includes(currentUserEmail.toLowerCase()))}
+                        path="/lists"
+                      />
+                      <SocialActionButton
+                        type="list"
+                        id={list._id}
+                        action="save"
+                        count={list.savedBy?.length || 0}
+                        active={Boolean(list.savedBy?.includes(currentUserEmail.toLowerCase()))}
+                        path="/lists"
+                      />
+                    </div>
                   )}
 
                   <div className="grid grid-cols-5 gap-2">

@@ -52,6 +52,14 @@ const MovieListSchema = new mongoose.Schema({
     default: "public",
     index: true,
   },
+  likedBy: {
+    type: [String],
+    default: [],
+  },
+  savedBy: {
+    type: [String],
+    default: [],
+  },
 }, { timestamps: true });
 
 export default mongoose.models?.MovieList || mongoose.model("MovieList", MovieListSchema);

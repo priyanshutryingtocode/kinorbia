@@ -4,6 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
+import { ensureUserIdentity, slugifyUsername } from "@/lib/userIdentity";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -58,12 +59,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const existingUser = await User.findOne({ email: email.toLowerCase() });
 
           if (!existingUser) {
+            const baseUsername = slugifyUsername(name || email.split("@")[0]);
+            let username = baseUsername;
+            let suffix = 1;
+
+            while (await User.exists({ username })) {
+              username = `${baseUsername}-${suffix}`;
+              suffix += 1;
+            }
+
             await User.create({
               name: name || "KinOrbia user",
               email: email.toLowerCase(),
               image,
               provider: "google",
+              username,
             });
+          } else {
+            await ensureUserIdentity(email, existingUser.name || name || "KinOrbia user");
           }
         } catch (error) {
           console.error("Error saving Google user:", error);
@@ -78,6 +91,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         await dbConnect();
         const dbUser = await User.findOne({ email: session.user.email.toLowerCase() });
         if (dbUser) {
+          if (!dbUser.username) {
+            await ensureUserIdentity(dbUser.email, dbUser.name);
+          }
           session.user.name = dbUser.name;
           session.user.image = dbUser.image;
         }

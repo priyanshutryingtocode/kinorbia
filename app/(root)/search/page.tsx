@@ -8,16 +8,38 @@ type SearchResponse = {
   results?: MovieSummary[];
 };
 
-async function searchMovies(query: string, year: string): Promise<SearchResponse> {
-  if (!query) {
+async function searchMovies({
+  query,
+  year,
+  genre,
+  minRating,
+  maxRuntime,
+  language,
+  sort,
+}: {
+  query: string;
+  year: string;
+  genre: string;
+  minRating: number;
+  maxRuntime: string;
+  language: string;
+  sort: string;
+}): Promise<SearchResponse> {
+  const yearParam = year ? `&primary_release_year=${encodeURIComponent(year)}` : "";
+  const ratingParam = minRating ? `&vote_average.gte=${encodeURIComponent(minRating)}` : "";
+  const genreParam = genre ? `&with_genres=${encodeURIComponent(genre)}` : "";
+  const runtimeParam = maxRuntime ? `&with_runtime.lte=${encodeURIComponent(maxRuntime)}` : "";
+  const languageParam = language ? `&with_original_language=${encodeURIComponent(language)}` : "";
+  const sortParam = sort ? `&sort_by=${encodeURIComponent(sort)}` : "&sort_by=popularity.desc";
+  const url = query
+    ? `https://api.themoviedb.org/3/search/movie?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(query)}${yearParam}`
+    : `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}${yearParam}${ratingParam}${genreParam}${runtimeParam}${languageParam}${sortParam}`;
+
+  if (!query && !year && !genre && !minRating && !maxRuntime && !language) {
     return { results: [] };
   }
 
-  const yearParam = year ? `&primary_release_year=${encodeURIComponent(year)}` : "";
-  const res = await fetch(
-    `https://api.themoviedb.org/3/search/movie?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(query)}${yearParam}`,
-    { next: { revalidate: 300 } }
-  );
+  const res = await fetch(url, { next: { revalidate: 300 } });
 
   if (!res.ok) {
     throw new Error("Failed to search");
@@ -27,17 +49,32 @@ async function searchMovies(query: string, year: string): Promise<SearchResponse
 }
 
 type SearchPageProps = {
-  searchParams: Promise<{ q?: string; year?: string; minRating?: string }> | { q?: string; year?: string; minRating?: string };
+  searchParams: Promise<{ q?: string; year?: string; minRating?: string; genre?: string; runtime?: string; language?: string; sort?: string }> | { q?: string; year?: string; minRating?: string; genre?: string; runtime?: string; language?: string; sort?: string };
 };
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const { q, year, minRating } = await Promise.resolve(searchParams);
+  const { q, year, minRating, genre, runtime, language, sort } = await Promise.resolve(searchParams);
   const query = typeof q === "string" ? q.trim() : "";
   const releaseYear = typeof year === "string" ? year.trim() : "";
   const minimumRating = typeof minRating === "string" ? Number(minRating) : 0;
-  const data = await searchMovies(query, releaseYear);
+  const selectedGenre = typeof genre === "string" ? genre : "";
+  const maxRuntime = typeof runtime === "string" ? runtime : "";
+  const selectedLanguage = typeof language === "string" ? language : "";
+  const selectedSort = typeof sort === "string" ? sort : "";
+  const data = await searchMovies({
+    query,
+    year: releaseYear,
+    genre: selectedGenre,
+    minRating: minimumRating,
+    maxRuntime,
+    language: selectedLanguage,
+    sort: selectedSort,
+  });
   const movies = (data.results || []).filter((movie) => {
-    return !minimumRating || movie.vote_average >= minimumRating;
+    const matchesRating = !minimumRating || movie.vote_average >= minimumRating;
+    const matchesGenre = !query || !selectedGenre || movie.genre_ids?.includes(Number(selectedGenre));
+    const matchesLanguage = !query || !selectedLanguage || movie.original_language === selectedLanguage;
+    return matchesRating && matchesGenre && matchesLanguage;
   });
 
   return (
@@ -49,7 +86,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </p>
           <h1 className="text-4xl md:text-5xl font-bold">Find a Movie</h1>
           <p className="text-neutral-400 mt-3 max-w-2xl">
-            Search TMDB by title, then open a movie to view details or add it to your favorites.
+            Search by title or use filters to discover movies by genre, rating, runtime, language, and release year.
           </p>
         </header>
 
@@ -72,7 +109,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               Search
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
             <input
               name="year"
               type="number"
@@ -93,12 +130,57 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               <option value="7">7+ TMDB rating</option>
               <option value="8">8+ TMDB rating</option>
             </select>
+            <select
+              name="genre"
+              defaultValue={selectedGenre}
+              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
+            >
+              <option value="">Any genre</option>
+              <option value="28">Action</option>
+              <option value="35">Comedy</option>
+              <option value="18">Drama</option>
+              <option value="27">Horror</option>
+              <option value="878">Sci-Fi</option>
+              <option value="53">Thriller</option>
+            </select>
+            <select
+              name="runtime"
+              defaultValue={maxRuntime}
+              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
+            >
+              <option value="">Any runtime</option>
+              <option value="90">Under 90 min</option>
+              <option value="120">Under 2 hours</option>
+              <option value="150">Under 2.5 hours</option>
+            </select>
+            <select
+              name="language"
+              defaultValue={selectedLanguage}
+              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
+            >
+              <option value="">Any language</option>
+              <option value="en">English</option>
+              <option value="hi">Hindi</option>
+              <option value="ja">Japanese</option>
+              <option value="ko">Korean</option>
+              <option value="fr">French</option>
+            </select>
+            <select
+              name="sort"
+              defaultValue={selectedSort}
+              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
+            >
+              <option value="popularity.desc">Most popular</option>
+              <option value="vote_average.desc">Highest rated</option>
+              <option value="primary_release_date.desc">Newest</option>
+              <option value="revenue.desc">Box office</option>
+            </select>
           </div>
         </form>
 
-        {!query ? (
+        {!query && !releaseYear && !selectedGenre && !minimumRating && !maxRuntime && !selectedLanguage ? (
           <div className="border border-dashed border-white/10 rounded-xl p-10 text-center text-neutral-500">
-            Type a movie title to start searching.
+            Type a movie title or choose filters to start discovering.
           </div>
         ) : movies.length === 0 ? (
           <div className="border border-dashed border-white/10 rounded-xl p-10 text-center text-neutral-500">
@@ -107,7 +189,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         ) : (
           <>
             <h2 className="text-2xl font-bold mb-6">
-              Results for <span className="text-red-500">{query}</span>
+              {query ? <>Results for <span className="text-red-500">{query}</span></> : "Discovery Results"}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
               {movies.map((movie) => (

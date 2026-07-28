@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Image from "next/image";
-import { Film, Heart, List, Calendar, User as UserIcon } from "lucide-react";
+import { Film, Heart, List, Calendar, User as UserIcon, Bookmark, Star } from "lucide-react";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
@@ -10,7 +10,7 @@ import Review from "@/models/Review";
 import ProfileActions from "@/components/profileActions";
 import Link from "next/link";
 import ProfileFavorites from "@/components/ProfileFavorites";
-import type { FavoriteMovie, JournalItem, MovieListItem, ReviewItem } from "@/types";
+import type { FavoriteMovie, JournalItem, MovieListItem, ReviewItem, WatchlistMovie } from "@/types";
 
 type RawFavoriteMovie = FavoriteMovie & {
   _id?: { toString: () => string };
@@ -22,8 +22,10 @@ type ProfileUser = {
   bio?: string;
   email?: string;
   image?: string;
+  username?: string;
   createdAt?: Date;
   favorites?: RawFavoriteMovie[];
+  watchlist?: WatchlistMovie[];
 };
 
 type RawJournalEntry = Omit<JournalItem, "_id" | "createdAt" | "watchedAt"> & {
@@ -106,6 +108,7 @@ export default async function ProfilePage() {
   await dbConnect();
   const dbUser = await User.findOne({ email: session.user.email }).lean<ProfileUser | null>();
   const favorites = serializeFavorites(dbUser?.favorites);
+  const watchlist = serializeFavorites(dbUser?.watchlist || []);
   const [watchedMovieIds, listsCreated, rawJournalEntries, rawReviews, rawLists] = await Promise.all([
     JournalEntry.distinct("movieId", { userEmail: session.user.email }),
     MovieList.countDocuments({ userEmail: session.user.email }),
@@ -125,12 +128,26 @@ export default async function ProfilePage() {
   const journalEntries = rawJournalEntries.map(serializeJournal);
   const reviews = rawReviews.map(serializeReview);
   const lists = rawLists.map(serializeList);
+  const ratedMovies = [
+    ...favorites.filter((movie) => movie.personalRating && movie.personalRating > 0),
+    ...journalEntries.filter((entry) => entry.rating && entry.rating > 0).map((entry) => ({
+      movieId: entry._id,
+      title: entry.movieTitle,
+      posterPath: entry.posterPath || null,
+      voteAverage: 0,
+      personalRating: entry.rating || 0,
+    })),
+  ];
+  const averageRating = ratedMovies.length
+    ? (ratedMovies.reduce((sum, movie) => sum + (movie.personalRating || 0), 0) / ratedMovies.length / 2).toFixed(1)
+    : "0.0";
 
   const userData = {
     name: dbUser?.name || session.user.name || "User",
     bio: dbUser?.bio || "",
     email: dbUser?.email || "",
     image: dbUser?.image || session.user.image,
+    username: dbUser?.username,
     createdAt: dbUser?.createdAt,
     favorites,
   };
@@ -178,6 +195,11 @@ export default async function ProfilePage() {
                 <Calendar className="w-3 h-3" /> 
                 Joined {userData.createdAt ? new Date(userData.createdAt).getFullYear() : "2024"}
               </span>
+              {userData.username && (
+                <Link href={`/u/${userData.username}`} className="text-red-400 hover:text-red-300">
+                  Public profile
+                </Link>
+              )}
             </div>
           </div>
 
@@ -193,13 +215,15 @@ export default async function ProfilePage() {
              value={userData.favorites.length.toString()} 
            />
            <StatCard icon={<List className="w-5 h-5 text-yellow-400" />} label="Lists Created" value={listsCreated.toString()} />
-           <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Following" value="0" />
+           <StatCard icon={<Bookmark className="w-5 h-5 text-blue-400" />} label="Watchlist" value={watchlist.length.toString()} />
+           <StatCard icon={<Star className="w-5 h-5 text-yellow-400" />} label="Avg Stars" value={averageRating} />
         </div>
 
         <nav className="border-t border-white/10 pt-8 mb-8 flex flex-wrap gap-3 text-sm">
           {[
             ["Favorites", "#favorites"],
             ["Watched", "#watched"],
+            ["Watchlist", "#watchlist"],
             ["Reviews", "#reviews"],
             ["Lists", "#lists"],
             ["Journal", "#journal"],
@@ -235,6 +259,38 @@ export default async function ProfilePage() {
             Recently Watched
           </h3>
           <ProfileMovieStrip items={journalEntries} emptyText="You have not marked any movies as watched yet." />
+        </section>
+
+        <section id="watchlist" className="border-t border-white/10 pt-10 mt-12">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Bookmark className="w-5 h-5 text-blue-400" />
+            Watchlist
+          </h3>
+          {watchlist.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {watchlist.slice(0, 8).map((movie) => (
+                <Link key={movie.movieId} href={`/movie/${movie.movieId}`} className="bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden hover:border-red-500/40 transition">
+                  <div className="relative aspect-2/3 bg-neutral-900">
+                    {posterUrl(movie.posterPath) ? (
+                      <Image
+                        src={posterUrl(movie.posterPath) as string}
+                        alt={movie.title}
+                        fill
+                        sizes="(min-width: 768px) 25vw, 50vw"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-neutral-700">
+                        <Film className="w-8 h-8" />
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <EmptyPanel text="Your watchlist is empty." />
+          )}
         </section>
 
         <section id="reviews" className="border-t border-white/10 pt-10 mt-12">

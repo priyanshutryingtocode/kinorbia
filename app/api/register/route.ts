@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { slugifyUsername } from "@/lib/userIdentity";
 
 export async function POST(req: Request) {
   try {
@@ -36,11 +37,21 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(normalizedPassword, 10);
 
+    const baseUsername = slugifyUsername(normalizedName || normalizedEmail.split("@")[0]);
+    let username = baseUsername;
+    let suffix = 1;
+
+    while (await User.exists({ username })) {
+      username = `${baseUsername}-${suffix}`;
+      suffix += 1;
+    }
+
     await User.create({
       name: normalizedName,
       email: normalizedEmail,
       password: hashedPassword,
       provider: "credentials",
+      username,
     });
 
     return NextResponse.json({ message: "User registered." }, { status: 201 });

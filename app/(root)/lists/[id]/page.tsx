@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import type { MovieListItem } from "@/types";
+import SocialActionButton from "@/components/SocialActionButton";
 
 type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
@@ -22,6 +23,8 @@ function serializeList(list: RawMovieList): MovieListItem {
     description: list.description,
     movies: list.movies,
     visibility: list.visibility || "public",
+    likedBy: list.likedBy || [],
+    savedBy: list.savedBy || [],
     createdAt: list.createdAt.toISOString(),
   };
 }
@@ -87,6 +90,26 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
           </p>
           {list.description && (
             <p className="text-neutral-300 mt-5 max-w-3xl leading-relaxed">{list.description}</p>
+          )}
+          {list.visibility === "public" && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              <SocialActionButton
+                type="list"
+                id={list._id}
+                action="like"
+                count={list.likedBy?.length || 0}
+                active={Boolean(list.likedBy?.includes(session.user.email.toLowerCase()))}
+                path={`/lists/${list._id}`}
+              />
+              <SocialActionButton
+                type="list"
+                id={list._id}
+                action="save"
+                count={list.savedBy?.length || 0}
+                active={Boolean(list.savedBy?.includes(session.user.email.toLowerCase()))}
+                path={`/lists/${list._id}`}
+              />
+            </div>
           )}
         </header>
 

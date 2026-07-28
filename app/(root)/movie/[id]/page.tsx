@@ -2,10 +2,14 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
+import MovieList from "@/models/MovieList";
+import Review from "@/models/Review";
 import FavoriteButton from "@/components/FavouriteButton";
 import WatchedButton from "@/components/WatchedButton";
+import WatchlistButton from "@/components/WatchlistButton";
 import MovieRatingControl from "@/components/MovieRatingControl";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Calendar, Clock, Film, Star } from "lucide-react";
 import type { FavoriteMovie, TmdbMovieDetails } from "@/types";
@@ -40,12 +44,14 @@ export default async function MoviePage({ params }: Props) {
 
   let isFavorite = false;
   let isWatched = false;
+  let isWatchlisted = false;
   let personalRating = 0;
   
   if (session?.user?.email) {
     await dbConnect();
     const user = await User.findOne({ email: session.user.email }).lean<{
       favorites?: FavoriteMovie[];
+      watchlist?: FavoriteMovie[];
     } | null>();
 
     if (user?.favorites) {
@@ -53,6 +59,8 @@ export default async function MoviePage({ params }: Props) {
       isFavorite = Boolean(favorite);
       personalRating = favorite?.personalRating || 0;
     }
+
+    isWatchlisted = Boolean(user?.watchlist?.some((item) => item.movieId === id.toString()));
 
     const journalEntry = await JournalEntry.findOne({
       userEmail: session.user.email,
@@ -70,6 +78,30 @@ export default async function MoviePage({ params }: Props) {
   const runtimeLabel = runtime > 0 ? `${hours}h ${minutes}m` : "Runtime TBA";
   const ratingLabel =
     typeof movie.vote_average === "number" ? movie.vote_average.toFixed(1) : "N/A";
+
+  await dbConnect();
+  const [publicReviews, publicLists] = await Promise.all([
+    Review.find({ movieId: id.toString(), visibility: "public" })
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .lean<{
+        _id: { toString: () => string };
+        userName: string;
+        rating: number;
+        body: string;
+        createdAt: Date;
+      }[]>(),
+    MovieList.find({ "movies.movieId": id.toString(), visibility: "public" })
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .lean<{
+        _id: { toString: () => string };
+        userName: string;
+        title: string;
+        description?: string;
+        movies: unknown[];
+      }[]>(),
+  ]);
 
   return (
     <div className="relative min-h-screen overflow-hidden pb-20 text-white">
@@ -160,6 +192,16 @@ export default async function MoviePage({ params }: Props) {
                   }}
                   initialIsWatched={isWatched}
                 />
+                <WatchlistButton
+                  movie={{
+                    id: movie.id.toString(),
+                    title: movie.title,
+                    poster_path: movie.poster_path,
+                    vote_average: movie.vote_average || 0,
+                    release_date: movie.release_date,
+                  }}
+                  initialIsWatchlisted={isWatchlisted}
+                />
                 <MovieRatingControl
                   movie={{
                     id: movie.id.toString(),
@@ -178,6 +220,49 @@ export default async function MoviePage({ params }: Props) {
             </p>
           </div>
         </div>
+
+        {(publicReviews.length > 0 || publicLists.length > 0) && (
+          <section className="mt-14 grid gap-6 border-t border-white/10 pt-8 lg:grid-cols-2">
+            <div>
+              <h2 className="mb-5 text-2xl font-bold">Reviews</h2>
+              {publicReviews.length > 0 ? (
+                <div className="space-y-3">
+                  {publicReviews.map((review) => (
+                    <article key={review._id.toString()} className="rounded-lg border border-white/10 bg-neutral-900/50 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm text-neutral-400">by {review.userName}</p>
+                        <span className="text-sm font-bold text-yellow-400">{(review.rating / 2).toFixed(1)} stars</span>
+                      </div>
+                      <p className="mt-3 line-clamp-4 text-sm leading-6 text-neutral-300">{review.body}</p>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-white/10 p-6 text-center text-neutral-500">No public reviews yet.</div>
+              )}
+            </div>
+
+            <div>
+              <h2 className="mb-5 text-2xl font-bold">In Lists</h2>
+              {publicLists.length > 0 ? (
+                <div className="space-y-3">
+                  {publicLists.map((list) => (
+                    <Link key={list._id.toString()} href={`/lists/${list._id}`} className="block rounded-lg border border-white/10 bg-neutral-900/50 p-4 transition hover:border-red-500/40">
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="font-bold">{list.title}</h3>
+                        <span className="text-xs text-neutral-500">{list.movies.length} films</span>
+                      </div>
+                      <p className="mt-1 text-xs text-neutral-500">by {list.userName}</p>
+                      {list.description && <p className="mt-3 line-clamp-2 text-sm text-neutral-300">{list.description}</p>}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-white/10 p-6 text-center text-neutral-500">No public lists include this yet.</div>
+              )}
+            </div>
+          </section>
+        )}
         
         <SimilarMovies movieId={id} />
         

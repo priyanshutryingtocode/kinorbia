@@ -5,6 +5,8 @@ export type MovieSummary = {
   release_date?: string;
   vote_average: number;
   personalRating?: number;
+  genre_ids?: number[];
+  original_language?: string;
 };
 
 export type FavoriteMovie = {
@@ -15,6 +17,8 @@ export type FavoriteMovie = {
   releaseDate?: string;
   personalRating?: number;
 };
+
+export type WatchlistMovie = FavoriteMovie;
 
 export type TmdbMovieDetails = MovieSummary & {
   backdrop_path: string | null;
@@ -33,6 +37,9 @@ export type ReviewItem = {
   rating: number;
   body: string;
   visibility: "public" | "private";
+  movieId?: string;
+  likedBy?: string[];
+  savedBy?: string[];
   createdAt: string;
 };
 
@@ -44,6 +51,8 @@ export type MovieListItem = {
   description?: string;
   movies: FavoriteMovie[];
   visibility: "public" | "private";
+  likedBy?: string[];
+  savedBy?: string[];
   createdAt: string;
 };
 

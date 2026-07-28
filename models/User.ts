@@ -17,6 +17,12 @@ const UserSchema = new mongoose.Schema({
   image: {
     type: String,
   },
+  username: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true,
+  },
   bio: {
     type: String,
     default: "",
@@ -37,6 +43,18 @@ const UserSchema = new mongoose.Schema({
       addedAt: { type: Date, default: Date.now },
     },
   ],
+  watchlist: [
+    {
+      movieId: { type: String, required: true },
+      title: { type: String, required: true },
+      posterPath: { type: String },
+      voteAverage: { type: Number },
+      releaseDate: { type: String },
+      addedAt: { type: Date, default: Date.now },
+    },
+  ],
+  savedReviewIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
+  savedListIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "MovieList" }],
 }, { timestamps: true });
 
 export default mongoose.models?.User || mongoose.model("User", UserSchema);
