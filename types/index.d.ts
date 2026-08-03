@@ -28,6 +28,22 @@ export type TmdbMovieDetails = MovieSummary & {
   tagline: string;
 };
 
+export type TmdbCredit = {
+  id: number;
+  name: string;
+  character?: string;
+  job?: string;
+  department?: string;
+  profile_path: string | null;
+  order?: number;
+};
+
+export type TmdbMovieCredits = {
+  id: number;
+  cast: TmdbCredit[];
+  crew: TmdbCredit[];
+};
+
 export type ReviewItem = {
   _id: string;
   userEmail: string;

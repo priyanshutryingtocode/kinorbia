@@ -12,7 +12,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Calendar, Clock, Film, Star } from "lucide-react";
-import type { FavoriteMovie, TmdbMovieDetails } from "@/types";
+import type { FavoriteMovie, TmdbMovieCredits, TmdbMovieDetails } from "@/types";
 import SimilarMovies from "@/components/SimilarMovies";
 
 async function getMovie(id: string): Promise<TmdbMovieDetails> {
@@ -32,6 +32,19 @@ async function getMovie(id: string): Promise<TmdbMovieDetails> {
   return res.json();
 }
 
+async function getCredits(id: string): Promise<TmdbMovieCredits> {
+  const res = await fetch(
+    `https://api.themoviedb.org/3/movie/${id}/credits?api_key=${process.env.TMDB_API_KEY}&language=en-US`,
+    { next: { revalidate: 3600 } }
+  );
+
+  if (!res.ok) {
+    return { id: Number(id), cast: [], crew: [] };
+  }
+
+  return res.json();
+}
+
 type Props = {
   params: Promise<{ id: string }>;
 };
@@ -39,7 +52,7 @@ type Props = {
 export default async function MoviePage({ params }: Props) {
 
   const { id } = await params;
-  const movie = await getMovie(id);
+  const [movie, credits] = await Promise.all([getMovie(id), getCredits(id)]);
   const session = await auth();
 
   let isFavorite = false;
@@ -78,6 +91,10 @@ export default async function MoviePage({ params }: Props) {
   const runtimeLabel = runtime > 0 ? `${hours}h ${minutes}m` : "Runtime TBA";
   const ratingLabel =
     typeof movie.vote_average === "number" ? movie.vote_average.toFixed(1) : "N/A";
+
+  const directors = credits.crew.filter((member) => member.job === "Director");
+  const producers = credits.crew.filter((member) => member.job === "Producer");
+  const topCast = [...credits.cast].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).slice(0, 6);
 
   await dbConnect();
   const [publicReviews, publicLists] = await Promise.all([
@@ -218,8 +235,64 @@ export default async function MoviePage({ params }: Props) {
             <p className="mt-8 max-w-3xl text-base leading-8 text-neutral-300 sm:text-lg">
               {movie.overview || "No overview is available for this movie yet."}
             </p>
+
+            {(directors.length > 0 || producers.length > 0) && (
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                {directors.length > 0 && (
+                  <div className="rounded-lg border border-white/10 bg-neutral-900/50 p-4">
+                    <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
+                      Director{directors.length > 1 ? "s" : ""}
+                    </h3>
+                    <p className="text-base font-semibold text-white">
+                      {directors.map((member) => member.name).join(", ")}
+                    </p>
+                  </div>
+                )}
+                {producers.length > 0 && (
+                  <div className="rounded-lg border border-white/10 bg-neutral-900/50 p-4">
+                    <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
+                      Producer{producers.length > 1 ? "s" : ""}
+                    </h3>
+                    <p className="text-base font-semibold text-white">
+                      {producers.map((member) => member.name).join(", ")}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
+
+        {topCast.length > 0 && (
+          <section className="mt-14 border-t border-white/10 pt-8">
+            <h2 className="mb-5 text-2xl font-bold">Top Cast</h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+              {topCast.map((member) => (
+                <div key={member.id} className="rounded-lg border border-white/10 bg-neutral-900/50 p-3 text-center">
+                  {member.profile_path ? (
+                    <Image
+                      src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
+                      alt={member.name}
+                      width={120}
+                      height={120}
+                      className="mx-auto aspect-square rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="mx-auto flex aspect-square w-[120px] items-center justify-center rounded-full bg-neutral-800">
+                      <span className="text-3xl font-bold text-neutral-500">
+                        {member.name.trim().charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <p className="mt-3 text-sm font-semibold text-white">{member.name}</p>
+                  <p className="mt-1 text-xs text-neutral-400">
+                    {member.character || "—"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {(publicReviews.length > 0 || publicLists.length > 0) && (
           <section className="mt-14 grid gap-6 border-t border-white/10 pt-8 lg:grid-cols-2">
