@@ -1,31 +1,40 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
+import { getSessionEmail } from "@/lib/session";
+import { rateFavoriteSchema, parseBody, badRequest } from "@/lib/validators";
+import { withRateLimit } from "@/lib/rateLimit";
 
-export async function POST(req: Request) {
-  try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
-    const { movieId, rating } = await req.json();
-    await dbConnect();
-
-    await User.updateOne(
-      { 
-        email: session.user.email, 
-        "favorites.movieId": movieId.toString() 
-      },
-      { 
-        $set: { "favorites.$.personalRating": rating } 
+export const POST = withRateLimit(
+  async (req: Request) => {
+    try {
+      const email = await getSessionEmail();
+      if (!email) {
+        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
       }
-    );
 
-    return NextResponse.json({ message: "Rating updated" });
-  } catch (error) {
-    console.error("Error updating rating:", error);
-    return NextResponse.json({ message: "Error updating rating" }, { status: 500 });
-  }
-}
+      const body = await parseBody(req, rateFavoriteSchema);
+      if (!body) {
+        return badRequest("Movie and rating are required.");
+      }
+
+      await dbConnect();
+
+      await User.updateOne(
+        {
+          email,
+          "favorites.movieId": body.movieId,
+        },
+        {
+          $set: { "favorites.$.personalRating": body.rating },
+        }
+      );
+
+      return NextResponse.json({ message: "Rating updated" });
+    } catch (error) {
+      console.error("Error updating rating:", error);
+      return NextResponse.json({ message: "Error updating rating" }, { status: 500 });
+    }
+  },
+  { windowMs: 60 * 1000, limit: 120 }
+);

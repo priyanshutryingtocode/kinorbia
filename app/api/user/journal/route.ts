@@ -1,45 +1,55 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import JournalEntry from "@/models/JournalEntry";
+import { getSessionUser } from "@/lib/session";
+import { parseBody, badRequest } from "@/lib/validators";
+import { z } from "zod";
+import { withRateLimit } from "@/lib/rateLimit";
 
-export async function POST(req: Request) {
-  try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+const markWatchedSchema = z.object({
+  movieId: z.union([z.string(), z.number()]).transform(String),
+  movieTitle: z.string().trim().min(1).max(120),
+  posterPath: z.string().trim().max(500).nullish().transform((v) => v ?? null),
+});
 
-    const { movieId, movieTitle, posterPath } = await req.json();
-    const normalizedMovieId = movieId?.toString();
+export const POST = withRateLimit(
+  async (req: Request) => {
+    try {
+      const { email, name } = await getSessionUser();
+      if (!email) {
+        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      }
 
-    if (!normalizedMovieId || !movieTitle) {
-      return NextResponse.json({ message: "Movie details are required" }, { status: 400 });
-    }
+      const body = await parseBody(req, markWatchedSchema);
+      if (!body) {
+        return badRequest("Movie details are required.");
+      }
 
-    await dbConnect();
+      await dbConnect();
 
-    await JournalEntry.updateOne(
-      {
-        userEmail: session.user.email,
-        movieId: normalizedMovieId,
-      },
-      {
-        $setOnInsert: {
-          userEmail: session.user.email,
-          userName: session.user.name || "KinOrbia user",
-          movieId: normalizedMovieId,
-          movieTitle,
-          posterPath: posterPath || undefined,
-          watchedAt: new Date(),
+      await JournalEntry.updateOne(
+        {
+          userEmail: email,
+          movieId: body.movieId,
         },
-      },
-      { upsert: true }
-    );
+        {
+          $setOnInsert: {
+            userEmail: email,
+            userName: name || "KinOrbia user",
+            movieId: body.movieId,
+            movieTitle: body.movieTitle,
+            posterPath: body.posterPath,
+            watchedAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
 
-    return NextResponse.json({ isWatched: true, message: "Marked as watched" });
-  } catch (error) {
-    console.error("Error marking movie as watched:", error);
-    return NextResponse.json({ message: "Error marking movie as watched" }, { status: 500 });
-  }
-}
+      return NextResponse.json({ isWatched: true, message: "Marked as watched" });
+    } catch (error) {
+      console.error("Error marking movie as watched:", error);
+      return NextResponse.json({ message: "Error marking movie as watched" }, { status: 500 });
+    }
+  },
+  { windowMs: 60 * 1000, limit: 60 }
+);

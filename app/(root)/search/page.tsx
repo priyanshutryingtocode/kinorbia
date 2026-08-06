@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Film, Search } from "lucide-react";
 import SearchHistory from "@/components/SearchHistory";
+import { searchMovies as searchTmdbMovies, discoverMovies } from "@/lib/tmdb";
 import type { MovieSummary } from "@/types";
 
 type SearchResponse = {
@@ -31,21 +32,18 @@ async function searchMovies({
   const runtimeParam = maxRuntime ? `&with_runtime.lte=${encodeURIComponent(maxRuntime)}` : "";
   const languageParam = language ? `&with_original_language=${encodeURIComponent(language)}` : "";
   const sortParam = sort ? `&sort_by=${encodeURIComponent(sort)}` : "&sort_by=popularity.desc";
-  const url = query
-    ? `https://api.themoviedb.org/3/search/movie?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(query)}${yearParam}`
-    : `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}${yearParam}${ratingParam}${genreParam}${runtimeParam}${languageParam}${sortParam}`;
 
   if (!query && !year && !genre && !minRating && !maxRuntime && !language) {
     return { results: [] };
   }
 
-  const res = await fetch(url, { next: { revalidate: 300 } });
-
-  if (!res.ok) {
-    throw new Error("Failed to search");
+  if (query) {
+    const data = await searchTmdbMovies(query, yearParam);
+    return { results: data?.results || [] };
   }
 
-  return res.json();
+  const data = await discoverMovies(yearParam + ratingParam + genreParam + runtimeParam + languageParam + sortParam);
+  return { results: data?.results || [] };
 }
 
 type SearchPageProps = {

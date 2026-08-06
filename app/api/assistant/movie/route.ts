@@ -3,6 +3,9 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
+import { assistantSchema, parseBody, badRequest } from "@/lib/validators";
+import { withRateLimit } from "@/lib/rateLimit";
+import { searchMovies, getRecommendationMovies } from "@/lib/tmdb";
 import type { FavoriteMovie, MovieSummary } from "@/types";
 
 type AssistantMessage = {
@@ -15,12 +18,7 @@ type GeminiPlan = {
   titles: string[];
 };
 
-type TmdbSearchResponse = {
-  results?: MovieSummary[];
-};
-
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-const TMDB_RETRY_DELAY_MS = 350;
 
 function getLatestUserMessage(messages: AssistantMessage[]) {
   return [...messages].reverse().find((message) => message.role === "user")?.content.trim() || "";
@@ -67,27 +65,6 @@ function getReferencedTitle(prompt: string) {
 
   const likeMatch = prompt.match(/\b(?:like|similar to|after watching)\s+([a-z0-9 '&:.-]+?)(?:\s+but|\s+with|[,.!?]|$)/i)?.[1];
   return likeMatch?.trim() || "";
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function safeFetch(url: string, init?: RequestInit, retries = 1) {
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    try {
-      return await fetch(url, init);
-    } catch (error) {
-      if (attempt === retries) {
-        console.error("Assistant fetch failed:", error);
-        return null;
-      }
-
-      await sleep(TMDB_RETRY_DELAY_MS);
-    }
-  }
-
-  return null;
 }
 
 async function getUserContext(email?: string | null) {
@@ -186,81 +163,76 @@ async function getGeminiPlan(prompt: string, messages: AssistantMessage[], conte
 }
 
 async function searchTmdbTitle(title: string) {
-  const res = await safeFetch(
-    `https://api.themoviedb.org/3/search/movie?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(title)}`,
-    { next: { revalidate: 3600 } }
-  );
+  const data = await searchMovies(title);
 
-  if (!res?.ok) {
+  if (!data?.results?.length) {
     return null;
   }
 
-  const data = (await res.json()) as TmdbSearchResponse;
-  return data.results?.find((movie) => movie.poster_path) || data.results?.[0] || null;
+  return data.results.find((movie) => movie.poster_path) || data.results[0];
 }
 
 async function getTmdbRecommendations(movieId: string) {
-  const res = await safeFetch(
-    `https://api.themoviedb.org/3/movie/${movieId}/recommendations?api_key=${process.env.TMDB_API_KEY}&language=en-US&page=1`,
-    { next: { revalidate: 3600 } }
-  );
-
-  if (!res?.ok) {
-    return [];
-  }
-
-  const data = (await res.json()) as TmdbSearchResponse;
-  return (data.results || []).slice(0, 6);
+  const data = await getRecommendationMovies(movieId);
+  return (data?.results || []).slice(0, 6);
 }
 
-export async function POST(req: Request) {
-  try {
-    const { messages } = (await req.json()) as { messages?: AssistantMessage[] };
-    const normalizedMessages = Array.isArray(messages) ? messages : [];
-    const prompt = getLatestUserMessage(normalizedMessages);
+export const POST = withRateLimit(
+  async (req: Request) => {
+    try {
+      const body = await parseBody(req, assistantSchema);
 
-    if (!prompt) {
-      return NextResponse.json({ message: "Ask for the kind of movie you want to watch." }, { status: 400 });
-    }
-
-    const session = await auth();
-    const context = await getUserContext(session?.user?.email);
-    const plan = await getGeminiPlan(prompt, normalizedMessages, context);
-    const settledMovies = await Promise.allSettled(plan.titles.map(searchTmdbTitle));
-    const rawMovies = settledMovies.map((result) => (result.status === "fulfilled" ? result.value : null));
-    const seen = new Set<string>();
-    let movies = rawMovies.filter((movie): movie is MovieSummary => {
-      if (!movie || seen.has(movie.id.toString())) {
-        return false;
+      if (!body) {
+        return badRequest("Ask for the kind of movie you want to watch.");
       }
 
-      seen.add(movie.id.toString());
-      return true;
-    });
+      const normalizedMessages = body.messages;
+      const prompt = getLatestUserMessage(normalizedMessages);
 
-    if (movies.length === 0) {
-      const referencedTitle = getReferencedTitle(prompt);
-      const referencedMovie = referencedTitle ? await searchTmdbTitle(referencedTitle) : null;
-      movies = referencedMovie ? await getTmdbRecommendations(referencedMovie.id.toString()) : [];
-    }
+      if (!prompt) {
+        return badRequest("Ask for the kind of movie you want to watch.");
+      }
 
-    return NextResponse.json({
-      reply: plan.reply,
-      movies,
-    });
-  } catch (error) {
-    console.error("Movie assistant error:", error);
+      const session = await auth();
+      const context = await getUserContext(session?.user?.email);
+      const plan = await getGeminiPlan(prompt, normalizedMessages, context);
+      const settledMovies = await Promise.allSettled(plan.titles.map(searchTmdbTitle));
+      const rawMovies = settledMovies.map((result) => (result.status === "fulfilled" ? result.value : null));
+      const seen = new Set<string>();
+      let movies = rawMovies.filter((movie): movie is MovieSummary => {
+        if (!movie || seen.has(movie.id.toString())) {
+          return false;
+        }
 
-    if (error instanceof Error && error.message === "Missing GEMINI_API_KEY") {
+        seen.add(movie.id.toString());
+        return true;
+      });
+
+      if (movies.length === 0) {
+        const referencedTitle = getReferencedTitle(prompt);
+        const referencedMovie = referencedTitle ? await searchTmdbTitle(referencedTitle) : null;
+        movies = referencedMovie ? await getTmdbRecommendations(referencedMovie.id.toString()) : [];
+      }
+
+      return NextResponse.json({
+        reply: plan.reply,
+        movies,
+      });
+    } catch (error) {
+      console.error("Movie assistant error:", error);
+
+      if (error instanceof Error && error.message === "Missing GEMINI_API_KEY") {
+        return NextResponse.json(
+          { message: "Gemini is not configured. Add GEMINI_API_KEY to .env.local." },
+          { status: 503 }
+        );
+      }
+
       return NextResponse.json(
-        { message: "Gemini is not configured. Add GEMINI_API_KEY to .env.local." },
-        { status: 503 }
+        { message: "The assistant could not recommend movies right now." },
+        { status: 500 }
       );
     }
-
-    return NextResponse.json(
-      { message: "The assistant could not recommend movies right now." },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { windowMs: 60 * 1000, limit: 20 }
+);

@@ -1,43 +1,51 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
+import { getSessionEmail } from "@/lib/session";
+import { movieRefSchema, parseBody, badRequest } from "@/lib/validators";
+import { withRateLimit } from "@/lib/rateLimit";
+import { hasCapacity, MAX_WATCHLIST } from "@/lib/bounds";
 
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+export const POST = withRateLimit(
+  async (req: Request) => {
+    const email = await getSessionEmail();
+    if (!email) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
 
-  const body = await req.json();
-  const movieId = String(body.movieId || "");
+    const body = await parseBody(req, movieRefSchema);
+    if (!body) {
+      return badRequest("A valid movie is required.");
+    }
 
-  if (!movieId || !body.title) {
-    return NextResponse.json({ message: "Movie is required." }, { status: 400 });
-  }
+    await dbConnect();
+    const user = await User.findOne({ email });
 
-  await dbConnect();
-  const user = await User.findOne({ email: session.user.email.toLowerCase() });
+    if (!user) {
+      return NextResponse.json({ message: "User not found." }, { status: 404 });
+    }
 
-  if (!user) {
-    return NextResponse.json({ message: "User not found." }, { status: 404 });
-  }
+    const exists = user.watchlist?.some((movie: { movieId: string }) => movie.movieId === body.movieId);
 
-  const exists = user.watchlist?.some((movie: { movieId: string }) => movie.movieId === movieId);
+    if (exists) {
+      user.watchlist = user.watchlist.filter((movie: { movieId: string }) => movie.movieId !== body.movieId);
+    } else {
+      if (!hasCapacity(user.watchlist, MAX_WATCHLIST)) {
+        return NextResponse.json({ message: "Watchlist is full." }, { status: 409 });
+      }
 
-  if (exists) {
-    user.watchlist = user.watchlist.filter((movie: { movieId: string }) => movie.movieId !== movieId);
-  } else {
-    user.watchlist.push({
-      movieId,
-      title: body.title,
-      posterPath: body.posterPath || null,
-      voteAverage: body.voteAverage || 0,
-      releaseDate: body.releaseDate,
-      addedAt: new Date(),
-    });
-  }
+      user.watchlist.push({
+        movieId: body.movieId,
+        title: body.movieTitle,
+        posterPath: body.posterPath,
+        voteAverage: body.voteAverage,
+        releaseDate: body.releaseDate,
+        addedAt: new Date(),
+      });
+    }
 
-  await user.save();
-  return NextResponse.json({ isWatchlisted: !exists });
-}
+    await user.save();
+    return NextResponse.json({ isWatchlisted: !exists });
+  },
+  { windowMs: 60 * 1000, limit: 60 }
+);

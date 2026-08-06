@@ -1,92 +1,99 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
+import { getSessionUser } from "@/lib/session";
+import { rateMovieSchema, parseBody, badRequest } from "@/lib/validators";
+import { withRateLimit } from "@/lib/rateLimit";
+import { hasCapacity, MAX_FAVORITES } from "@/lib/bounds";
 
-export async function POST(req: Request) {
-  try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
-    const { movieId, movieTitle, posterPath, voteAverage, releaseDate, rating } = await req.json();
-    const normalizedMovieId = movieId?.toString();
-    const numericRating = Number(rating);
-
-    if (!normalizedMovieId || !movieTitle || !Number.isFinite(numericRating)) {
-      return NextResponse.json({ message: "Movie and rating are required" }, { status: 400 });
-    }
-
-    const clampedRating = Math.min(10, Math.max(1, numericRating));
-
-    await dbConnect();
-    const updateFavorite = await User.updateOne(
-      {
-        email: session.user.email,
-        "favorites.movieId": normalizedMovieId,
-      },
-      {
-        $set: {
-          "favorites.$.personalRating": clampedRating,
-          "favorites.$.title": movieTitle,
-          "favorites.$.posterPath": posterPath,
-          "favorites.$.voteAverage": voteAverage,
-          "favorites.$.releaseDate": releaseDate,
-        },
+export const POST = withRateLimit(
+  async (req: Request) => {
+    try {
+      const { email, name } = await getSessionUser();
+      if (!email) {
+        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
       }
-    );
 
-    if (updateFavorite.matchedCount === 0) {
-      const addFavorite = await User.updateOne(
+      const body = await parseBody(req, rateMovieSchema);
+      if (!body) {
+        return badRequest("Movie and rating are required.");
+      }
+
+      const normalizedMovieId = body.movieId;
+      const clampedRating = body.rating;
+
+      await dbConnect();
+      const updateFavorite = await User.updateOne(
         {
-          email: session.user.email,
-          "favorites.movieId": { $ne: normalizedMovieId },
+          email,
+          "favorites.movieId": normalizedMovieId,
         },
         {
-          $push: {
-            favorites: {
-              movieId: normalizedMovieId,
-              title: movieTitle,
-              posterPath,
-              voteAverage,
-              releaseDate,
-              personalRating: clampedRating,
-            },
+          $set: {
+            "favorites.$.personalRating": clampedRating,
+            "favorites.$.title": body.movieTitle,
+            "favorites.$.posterPath": body.posterPath,
+            "favorites.$.voteAverage": body.voteAverage,
+            "favorites.$.releaseDate": body.releaseDate,
           },
         }
       );
 
-      if (addFavorite.matchedCount === 0) {
-        const userExists = await User.exists({ email: session.user.email });
-        if (!userExists) {
+      if (updateFavorite.matchedCount === 0) {
+        const userMovie = await User.findOne({ email }, { favorites: 1 });
+
+        if (!userMovie) {
           return NextResponse.json({ message: "User record not found" }, { status: 404 });
         }
+
+        if (!hasCapacity(userMovie.favorites, MAX_FAVORITES)) {
+          return NextResponse.json({ message: "Favorites list is full." }, { status: 409 });
+        }
+
+        await User.updateOne(
+          {
+            email,
+            "favorites.movieId": { $ne: normalizedMovieId },
+          },
+          {
+            $push: {
+              favorites: {
+                movieId: normalizedMovieId,
+                title: body.movieTitle,
+                posterPath: body.posterPath,
+                voteAverage: body.voteAverage,
+                releaseDate: body.releaseDate,
+                personalRating: clampedRating,
+              },
+            },
+          }
+        );
       }
+
+      await JournalEntry.updateOne(
+        { userEmail: email, movieId: normalizedMovieId },
+        {
+          $set: {
+            rating: clampedRating,
+            movieTitle: body.movieTitle,
+            posterPath: body.posterPath || undefined,
+          },
+          $setOnInsert: {
+            userEmail: email,
+            userName: name || "KinOrbia user",
+            movieId: normalizedMovieId,
+            watchedAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+
+      return NextResponse.json({ rating: clampedRating });
+    } catch (error) {
+      console.error("Error updating movie rating:", error);
+      return NextResponse.json({ message: "Error updating movie rating" }, { status: 500 });
     }
-
-    await JournalEntry.updateOne(
-      { userEmail: session.user.email, movieId: normalizedMovieId },
-      {
-        $set: {
-          rating: clampedRating,
-          movieTitle,
-          posterPath: posterPath || undefined,
-        },
-        $setOnInsert: {
-          userEmail: session.user.email,
-          userName: session.user.name || "KinOrbia user",
-          movieId: normalizedMovieId,
-          watchedAt: new Date(),
-        },
-      },
-      { upsert: true }
-    );
-
-    return NextResponse.json({ rating: clampedRating });
-  } catch (error) {
-    console.error("Error updating movie rating:", error);
-    return NextResponse.json({ message: "Error updating movie rating" }, { status: 500 });
-  }
-}
+  },
+  { windowMs: 60 * 1000, limit: 120 }
+);

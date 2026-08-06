@@ -5,24 +5,12 @@ import { fetchMovies } from "../actions";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
+import { getRecommendationMovies } from "@/lib/tmdb";
 import type { FavoriteMovie } from "@/types";
 
-type RecommendationResponse = {
-  results?: MovieProp[];
-};
-
 async function fetchRecommendations(movieId: string): Promise<MovieProp[]> {
-  const res = await fetch(
-    `https://api.themoviedb.org/3/movie/${movieId}/recommendations?api_key=${process.env.TMDB_API_KEY}&language=en-US&page=1`,
-    { next: { revalidate: 3600 } }
-  );
-
-  if (!res.ok) {
-    return [];
-  }
-
-  const data = (await res.json()) as RecommendationResponse;
-  return data.results || [];
+  const data = await getRecommendationMovies(movieId);
+  return data?.results || [];
 }
 
 type Props = {

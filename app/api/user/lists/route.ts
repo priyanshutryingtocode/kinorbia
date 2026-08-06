@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
-import type { FavoriteMovie } from "@/types";
+import { getSessionEmail } from "@/lib/session";
+import { addToListSchema, parseBody, badRequest } from "@/lib/validators";
+import { withRateLimit } from "@/lib/rateLimit";
 
 type ListSummary = {
   _id: { toString: () => string };
@@ -10,13 +11,13 @@ type ListSummary = {
 };
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.email) {
+  const email = await getSessionEmail();
+  if (!email) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   await dbConnect();
-  const lists = await MovieList.find({ userEmail: session.user.email })
+  const lists = await MovieList.find({ userEmail: email })
     .sort({ createdAt: -1 })
     .select({ title: 1 })
     .lean<ListSummary[]>();
@@ -29,55 +30,54 @@ export async function GET() {
   });
 }
 
-export async function POST(req: Request) {
-  try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+export const POST = withRateLimit(
+  async (req: Request) => {
+    try {
+      const email = await getSessionEmail();
+      if (!email) {
+        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      }
 
-    const { listId, movie } = await req.json() as {
-      listId?: string;
-      movie?: FavoriteMovie;
-    };
+      const body = await parseBody(req, addToListSchema);
+      if (!body) {
+        return badRequest("List and movie are required.");
+      }
 
-    if (!listId || !movie?.movieId || !movie.title) {
-      return NextResponse.json({ message: "List and movie are required" }, { status: 400 });
-    }
-
-    await dbConnect();
-    const result = await MovieList.updateOne(
-      {
-        _id: listId,
-        userEmail: session.user.email,
-        "movies.movieId": { $ne: movie.movieId },
-      },
-      {
-        $push: {
-          movies: {
-            movieId: movie.movieId,
-            title: movie.title,
-            posterPath: movie.posterPath,
-            voteAverage: movie.voteAverage,
-            releaseDate: movie.releaseDate,
-            personalRating: movie.personalRating,
-          },
+      await dbConnect();
+      const result = await MovieList.updateOne(
+        {
+          _id: body.listId,
+          userEmail: email,
+          "movies.movieId": { $ne: body.movie.movieId },
         },
-      }
-    );
+        {
+          $push: {
+            movies: {
+              movieId: body.movie.movieId,
+              title: body.movie.movieTitle,
+              posterPath: body.movie.posterPath,
+              voteAverage: body.movie.voteAverage,
+              releaseDate: body.movie.releaseDate,
+              personalRating: body.movie.personalRating,
+            },
+          },
+        }
+      );
 
-    if (result.matchedCount === 0) {
-      const listExists = await MovieList.exists({ _id: listId, userEmail: session.user.email });
-      if (!listExists) {
-        return NextResponse.json({ message: "List not found" }, { status: 404 });
+      if (result.matchedCount === 0) {
+        const listExists = await MovieList.exists({ _id: body.listId, userEmail: email });
+        if (!listExists) {
+          return NextResponse.json({ message: "List not found" }, { status: 404 });
+        }
+
+        return NextResponse.json({ message: "Movie is already in this list" }, { status: 409 });
       }
 
-      return NextResponse.json({ message: "Movie is already in this list" }, { status: 409 });
+      return NextResponse.json({ message: "Added to list" });
+    } catch (error) {
+      console.error("Error adding movie to list:", error);
+      return NextResponse.json({ message: "Error adding movie to list" }, { status: 500 });
     }
-
-    return NextResponse.json({ message: "Added to list" });
-  } catch (error) {
-    console.error("Error adding movie to list:", error);
-    return NextResponse.json({ message: "Error adding movie to list" }, { status: 500 });
-  }
-}
+  },
+  { windowMs: 60 * 1000, limit: 120 }
+);

@@ -1,21 +1,18 @@
 import MovieCarousel, { CarouselMovie } from "./MovieCarousel";
+import { getRecommendationMovies } from "@/lib/tmdb";
 
 interface SimilarMoviesProps {
   movieId: string;
 }
 
 export default async function SimilarMovies({ movieId }: SimilarMoviesProps) {
-  const res = await fetch(
-    `https://api.themoviedb.org/3/movie/${movieId}/recommendations?api_key=${process.env.TMDB_API_KEY}&language=en-US&page=1`,
-    { next: { revalidate: 86400 } }
-  );
+  const data = await getRecommendationMovies(movieId);
 
-  if (!res.ok) return null;
+  if (!data?.results?.length) {
+    return null;
+  }
 
-  const data = await res.json();
-  const movies: CarouselMovie[] = data.results.slice(0, 15); 
-
-  if (movies.length === 0) return null;
+  const movies = data.results.slice(0, 15) as CarouselMovie[];
 
   return (
     <section className="mt-14 border-t border-white/10 pt-8">
