@@ -207,7 +207,7 @@ export default async function ProfilePage() {
           
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-12">
            <StatCard icon={<Film className="w-5 h-5 text-blue-400" />} label="Movies Watched" value={watchedMovieIds.length.toString()} />
            <StatCard 
              icon={<Heart className="w-5 h-5 text-red-500" />} 
@@ -216,7 +216,9 @@ export default async function ProfilePage() {
            />
            <StatCard icon={<List className="w-5 h-5 text-yellow-400" />} label="Lists Created" value={listsCreated.toString()} />
            <StatCard icon={<Bookmark className="w-5 h-5 text-blue-400" />} label="Watchlist" value={watchlist.length.toString()} />
-           <StatCard icon={<Star className="w-5 h-5 text-yellow-400" />} label="Avg Stars" value={averageRating} />
+           <div className="col-span-2 md:col-span-1">
+             <StatCard icon={<Star className="w-5 h-5 text-yellow-400" />} label="Avg Stars" value={averageRating} />
+           </div>
         </div>
 
         <nav className="border-t border-white/10 pt-8 mb-8 flex flex-wrap gap-3 text-sm">

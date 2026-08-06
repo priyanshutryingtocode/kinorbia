@@ -74,7 +74,7 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
         {loading && <Loader2 className="h-4 w-4 animate-spin text-yellow-400" />}
       </div>
 
-      <div className="relative h-8 w-36 shrink-0">
+      <div className="relative h-8 min-w-[120px] flex-1">
         <div className="flex h-full items-center gap-1">
           {stars.map((star) => {
             const fillPercent = Math.max(0, Math.min(1, draftStars - (star - 1))) * 100;

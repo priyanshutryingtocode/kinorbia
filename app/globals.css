@@ -20,6 +20,10 @@ html {
   scroll-behavior: smooth;
 }
 
+html {
+  overflow-x: clip;
+}
+
 body {
   min-height: 100vh;
   background:

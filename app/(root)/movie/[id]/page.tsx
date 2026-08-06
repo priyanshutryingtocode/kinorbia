@@ -219,16 +219,18 @@ export default async function MoviePage({ params }: Props) {
                   }}
                   initialIsWatchlisted={isWatchlisted}
                 />
-                <MovieRatingControl
-                  movie={{
-                    id: movie.id.toString(),
-                    title: movie.title,
-                    poster_path: movie.poster_path,
-                    vote_average: movie.vote_average || 0,
-                    release_date: movie.release_date,
-                  }}
-                  initialRating={personalRating}
-                />
+<div className="mt-3 w-full sm:mt-0 sm:w-auto sm:flex-1 sm:min-w-0">
+                  <MovieRatingControl
+                    movie={{
+                      id: movie.id.toString(),
+                      title: movie.title,
+                      poster_path: movie.poster_path,
+                      vote_average: movie.vote_average || 0,
+                      release_date: movie.release_date,
+                    }}
+                    initialRating={personalRating}
+                  />
+                </div>
               </div>
             </div>
 
