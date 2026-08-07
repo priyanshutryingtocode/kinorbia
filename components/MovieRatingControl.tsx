@@ -64,18 +64,24 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
     }
   };
 
-  return (
-    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-2">
-      <div className="flex shrink-0 items-center gap-2">
-        <Star className="h-4 w-4 fill-current text-yellow-400" />
-        <span className="text-sm font-medium text-neutral-300">
-          {rating > 0 ? `${savedStars.toFixed(1)} stars` : "Rate"}
+return (
+    <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:rounded-full sm:px-3 sm:py-2">
+      <div className="flex items-center justify-between gap-2 sm:shrink-0 sm:justify-start">
+        <div className="flex shrink-0 items-center gap-2">
+          <Star className="h-4 w-4 fill-current text-yellow-400" />
+          <span className="text-sm font-medium text-neutral-300">
+            {rating > 0 ? `${savedStars.toFixed(1)} stars` : "Rate"}
+          </span>
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-yellow-400" />}
+        </div>
+
+        <span className="shrink-0 rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-sm font-bold text-yellow-300 sm:hidden">
+          {draftStars.toFixed(1)}
         </span>
-        {loading && <Loader2 className="h-4 w-4 animate-spin text-yellow-400" />}
       </div>
 
-      <div className="relative h-8 min-w-[120px] flex-1">
-        <div className="flex h-full items-center gap-1">
+      <div className="relative h-9 w-full min-w-[120px] flex-1">
+        <div className="flex h-full items-center justify-center gap-1 sm:justify-start">
           {stars.map((star) => {
             const fillPercent = Math.max(0, Math.min(1, draftStars - (star - 1))) * 100;
 
@@ -105,7 +111,7 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
         />
       </div>
 
-      <span className="shrink-0 rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-sm font-bold text-yellow-300">
+      <span className="hidden shrink-0 rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-sm font-bold text-yellow-300 sm:inline-block">
         {draftStars.toFixed(1)}
       </span>
 
@@ -113,7 +119,7 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
         type="button"
         onClick={() => rateMovie(draftStars)}
         disabled={loading || Math.round(draftStars * 2) === rating}
-        className="kin-focus shrink-0 rounded-full border border-white/10 bg-white/7 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
+        className="kin-focus w-full shrink-0 rounded-full border border-white/10 bg-white/7 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-1.5"
       >
         Save
       </button>
