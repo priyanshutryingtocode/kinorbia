@@ -35,16 +35,15 @@ export const addToListSchema = z.object({
   movie: movieRefSchema,
 });
 
-export const assistantSchema = z.object({
-  messages: z
-    .array(
-      z.object({
-        role: z.enum(["user", "assistant"]),
-        content: z.string().trim().max(2000),
-      })
-    )
-    .min(1)
-    .max(30),
+export const assistantMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().trim().max(2000),
+});
+
+export const assistantPromptSchema = z.object({
+  message: z.string().trim().min(1).max(2000),
+  history: z.array(assistantMessageSchema).max(30).optional(),
+  threadId: z.string().trim().max(120).optional(),
 });
 
 export async function parseBody<T extends z.ZodType>(req: Request, schema: T): Promise<z.infer<T> | null> {

@@ -3,13 +3,16 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
-import { assistantSchema, parseBody, badRequest } from "@/lib/validators";
+import Conversation, { MAX_CONVERSATION_MESSAGES } from "@/models/Conversation";
+import { assistantPromptSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
 import { searchMovies, getRecommendationMovies } from "@/lib/tmdb";
 import type { FavoriteMovie, MovieSummary } from "@/types";
 
+type Role = "user" | "assistant";
+
 type AssistantMessage = {
-  role: "user" | "assistant";
+  role: Role;
   content: string;
 };
 
@@ -18,11 +21,12 @@ type GeminiPlan = {
   titles: string[];
 };
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+type GeminiSeed = {
+  title?: string;
+  movies: MovieSummary[];
+};
 
-function getLatestUserMessage(messages: AssistantMessage[]) {
-  return [...messages].reverse().find((message) => message.role === "user")?.content.trim() || "";
-}
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 function parseGeminiJson(text: string): GeminiPlan {
   const cleaned = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
@@ -67,6 +71,11 @@ function getReferencedTitle(prompt: string) {
   return likeMatch?.trim() || "";
 }
 
+function hasQualifier(prompt: string) {
+  const qualifiers = /\b(?:but|with|that|yet|more|less|not|without|instead|rather|though|however)\b/i;
+  return qualifiers.test(prompt);
+}
+
 async function getUserContext(email?: string | null) {
   if (!email) {
     return {
@@ -91,7 +100,12 @@ async function getUserContext(email?: string | null) {
   };
 }
 
-async function getGeminiPlan(prompt: string, messages: AssistantMessage[], context: Awaited<ReturnType<typeof getUserContext>>) {
+async function getGeminiPlan(
+  prompt: string,
+  history: AssistantMessage[],
+  context: Awaited<ReturnType<typeof getUserContext>>,
+  seed?: GeminiSeed
+) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -106,10 +120,13 @@ async function getGeminiPlan(prompt: string, messages: AssistantMessage[], conte
     "Use 3 to 6 movie titles. Keep reply under 70 words.",
   ].join(" ");
 
-  const history = messages
-    .slice(-6)
-    .map((message) => `${message.role === "user" ? "User" : "Assistant"}: ${message.content}`)
-    .join("\n");
+  const historyText = history.length
+    ? history.map((message) => `${message.role === "user" ? "User" : "Assistant"}: ${message.content}`).join("\n")
+    : "No prior conversation.";
+
+  const seedText = seed?.title
+    ? `The user is likely referencing "${seed.title}". Prefer it as the starting point when relevant.`
+    : "";
 
   const contextText = [
     `Favorites: ${context.favorites.map((movie) => `${movie.title}${movie.personalRating ? ` (${movie.personalRating}/10)` : ""}`).join(", ") || "none"}`,
@@ -127,7 +144,7 @@ async function getGeminiPlan(prompt: string, messages: AssistantMessage[], conte
             role: "user",
             parts: [
               {
-                text: `${systemPrompt}\n\nUser context:\n${contextText}\n\nRecent chat:\n${history}\n\nCurrent request:\n${prompt}`,
+                text: `${systemPrompt}\n\nUser context:\n${contextText}\n\n${seedText}\nRecent chat:\n${historyText}\n\nCurrent request:\n${prompt}`,
               },
             ],
           },
@@ -177,27 +194,112 @@ async function getTmdbRecommendations(movieId: string) {
   return (data?.results || []).slice(0, 6);
 }
 
+async function getHistory(email?: string | null): Promise<AssistantMessage[]> {
+  if (!email) {
+    return [];
+  }
+
+  await dbConnect();
+  const conv = await Conversation.findOne({ userEmail: email }).lean<{
+    messages?: { role: Role; content: string }[];
+  } | null>();
+
+  return (conv?.messages || []).slice(-8).map((message) => ({
+    role: message.role,
+    content: message.content,
+  }));
+}
+
+async function persistConversation(
+  email: string | null,
+  userContent: string,
+  assistantContent: string,
+  movies: MovieSummary[]
+) {
+  if (!email) {
+    return;
+  }
+
+  await dbConnect();
+  await Conversation.updateOne(
+    { userEmail: email },
+    {
+      $push: {
+        messages: {
+          $each: [
+            { role: "user", content: userContent },
+            { role: "assistant", content: assistantContent, movies },
+          ],
+          $slice: -MAX_CONVERSATION_MESSAGES,
+        },
+      },
+    },
+    { upsert: true }
+  );
+}
+
+function serializeMessages(messages: unknown[] = []) {
+  return (messages as { role: Role; content: string; movies?: MovieSummary[] }[])
+    .filter((message) => message && typeof message.content === "string")
+    .map((message) => ({
+      role: message.role,
+      content: message.content,
+      movies: message.movies || undefined,
+    }));
+}
+
+export async function GET() {
+  const session = await auth();
+  const email = session?.user?.email ? session.user.email.toLowerCase() : null;
+
+  if (!email) {
+    return NextResponse.json({ messages: [] });
+  }
+
+  await dbConnect();
+  const conv = await Conversation.findOne({ userEmail: email }).lean<{ messages?: unknown[] }>();
+  return NextResponse.json({ messages: serializeMessages(conv?.messages) });
+}
+
 export const POST = withRateLimit(
   async (req: Request) => {
     try {
-      const body = await parseBody(req, assistantSchema);
+      const body = await parseBody(req, assistantPromptSchema);
 
       if (!body) {
         return badRequest("Ask for the kind of movie you want to watch.");
       }
 
-      const normalizedMessages = body.messages;
-      const prompt = getLatestUserMessage(normalizedMessages);
+      const prompt = body.message;
+      const session = await auth();
+      const email = session?.user?.email ? session.user.email.toLowerCase() : null;
+      const context = await getUserContext(email);
 
-      if (!prompt) {
-        return badRequest("Ask for the kind of movie you want to watch.");
+      const referencedTitle = getReferencedTitle(prompt);
+      const referencedMovie = referencedTitle ? await searchTmdbTitle(referencedTitle) : null;
+      const referenceMovies = referencedMovie
+        ? await getTmdbRecommendations(referencedMovie.id.toString())
+        : [];
+
+      if (referencedMovie && !hasQualifier(prompt) && referenceMovies.length > 0) {
+        const reply = `Here are a few films similar to "${referencedMovie.title}".`;
+        await persistConversation(email, prompt, reply, referenceMovies);
+        return NextResponse.json({ reply, movies: referenceMovies });
       }
 
-      const session = await auth();
-      const context = await getUserContext(session?.user?.email);
-      const plan = await getGeminiPlan(prompt, normalizedMessages, context);
-      const settledMovies = await Promise.allSettled(plan.titles.map(searchTmdbTitle));
-      const rawMovies = settledMovies.map((result) => (result.status === "fulfilled" ? result.value : null));
+      const history = email
+        ? await getHistory(email)
+        : (body.history || [])
+            .slice(-8)
+            .map((message) => ({ role: message.role, content: message.content }));
+
+      const plan = await getGeminiPlan(prompt, history, context, {
+        title: referencedMovie?.title,
+        movies: referenceMovies,
+      });
+
+      const settled = await Promise.allSettled(plan.titles.map(searchTmdbTitle));
+      const rawMovies = settled.map((result) => (result.status === "fulfilled" ? result.value : null));
       const seen = new Set<string>();
       let movies = rawMovies.filter((movie): movie is MovieSummary => {
         if (!movie || seen.has(movie.id.toString())) {
@@ -209,15 +311,13 @@ export const POST = withRateLimit(
       });
 
       if (movies.length === 0) {
-        const referencedTitle = getReferencedTitle(prompt);
-        const referencedMovie = referencedTitle ? await searchTmdbTitle(referencedTitle) : null;
-        movies = referencedMovie ? await getTmdbRecommendations(referencedMovie.id.toString()) : [];
+        movies = referenceMovies;
       }
 
-      return NextResponse.json({
-        reply: plan.reply,
-        movies,
-      });
+      const reply = plan.reply;
+      await persistConversation(email, prompt, reply, movies);
+
+      return NextResponse.json({ reply, movies });
     } catch (error) {
       console.error("Movie assistant error:", error);
 

@@ -19,21 +19,77 @@ const STARTERS = [
   "Movies like Dune but more emotional",
 ];
 
+const GREETING: ChatMessage = {
+  role: "assistant",
+  content: "Tell me the mood, genre, pace, or vibe you want. I will suggest a few movies.",
+};
+
+const THREAD_KEY = "kinorbia-assistant-thread";
+const HISTORY_KEY = "kinorbia-assistant-history";
+
+function getThreadId() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  let id = localStorage.getItem(THREAD_KEY);
+  if (!id) {
+    id =
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `t-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(THREAD_KEY, id);
+  }
+
+  return id;
+}
+
+function loadHistory(): ChatMessage[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as ChatMessage[];
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch {
+    // ignore corrupt history
+  }
+
+  return [];
+}
+
+function saveHistory(messages: ChatMessage[]) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-40)));
+  } catch {
+    // ignore quota errors
+  }
+}
+
 function movieYear(movie: MovieSummary) {
   return movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
 }
 
 export default function MovieAssistant() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: "Tell me the mood, genre, pace, or vibe you want. I will suggest a few movies.",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const stored = loadHistory();
+    return stored.length ? stored : [GREETING];
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const commitMessages = (next: ChatMessage[]) => {
+    setMessages(next);
+    saveHistory(next);
+  };
 
   const sendMessage = async (content: string) => {
     const trimmed = content.trim();
@@ -41,8 +97,13 @@ export default function MovieAssistant() {
       return;
     }
 
+    const history = messages.slice(-8).map((message) => ({
+      role: message.role,
+      content: message.content,
+    }));
+
     const nextMessages: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
-    setMessages(nextMessages);
+    commitMessages(nextMessages);
     setInput("");
     setLoading(true);
 
@@ -51,17 +112,16 @@ export default function MovieAssistant() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: nextMessages.map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
+          message: trimmed,
+          history,
+          threadId: getThreadId(),
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setMessages([
+        commitMessages([
           ...nextMessages,
           {
             role: "assistant",
@@ -71,7 +131,7 @@ export default function MovieAssistant() {
         return;
       }
 
-      setMessages([
+      commitMessages([
         ...nextMessages,
         {
           role: "assistant",
@@ -80,7 +140,7 @@ export default function MovieAssistant() {
         },
       ]);
     } catch {
-      setMessages([
+      commitMessages([
         ...nextMessages,
         {
           role: "assistant",
