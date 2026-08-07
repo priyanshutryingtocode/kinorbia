@@ -19,6 +19,8 @@ export async function createJournalEntry(formData: FormData) {
     redirect("/login");
   }
 
+  const email = session.user.email.toLowerCase();
+
   const favoriteMovieId = getRequiredString(formData, "favoriteMovieId");
   let movieTitle = getRequiredString(formData, "movieTitle");
   let movieId = getRequiredString(formData, "movieId");
@@ -36,7 +38,7 @@ export async function createJournalEntry(formData: FormData) {
 
   await dbConnect();
   if (favoriteMovieId) {
-    const user = await User.findOne({ email: session.user.email });
+    const user = await User.findOne({ email });
     const favorites = (user?.favorites || []) as FavoriteMovie[];
     const favorite = favorites.find((movie) => movie.movieId === favoriteMovieId);
 
@@ -52,7 +54,7 @@ export async function createJournalEntry(formData: FormData) {
   }
 
   await JournalEntry.create({
-    userEmail: session.user.email,
+    userEmail: email,
     userName: session.user.name || "KinOrbia user",
     movieId: movieId || undefined,
     movieTitle,
@@ -71,6 +73,8 @@ export async function updateJournalEntry(formData: FormData) {
     redirect("/login");
   }
 
+  const email = session.user.email.toLowerCase();
+
   const entryId = getRequiredString(formData, "entryId");
   const note = getRequiredString(formData, "note");
   const watchedAtValue = getRequiredString(formData, "watchedAt");
@@ -83,7 +87,7 @@ export async function updateJournalEntry(formData: FormData) {
 
   await dbConnect();
   await JournalEntry.updateOne(
-    { _id: entryId, userEmail: session.user.email },
+    { _id: entryId, userEmail: email },
     {
       $set: {
         watchedAt: new Date(watchedAtValue),
@@ -103,13 +107,15 @@ export async function deleteJournalEntry(formData: FormData) {
     redirect("/login");
   }
 
+  const email = session.user.email.toLowerCase();
+
   const entryId = getRequiredString(formData, "entryId");
   if (!entryId) {
     return;
   }
 
   await dbConnect();
-  await JournalEntry.deleteOne({ _id: entryId, userEmail: session.user.email });
+  await JournalEntry.deleteOne({ _id: entryId, userEmail: email });
 
   revalidatePath("/journal");
   revalidatePath("/profile");

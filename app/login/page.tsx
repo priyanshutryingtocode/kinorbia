@@ -82,6 +82,15 @@ export default function LoginPage() {
                 />
               </div>
 
+              <div className="flex items-center justify-end -mt-1">
+                <Link
+                  href="/forgot-password"
+                  className="text-[11px] font-medium text-neutral-500 hover:text-red-400 transition"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 group-focus-within:text-red-400 transition-colors" />
                 <input

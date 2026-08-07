@@ -19,6 +19,8 @@ export async function createReview(formData: FormData) {
     redirect("/login");
   }
 
+  const email = session.user.email.toLowerCase();
+
   const favoriteMovieId = getRequiredString(formData, "favoriteMovieId");
   let movieTitle = getRequiredString(formData, "movieTitle");
   const body = getRequiredString(formData, "body");
@@ -29,7 +31,7 @@ export async function createReview(formData: FormData) {
 
   await dbConnect();
   if (favoriteMovieId) {
-    const user = await User.findOne({ email: session.user.email });
+    const user = await User.findOne({ email });
     const favorites = (user?.favorites || []) as FavoriteMovie[];
     const favorite = favorites.find((movie) => movie.movieId === favoriteMovieId);
 
@@ -45,7 +47,7 @@ export async function createReview(formData: FormData) {
   }
 
   await Review.create({
-    userEmail: session.user.email,
+    userEmail: email,
     userName: session.user.name || "KinOrbia user",
     movieId: movieId || undefined,
     movieTitle,
@@ -64,6 +66,8 @@ export async function updateReview(formData: FormData) {
     redirect("/login");
   }
 
+  const email = session.user.email.toLowerCase();
+
   const reviewId = getRequiredString(formData, "reviewId");
   const body = getRequiredString(formData, "body");
   const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
@@ -75,7 +79,7 @@ export async function updateReview(formData: FormData) {
 
   await dbConnect();
   await Review.updateOne(
-    { _id: reviewId, userEmail: session.user.email },
+    { _id: reviewId, userEmail: email },
     {
       $set: {
         rating: Math.min(10, Math.max(1, rating)),
@@ -95,13 +99,15 @@ export async function deleteReview(formData: FormData) {
     redirect("/login");
   }
 
+  const email = session.user.email.toLowerCase();
+
   const reviewId = getRequiredString(formData, "reviewId");
   if (!reviewId) {
     return;
   }
 
   await dbConnect();
-  await Review.deleteOne({ _id: reviewId, userEmail: session.user.email });
+  await Review.deleteOne({ _id: reviewId, userEmail: email });
 
   revalidatePath("/reviews");
   revalidatePath("/profile");

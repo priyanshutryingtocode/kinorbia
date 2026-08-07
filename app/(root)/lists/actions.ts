@@ -19,6 +19,8 @@ export async function createMovieList(formData: FormData) {
     redirect("/login");
   }
 
+  const email = session.user.email.toLowerCase();
+
   const title = getRequiredString(formData, "title");
   const description = getRequiredString(formData, "description");
   const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
@@ -31,12 +33,12 @@ export async function createMovieList(formData: FormData) {
   }
 
   await dbConnect();
-  const user = await User.findOne({ email: session.user.email });
+  const user = await User.findOne({ email });
   const favorites = (user?.favorites || []) as FavoriteMovie[];
   const selectedMovies = favorites.filter((movie) => movieIds.includes(movie.movieId));
 
   await MovieList.create({
-    userEmail: session.user.email,
+    userEmail: email,
     userName: session.user.name || "KinOrbia user",
     title,
     description,
@@ -53,6 +55,8 @@ export async function updateMovieList(formData: FormData) {
     redirect("/login");
   }
 
+  const email = session.user.email.toLowerCase();
+
   const listId = getRequiredString(formData, "listId");
   const title = getRequiredString(formData, "title");
   const description = getRequiredString(formData, "description");
@@ -66,14 +70,14 @@ export async function updateMovieList(formData: FormData) {
   }
 
   await dbConnect();
-  const user = await User.findOne({ email: session.user.email }).lean<{
+  const user = await User.findOne({ email }).lean<{
     favorites?: FavoriteMovie[];
   } | null>();
   const favorites = user?.favorites || [];
   const selectedMovies = favorites.filter((movie) => movieIds.includes(movie.movieId));
 
   await MovieList.updateOne(
-    { _id: listId, userEmail: session.user.email },
+    { _id: listId, userEmail: email },
     { $set: { title, description, visibility, movies: selectedMovies } }
   );
 
@@ -88,13 +92,15 @@ export async function deleteMovieList(formData: FormData) {
     redirect("/login");
   }
 
+  const email = session.user.email.toLowerCase();
+
   const listId = getRequiredString(formData, "listId");
   if (!listId) {
     return;
   }
 
   await dbConnect();
-  await MovieList.deleteOne({ _id: listId, userEmail: session.user.email });
+  await MovieList.deleteOne({ _id: listId, userEmail: email });
 
   revalidatePath("/lists");
   revalidatePath(`/lists/${listId}`);

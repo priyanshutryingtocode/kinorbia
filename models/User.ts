@@ -32,6 +32,20 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: "credentials",
   },
+  emailVerified: {
+    type: Date,
+    default: null,
+  },
+  verifyToken: {
+    token: String,
+    expiresAt: Date,
+    _id: false,
+  },
+  resetToken: {
+    token: String,
+    expiresAt: Date,
+    _id: false,
+  },
   favorites: [
     {
       movieId: { type: String, required: true },

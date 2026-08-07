@@ -48,6 +48,13 @@ Kinorbia is a modern, full-stack movie discovery, tracking, and journaling platf
     NEXTAUTH_URL=http://localhost:3000
     # Add any external Movie API keys here if applicable
     ```
+    *Email verification and password reset use [Resend](https://resend.com). Add:*
+    ```env
+    RESEND_API_KEY=your_resend_api_key
+    EMAIL_FROM=KinOrbia <onboarding@resend.dev>
+    # Base URL used to build verify/reset links (defaults to VERCEL_URL or http://localhost:3000)
+    NEXT_PUBLIC_APP_URL=http://localhost:3000
+    ```
 
 4.  **Run the development server:**
     ```bash

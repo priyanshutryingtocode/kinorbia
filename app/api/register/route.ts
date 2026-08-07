@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 import { slugifyUsername } from "@/lib/userIdentity";
 import { registerSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
+import { generateToken, hashToken, TOKEN_TTL_MS } from "@/lib/token";
+import { sendEmail, buildLink } from "@/lib/email";
 
 export const POST = withRateLimit(
   async (req: Request) => {
@@ -36,13 +38,36 @@ export const POST = withRateLimit(
         suffix += 1;
       }
 
+      const verifyToken = generateToken();
+      const verifyTokenHash = hashToken(verifyToken);
+      const verifyTokenExpiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+
       await User.create({
         name: body.name,
         email: body.email,
         password: hashedPassword,
         provider: "credentials",
         username,
+        verifyToken: {
+          token: verifyTokenHash,
+          expiresAt: verifyTokenExpiresAt,
+        },
       });
+
+      try {
+        await sendEmail({
+          to: body.email,
+          subject: "Verify your KinOrbia email",
+          html: [
+            "<h2>Welcome to KinOrbia</h2>",
+            "<p>Confirm your email address to keep your account secure.</p>",
+            `<p><a href="${buildLink(`/verify-email?token=${verifyToken}`)}">Verify email</a></p>`,
+            "<p>If you did not create this account, you can ignore this email.</p>",
+          ].join("\n"),
+        });
+      } catch (error) {
+        console.error("Failed to send verification email:", error);
+      }
 
       return NextResponse.json({ message: "User registered." }, { status: 201 });
     } catch (error) {
