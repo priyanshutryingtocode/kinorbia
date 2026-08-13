@@ -161,7 +161,7 @@ export default function MovieAssistant() {
     <div className="fixed bottom-5 right-5 z-100">
       {open && (
         <div className="premium-surface mb-4 w-[calc(100vw-2.5rem)] max-w-md overflow-hidden rounded-xl text-white ring-1 ring-white/5">
-          <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-4 py-3">
+          <div className="flex items-center justify-between border-b border-white/10 bg-white/4 px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="rounded-lg border border-red-500/20 bg-red-500/12 p-2 text-red-300 shadow-[0_0_28px_rgba(220,38,38,0.12)]">
                 <Sparkles className="h-5 w-5" />

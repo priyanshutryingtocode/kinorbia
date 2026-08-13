@@ -334,5 +334,5 @@ export const POST = withRateLimit(
       );
     }
   },
-  { windowMs: 60 * 1000, limit: 20 }
+  { windowMs: 60 * 1000, limit: 2 }
 );

@@ -68,5 +68,5 @@ export const POST = withRateLimit(
       return NextResponse.json({ message: "Error updating favorites" }, { status: 500 });
     }
   },
-  { windowMs: 60 * 1000, limit: 60 }
+  { windowMs: 60 * 1000, limit: 20 }
 );

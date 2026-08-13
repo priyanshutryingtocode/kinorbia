@@ -36,5 +36,5 @@ export const POST = withRateLimit(
       return NextResponse.json({ message: "Error updating rating" }, { status: 500 });
     }
   },
-  { windowMs: 60 * 1000, limit: 120 }
+  { windowMs: 60 * 1000, limit: 20 }
 );
