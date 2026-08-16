@@ -64,6 +64,7 @@ export default function AssistantMovieActions({ movie }: { movie: MovieSummary }
           posterPath: movie.poster_path,
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
+          mediaType: movie.mediaType || "movie",
         }),
       });
 
@@ -94,6 +95,7 @@ export default function AssistantMovieActions({ movie }: { movie: MovieSummary }
           movieId: movie.id.toString(),
           movieTitle: movie.title,
           posterPath: movie.poster_path,
+          mediaType: movie.mediaType || "movie",
         }),
       });
 
@@ -131,6 +133,7 @@ export default function AssistantMovieActions({ movie }: { movie: MovieSummary }
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
           rating,
+          mediaType: movie.mediaType || "movie",
         }),
       });
 
@@ -169,6 +172,7 @@ export default function AssistantMovieActions({ movie }: { movie: MovieSummary }
             posterPath: movie.poster_path,
             voteAverage: movie.vote_average,
             releaseDate: movie.release_date,
+            mediaType: movie.mediaType || "movie",
           },
         }),
       });

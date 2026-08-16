@@ -4,6 +4,7 @@ import User from "@/models/User";
 import { getSessionEmail } from "@/lib/session";
 import { rateFavoriteSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
+import { mediaEquals } from "@/lib/media";
 
 export const POST = withRateLimit(
   async (req: Request) => {
@@ -24,6 +25,7 @@ export const POST = withRateLimit(
         {
           email,
           "favorites.movieId": body.movieId,
+          "favorites.mediaType": mediaEquals(body.mediaType),
         },
         {
           $set: { "favorites.$.personalRating": body.rating },

@@ -25,10 +25,16 @@ export const POST = withRateLimit(
       return NextResponse.json({ message: "User not found." }, { status: 404 });
     }
 
-    const exists = user.watchlist?.some((movie: { movieId: string }) => movie.movieId === body.movieId);
+    const exists = user.watchlist?.some(
+      (movie: { movieId: string; mediaType?: string }) =>
+        movie.movieId === body.movieId && (movie.mediaType || "movie") === body.mediaType
+    );
 
     if (exists) {
-      user.watchlist = user.watchlist.filter((movie: { movieId: string }) => movie.movieId !== body.movieId);
+      user.watchlist = user.watchlist.filter(
+        (movie: { movieId: string; mediaType?: string }) =>
+          !(movie.movieId === body.movieId && (movie.mediaType || "movie") === body.mediaType)
+      );
     } else {
       if (!hasCapacity(user.watchlist, MAX_WATCHLIST)) {
         return NextResponse.json({ message: "Watchlist is full." }, { status: 409 });
@@ -40,6 +46,7 @@ export const POST = withRateLimit(
         posterPath: body.posterPath,
         voteAverage: body.voteAverage,
         releaseDate: body.releaseDate,
+        mediaType: body.mediaType,
         addedAt: new Date(),
       });
     }

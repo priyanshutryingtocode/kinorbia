@@ -5,11 +5,15 @@ import { fetchMovies } from "../actions";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
-import { getRecommendationMovies } from "@/lib/tmdb";
+import { getRecommendationMovies, getTvRecommendations } from "@/lib/tmdb";
 import type { FavoriteMovie } from "@/types";
 
-async function fetchRecommendations(movieId: string): Promise<MovieProp[]> {
-  const data = await getRecommendationMovies(movieId);
+async function fetchRecommendations(movie: FavoriteMovie): Promise<MovieProp[]> {
+  if (movie.mediaType === "tv") {
+    const data = await getTvRecommendations(movie.movieId);
+    return data?.results || [];
+  }
+  const data = await getRecommendationMovies(movie.movieId);
   return data?.results || [];
 }
 
@@ -36,7 +40,7 @@ export default async function Home({ searchParams }: Props) {
 
     if (favorite) {
       recommendationSource = favorite.title;
-      recommendations = (await fetchRecommendations(favorite.movieId)).slice(0, 5);
+      recommendations = (await fetchRecommendations(favorite)).slice(0, 5);
     }
   }
 

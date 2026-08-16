@@ -20,7 +20,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
       const res = await fetch("/api/user/favorites/rate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ movieId: selectedMovie.id, rating }),
+        body: JSON.stringify({ movieId: selectedMovie.id, rating, mediaType: selectedMovie.mediaType || "movie" }),
       });
 
       if (res.ok) {
@@ -58,7 +58,8 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
               poster_path: fav.posterPath,
               vote_average: fav.voteAverage,
               release_date: fav.releaseDate,
-              personalRating: fav.personalRating || 0 
+              personalRating: fav.personalRating || 0,
+              mediaType: fav.mediaType || "movie",
             }} 
             onRateClick={setSelectedMovie}
           />

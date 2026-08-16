@@ -12,6 +12,7 @@ type WatchlistButtonProps = {
     poster_path: string | null;
     vote_average: number;
     release_date?: string;
+    mediaType?: "movie" | "tv";
   };
   initialIsWatchlisted: boolean;
 };
@@ -35,6 +36,7 @@ export default function WatchlistButton({ movie, initialIsWatchlisted }: Watchli
           posterPath: movie.poster_path,
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
+          mediaType: movie.mediaType || "movie",
         }),
       });
 

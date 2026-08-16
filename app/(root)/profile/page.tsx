@@ -52,6 +52,7 @@ function serializeFavorites(favorites: RawFavoriteMovie[] = []): FavoriteMovie[]
     voteAverage: favorite.voteAverage || 0,
     releaseDate: favorite.releaseDate,
     personalRating: favorite.personalRating || 0,
+    mediaType: favorite.mediaType || "movie",
   }));
 }
 
@@ -64,6 +65,8 @@ function serializeJournal(entry: RawJournalEntry): JournalItem {
     watchedAt: entry.watchedAt.toISOString(),
     note: entry.note,
     createdAt: entry.createdAt.toISOString(),
+    movieId: entry.movieId,
+    mediaType: entry.mediaType || "movie",
   };
 }
 
@@ -270,8 +273,8 @@ export default async function ProfilePage() {
           </h3>
           {watchlist.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {watchlist.slice(0, 8).map((movie) => (
-                <Link key={movie.movieId} href={`/movie/${movie.movieId}`} className="bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden hover:border-red-500/40 transition">
+{watchlist.slice(0, 8).map((movie) => (
+                <Link key={movie.movieId} href={movie.mediaType === "tv" ? `/tv/${movie.movieId}` : `/movie/${movie.movieId}`} className="bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden hover:border-red-500/40 transition">
                   <div className="relative aspect-2/3 bg-neutral-900">
                     {posterUrl(movie.posterPath) ? (
                       <Image
@@ -379,7 +382,11 @@ function ProfileMovieStrip({ items, emptyText }: { items: JournalItem[]; emptyTe
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {items.map((item) => (
-        <div key={item._id} className="bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden">
+        <Link
+          key={item._id}
+          href={item.mediaType === "tv" ? `/tv/${item.movieId ?? item._id}` : `/movie/${item.movieId ?? item._id}`}
+          className="bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden"
+        >
           <div className="relative aspect-2/3 bg-neutral-900">
             {posterUrl(item.posterPath) ? (
               <Image
@@ -399,7 +406,7 @@ function ProfileMovieStrip({ items, emptyText }: { items: JournalItem[]; emptyTe
             <h4 className="font-medium text-sm truncate">{item.movieTitle}</h4>
             <p className="text-xs text-neutral-500 mt-1">{new Date(item.watchedAt).toLocaleDateString()}</p>
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   );

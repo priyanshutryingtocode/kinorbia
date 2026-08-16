@@ -2,14 +2,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { Film, Search } from "lucide-react";
 import SearchHistory from "@/components/SearchHistory";
-import { searchMovies as searchTmdbMovies, discoverMovies } from "@/lib/tmdb";
+import {
+  searchMovies as searchTmdbMovies,
+  discoverMovies,
+  searchTv as searchTmdbTv,
+  discoverTv,
+} from "@/lib/tmdb";
 import type { MovieSummary } from "@/types";
 
 type SearchResponse = {
   results?: MovieSummary[];
 };
 
-async function searchMovies({
+async function searchContent({
   query,
   year,
   genre,
@@ -17,6 +22,7 @@ async function searchMovies({
   maxRuntime,
   language,
   sort,
+  type,
 }: {
   query: string;
   year: string;
@@ -25,11 +31,14 @@ async function searchMovies({
   maxRuntime: string;
   language: string;
   sort: string;
+  type: "movie" | "tv";
 }): Promise<SearchResponse> {
-  const yearParam = year ? `&primary_release_year=${encodeURIComponent(year)}` : "";
+  const isTv = type === "tv";
+  const yearKey = isTv ? "first_air_date_year" : "primary_release_year";
+  const yearParam = year ? `&${yearKey}=${encodeURIComponent(year)}` : "";
   const ratingParam = minRating ? `&vote_average.gte=${encodeURIComponent(minRating)}` : "";
   const genreParam = genre ? `&with_genres=${encodeURIComponent(genre)}` : "";
-  const runtimeParam = maxRuntime ? `&with_runtime.lte=${encodeURIComponent(maxRuntime)}` : "";
+  const runtimeParam = !isTv && maxRuntime ? `&with_runtime.lte=${encodeURIComponent(maxRuntime)}` : "";
   const languageParam = language ? `&with_original_language=${encodeURIComponent(language)}` : "";
   const sortParam = sort ? `&sort_by=${encodeURIComponent(sort)}` : "&sort_by=popularity.desc";
 
@@ -38,20 +47,22 @@ async function searchMovies({
   }
 
   if (query) {
-    const data = await searchTmdbMovies(query, yearParam);
+    const data = isTv ? await searchTmdbTv(query, yearParam) : await searchTmdbMovies(query, yearParam);
     return { results: data?.results || [] };
   }
 
-  const data = await discoverMovies(yearParam + ratingParam + genreParam + runtimeParam + languageParam + sortParam);
+  const data = isTv
+    ? await discoverTv(yearParam + ratingParam + genreParam + languageParam + sortParam)
+    : await discoverMovies(yearParam + ratingParam + genreParam + runtimeParam + languageParam + sortParam);
   return { results: data?.results || [] };
 }
 
 type SearchPageProps = {
-  searchParams: Promise<{ q?: string; year?: string; minRating?: string; genre?: string; runtime?: string; language?: string; sort?: string }> | { q?: string; year?: string; minRating?: string; genre?: string; runtime?: string; language?: string; sort?: string };
+  searchParams: Promise<{ q?: string; year?: string; minRating?: string; genre?: string; runtime?: string; language?: string; sort?: string; type?: string }> | { q?: string; year?: string; minRating?: string; genre?: string; runtime?: string; language?: string; sort?: string; type?: string };
 };
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const { q, year, minRating, genre, runtime, language, sort } = await Promise.resolve(searchParams);
+  const { q, year, minRating, genre, runtime, language, sort, type } = await Promise.resolve(searchParams);
   const query = typeof q === "string" ? q.trim() : "";
   const releaseYear = typeof year === "string" ? year.trim() : "";
   const minimumRating = typeof minRating === "string" ? Number(minRating) : 0;
@@ -59,7 +70,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const maxRuntime = typeof runtime === "string" ? runtime : "";
   const selectedLanguage = typeof language === "string" ? language : "";
   const selectedSort = typeof sort === "string" ? sort : "";
-  const data = await searchMovies({
+  const mediaType = type === "tv" ? "tv" : "movie";
+  const data = await searchContent({
     query,
     year: releaseYear,
     genre: selectedGenre,
@@ -67,6 +79,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     maxRuntime,
     language: selectedLanguage,
     sort: selectedSort,
+    type: mediaType,
   });
   const movies = (data.results || []).filter((movie) => {
     const matchesRating = !minimumRating || movie.vote_average >= minimumRating;
@@ -82,15 +95,37 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
             Search
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold">Find a Movie</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">Find a {mediaType === "tv" ? "Show" : "Movie"}</h1>
           <p className="text-neutral-400 mt-3 max-w-2xl">
-            Search by title or use filters to discover movies by genre, rating, runtime, language, and release year.
+            {mediaType === "tv"
+              ? "Search by title or use filters to discover TV shows by genre, rating, language, and first air year."
+              : "Search by title or use filters to discover movies by genre, rating, runtime, language, and release year."}
           </p>
         </header>
+
+        <div className="mb-6 inline-flex items-center gap-1 rounded-full border border-white/10 bg-neutral-900/50 p-1">
+          <Link
+            href={mediaType === "movie" ? "?type=movie" : "?type=movie"}
+            className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+              mediaType === "movie" ? "bg-red-600 text-white" : "text-neutral-400 hover:text-white"
+            }`}
+          >
+            Movies
+          </Link>
+          <Link
+            href="?type=tv"
+            className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+              mediaType === "tv" ? "bg-red-600 text-white" : "text-neutral-400 hover:text-white"
+            }`}
+          >
+            Shows
+          </Link>
+        </div>
 
         <SearchHistory query={query} />
 
         <form action="/search" className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 mb-10">
+          <input type="hidden" name="type" value={mediaType} />
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
             <input
@@ -114,7 +149,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               min="1888"
               max="2100"
               defaultValue={releaseYear}
-              placeholder="Release year"
+              placeholder={mediaType === "tv" ? "First air year" : "Release year"}
               className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500"
             />
             <select
@@ -133,24 +168,44 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               defaultValue={selectedGenre}
               className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
             >
-              <option value="">Any genre</option>
-              <option value="28">Action</option>
-              <option value="35">Comedy</option>
-              <option value="18">Drama</option>
-              <option value="27">Horror</option>
-              <option value="878">Sci-Fi</option>
-              <option value="53">Thriller</option>
+              {mediaType === "tv" ? (
+                <>
+                  <option value="">Any genre</option>
+                  <option value="10759">Action & Adventure</option>
+                  <option value="16">Animation</option>
+                  <option value="35">Comedy</option>
+                  <option value="80">Crime</option>
+                  <option value="99">Documentary</option>
+                  <option value="18">Drama</option>
+                  <option value="10751">Family</option>
+                  <option value="9648">Mystery</option>
+                  <option value="10765">Sci-Fi & Fantasy</option>
+                  <option value="10768">War & Politics</option>
+                </>
+              ) : (
+                <>
+                  <option value="">Any genre</option>
+                  <option value="28">Action</option>
+                  <option value="35">Comedy</option>
+                  <option value="18">Drama</option>
+                  <option value="27">Horror</option>
+                  <option value="878">Sci-Fi</option>
+                  <option value="53">Thriller</option>
+                </>
+              )}
             </select>
-            <select
-              name="runtime"
-              defaultValue={maxRuntime}
-              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
-            >
-              <option value="">Any runtime</option>
-              <option value="90">Under 90 min</option>
-              <option value="120">Under 2 hours</option>
-              <option value="150">Under 2.5 hours</option>
-            </select>
+            {mediaType === "movie" && (
+              <select
+                name="runtime"
+                defaultValue={maxRuntime}
+                className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
+              >
+                <option value="">Any runtime</option>
+                <option value="90">Under 90 min</option>
+                <option value="120">Under 2 hours</option>
+                <option value="150">Under 2.5 hours</option>
+              </select>
+            )}
             <select
               name="language"
               defaultValue={selectedLanguage}
@@ -170,19 +225,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             >
               <option value="popularity.desc">Most popular</option>
               <option value="vote_average.desc">Highest rated</option>
-              <option value="primary_release_date.desc">Newest</option>
-              <option value="revenue.desc">Box office</option>
+              <option value={mediaType === "tv" ? "first_air_date.desc" : "primary_release_date.desc"}>Newest</option>
+              {mediaType === "movie" && <option value="revenue.desc">Box office</option>}
             </select>
           </div>
         </form>
 
         {!query && !releaseYear && !selectedGenre && !minimumRating && !maxRuntime && !selectedLanguage ? (
           <div className="border border-dashed border-white/10 rounded-xl p-10 text-center text-neutral-500">
-            Type a movie title or choose filters to start discovering.
+            Type a {mediaType === "tv" ? "show" : "movie"} title or choose filters to start discovering.
           </div>
         ) : movies.length === 0 ? (
           <div className="border border-dashed border-white/10 rounded-xl p-10 text-center text-neutral-500">
-            No movies found for <span className="text-neutral-300">{query}</span>.
+            No {mediaType === "tv" ? "shows" : "movies"} found for <span className="text-neutral-300">{query}</span>.
           </div>
         ) : (
           <>
@@ -192,8 +247,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
               {movies.map((movie) => (
                 <Link
-                  key={movie.id}
-                  href={`/movie/${movie.id}`}
+                  key={`${movie.mediaType || "movie"}-${movie.id}`}
+                  href={movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`}
                   className="group relative block bg-neutral-900/60 border border-white/5 rounded-xl overflow-hidden hover:border-red-500/40 transition"
                 >
                   <div className="relative aspect-2/3 bg-neutral-800">

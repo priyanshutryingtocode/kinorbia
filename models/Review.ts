@@ -13,6 +13,11 @@ const ReviewSchema = new mongoose.Schema({
   movieId: {
     type: String,
   },
+  mediaType: {
+    type: String,
+    enum: ["movie", "tv"],
+    default: "movie",
+  },
   movieTitle: {
     type: String,
     required: true,

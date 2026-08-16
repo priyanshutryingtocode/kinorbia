@@ -117,8 +117,8 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
             {list.movies.map((movie) => (
               <Link
-                key={movie.movieId}
-                href={`/movie/${movie.movieId}`}
+                key={`${movie.mediaType || "movie"}-${movie.movieId}`}
+                href={movie.mediaType === "tv" ? `/tv/${movie.movieId}` : `/movie/${movie.movieId}`}
                 className="group bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden hover:border-red-500/40 transition"
               >
                 <div className="relative aspect-2/3 bg-neutral-900">

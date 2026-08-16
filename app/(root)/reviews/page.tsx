@@ -99,7 +99,7 @@ export default async function ReviewsPage() {
                     >
                       <option value="">Manual movie title</option>
                       {favorites.map((movie) => (
-                        <option key={movie.movieId} value={movie.movieId}>
+                        <option key={`${movie.mediaType || "movie"}-${movie.movieId}`} value={`${movie.mediaType || "movie"}:${movie.movieId}`}>
                           {movie.title}
                         </option>
                       ))}

@@ -5,6 +5,11 @@ const ListMovieSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  mediaType: {
+    type: String,
+    enum: ["movie", "tv"],
+    default: "movie",
+  },
   title: {
     type: String,
     required: true,

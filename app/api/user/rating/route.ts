@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/session";
 import { rateMovieSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
 import { hasCapacity, MAX_FAVORITES } from "@/lib/bounds";
+import { mediaEquals } from "@/lib/media";
 
 export const POST = withRateLimit(
   async (req: Request) => {
@@ -22,12 +23,14 @@ export const POST = withRateLimit(
 
       const normalizedMovieId = body.movieId;
       const clampedRating = body.rating;
+      const normalizedMediaType = body.mediaType;
 
       await dbConnect();
       const updateFavorite = await User.updateOne(
         {
           email,
           "favorites.movieId": normalizedMovieId,
+          "favorites.mediaType": mediaEquals(normalizedMediaType),
         },
         {
           $set: {
@@ -65,6 +68,7 @@ export const POST = withRateLimit(
                 voteAverage: body.voteAverage,
                 releaseDate: body.releaseDate,
                 personalRating: clampedRating,
+                mediaType: normalizedMediaType,
               },
             },
           }
@@ -72,7 +76,7 @@ export const POST = withRateLimit(
       }
 
       await JournalEntry.updateOne(
-        { userEmail: email, movieId: normalizedMovieId },
+        { userEmail: email, movieId: normalizedMovieId, mediaType: mediaEquals(normalizedMediaType) },
         {
           $set: {
             rating: clampedRating,
@@ -83,6 +87,7 @@ export const POST = withRateLimit(
             userEmail: email,
             userName: name || "KinOrbia user",
             movieId: normalizedMovieId,
+            mediaType: normalizedMediaType,
             watchedAt: new Date(),
           },
         },

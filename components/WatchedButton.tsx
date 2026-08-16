@@ -10,6 +10,7 @@ type WatchedButtonProps = {
     id: string;
     title: string;
     poster_path: string | null;
+    mediaType?: "movie" | "tv";
   };
   initialIsWatched: boolean;
 };
@@ -35,6 +36,7 @@ export default function WatchedButton({ movie, initialIsWatched }: WatchedButton
           movieId: movie.id,
           movieTitle: movie.title,
           posterPath: movie.poster_path,
+          mediaType: movie.mediaType || "movie",
         }),
       });
 

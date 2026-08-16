@@ -10,6 +10,7 @@ export interface CarouselMovie {
   title: string;
   poster_path: string | null;
   release_date: string;
+  mediaType?: "movie" | "tv";
 }
 
 export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
@@ -38,9 +39,9 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
         className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-6 hide-scrollbar scroll-smooth sm:gap-5"
       >
         {movies.map((movie) => (
-          <Link 
-            key={movie.id} 
-            href={`/movie/${movie.id}`}
+<Link 
+            key={`${movie.mediaType || "movie"}-${movie.id}`} 
+            href={movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`}
             className="kin-focus group/card relative w-32 shrink-0 snap-start overflow-hidden rounded-lg border border-white/8 bg-neutral-950 transition-all duration-300 hover:-translate-y-1 hover:border-white/18 hover:shadow-[0_24px_60px_-42px_rgba(220,38,38,0.45)] sm:w-36 md:w-44"
             aria-label={movie.title}
           >

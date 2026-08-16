@@ -17,6 +17,7 @@ const STARTERS = [
   "Something cozy and funny tonight",
   "A tense thriller under 2 hours",
   "Movies like Dune but more emotional",
+  "A TV series worth binging",
 ];
 
 const GREETING: ChatMessage = {
@@ -198,11 +199,11 @@ export default function MovieAssistant() {
                   <div className="mt-3 grid grid-cols-1 gap-2 text-left">
                     {message.movies.map((movie) => (
                       <div
-                        key={movie.id}
+                        key={`${movie.mediaType || "movie"}-${movie.id}`}
                         className="rounded-lg border border-white/10 bg-black/25 p-2 transition hover:border-red-500/50 hover:bg-white/8"
                       >
                         <Link
-                          href={`/movie/${movie.id}`}
+                          href={movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`}
                           onClick={() => setOpen(false)}
                           className="flex gap-3"
                         >

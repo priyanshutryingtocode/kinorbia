@@ -24,6 +24,7 @@ function serializeEntry(entry: RawJournalEntry): JournalItem {
     watchedAt: entry.watchedAt.toISOString(),
     note: entry.note,
     createdAt: entry.createdAt.toISOString(),
+    mediaType: entry.mediaType || "movie",
   };
 }
 
@@ -89,7 +90,7 @@ export default async function JournalPage() {
                   >
                     <option value="">Manual movie title</option>
                     {favorites.map((movie) => (
-                      <option key={movie.movieId} value={movie.movieId}>
+                      <option key={`${movie.mediaType || "movie"}-${movie.movieId}`} value={`${movie.mediaType || "movie"}:${movie.movieId}`}>
                         {movie.title}
                       </option>
                     ))}

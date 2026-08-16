@@ -1,4 +1,4 @@
-import type { MovieSummary, TmdbMovieDetails, TmdbMovieCredits } from "@/types";
+import type { MovieSummary, TmdbMovieDetails, TmdbMovieCredits, TmdbTvDetails, TmdbTvCredits } from "@/types";
 
 const BASE = "https://api.themoviedb.org/3";
 
@@ -90,3 +90,92 @@ export const getMovieCredits = (id: string) =>
 
 export const getRecommendationMovies = (id: string) =>
   tmdbFetch<ResultList<MovieSummary>>(`/movie/${id}/recommendations?language=en-US&page=1`, 3600);
+
+type RawTvResult = {
+  id: number;
+  name?: string;
+  poster_path?: string | null;
+  first_air_date?: string;
+  vote_average?: number;
+  genre_ids?: number[];
+  original_language?: string;
+};
+
+export function normalizeTvResult(result: RawTvResult): MovieSummary {
+  return {
+    id: result.id,
+    title: result.name || "Unknown",
+    poster_path: result.poster_path ?? null,
+    release_date: result.first_air_date,
+    vote_average: result.vote_average || 0,
+    genre_ids: result.genre_ids,
+    original_language: result.original_language,
+    mediaType: "tv",
+  };
+}
+
+export const getPopularTv = (page = 1) =>
+  tmdbFetch<ResultList<RawTvResult>>(`/tv/popular?language=en-US&page=${page}`, 3600).then((data) => ({
+    results: data?.results?.map(normalizeTvResult) || [],
+  }));
+
+export const getDiscoverTv = (page = 1, genre?: string) =>
+  tmdbFetch<ResultList<RawTvResult>>(
+    `/discover/tv?with_genres=${genre}&language=en-US&page=${page}`,
+    3600
+  ).then((data) => ({
+    results: data?.results?.map(normalizeTvResult) || [],
+  }));
+
+export const discoverTv = (extraParams = "", page = 1) => {
+  const params = extraParams.replace(/^&/, "");
+  return tmdbFetch<ResultList<RawTvResult>>(
+    `/discover/tv?${params ? `${params}&` : ""}language=en-US&page=${page}`,
+    300
+  ).then((data) => ({
+    results: data?.results?.map(normalizeTvResult) || [],
+  }));
+};
+
+export const searchTv = (query: string, extraParams = "") =>
+  tmdbFetch<ResultList<RawTvResult>>(
+    `/search/tv?query=${encodeURIComponent(query)}${extraParams}`,
+    3600
+  ).then((data) => ({
+    results: data?.results?.map(normalizeTvResult) || [],
+  }));
+
+export const getTv = (id: string) => tmdbFetch<TmdbTvDetails>(`/tv/${id}`, 3600);
+
+export async function getTvWithStatus(id: string): Promise<{
+  tv: TmdbTvDetails | null;
+  notFound: boolean;
+}> {
+  const url = `${BASE}/tv/${id}?api_key=${process.env.TMDB_API_KEY}`;
+
+  try {
+    const res = await fetch(url, { next: { revalidate: 3600 } });
+
+    if (res.status === 404) {
+      return { tv: null, notFound: true };
+    }
+
+    if (!res.ok) {
+      return { tv: null, notFound: false };
+    }
+
+    return { tv: (await res.json()) as TmdbTvDetails, notFound: false };
+  } catch {
+    return { tv: null, notFound: false };
+  }
+}
+
+export const getTvCredits = (id: string) =>
+  tmdbFetch<TmdbTvCredits | null>(`/tv/${id}/credits?language=en-US`, 3600);
+
+export const getTvRecommendations = (id: string) =>
+  tmdbFetch<ResultList<RawTvResult>>(`/tv/${id}/recommendations?language=en-US&page=1`, 3600).then(
+    (data) => ({
+      results: data?.results?.map(normalizeTvResult) || [],
+    })
+  );

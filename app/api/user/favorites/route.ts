@@ -5,6 +5,7 @@ import { getSessionEmail } from "@/lib/session";
 import { movieRefSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
 import { hasCapacity, MAX_FAVORITES } from "@/lib/bounds";
+import { mediaEquals } from "@/lib/media";
 import type { FavoriteMovie } from "@/types";
 
 export const POST = withRateLimit(
@@ -30,14 +31,15 @@ export const POST = withRateLimit(
       }
 
       const normalizedMovieId = body.movieId;
+      const normalizedMediaType = body.mediaType;
       const isFavorite = user.favorites.some(
-        (fav: FavoriteMovie) => fav.movieId === normalizedMovieId
+        (fav: FavoriteMovie) => fav.movieId === normalizedMovieId && (fav.mediaType || "movie") === normalizedMediaType
       );
 
       if (isFavorite) {
         await User.updateOne(
           { email },
-          { $pull: { favorites: { movieId: normalizedMovieId } } }
+          { $pull: { favorites: { movieId: normalizedMovieId, mediaType: mediaEquals(normalizedMediaType) } } }
         );
 
         return NextResponse.json({ isFavorite: false, message: "Removed from favorites" });
@@ -57,6 +59,7 @@ export const POST = withRateLimit(
               posterPath: body.posterPath,
               voteAverage: body.voteAverage,
               releaseDate: body.releaseDate,
+              mediaType: normalizedMediaType,
             },
           },
         }

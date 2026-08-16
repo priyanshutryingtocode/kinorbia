@@ -9,28 +9,28 @@ import MovieRatingControl from "@/components/MovieRatingControl";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Calendar, Clock, Film, Star } from "lucide-react";
-import type { FavoriteMovie, TmdbMovieCredits, TmdbMovieDetails } from "@/types";
-import SimilarMovies from "@/components/SimilarMovies";
+import { Calendar, Clapperboard, Layers, Star } from "lucide-react";
+import type { FavoriteMovie, TmdbTvCredits, TmdbTvDetails } from "@/types";
+import SimilarShows from "@/components/SimilarShows";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
-import { getMovieWithStatus, getMovieCredits } from "@/lib/tmdb";
+import { getTvWithStatus, getTvCredits } from "@/lib/tmdb";
 
-async function getMovieDetails(id: string): Promise<TmdbMovieDetails> {
-  const { movie, notFound: missing } = await getMovieWithStatus(id);
+async function getTvDetails(id: string): Promise<TmdbTvDetails> {
+  const { tv, notFound: missing } = await getTvWithStatus(id);
 
   if (missing) {
     notFound();
   }
 
-  if (!movie) {
-    throw new Error("Failed to load movie");
+  if (!tv) {
+    throw new Error("Failed to load show");
   }
 
-  return movie;
+  return tv;
 }
 
-async function getCredits(id: string): Promise<TmdbMovieCredits> {
-  const credits = await getMovieCredits(id);
+async function getCredits(id: string): Promise<TmdbTvCredits> {
+  const credits = await getTvCredits(id);
   return credits || { id: Number(id), cast: [], crew: [] };
 }
 
@@ -38,17 +38,16 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-export default async function MoviePage({ params }: Props) {
-
+export default async function TvPage({ params }: Props) {
   const { id } = await params;
-  const [movie, credits] = await Promise.all([getMovieDetails(id), getCredits(id)]);
+  const [tv, credits] = await Promise.all([getTvDetails(id), getCredits(id)]);
   const session = await auth();
 
   let isFavorite = false;
   let isWatched = false;
   let isWatchlisted = false;
   let personalRating = 0;
-  
+
   if (session?.user?.email) {
     await dbConnect();
     const user = await User.findOne({ email: session.user.email }).lean<{
@@ -56,9 +55,9 @@ export default async function MoviePage({ params }: Props) {
       watchlist?: FavoriteMovie[];
     } | null>();
 
-if (user?.favorites) {
+    if (user?.favorites) {
       const favorite = user.favorites.find(
-        (fav) => fav.movieId === id.toString() && (fav.mediaType || "movie") === "movie"
+        (fav) => fav.movieId === id.toString() && (fav.mediaType || "movie") === "tv"
       );
       isFavorite = Boolean(favorite);
       personalRating = favorite?.personalRating || 0;
@@ -66,38 +65,41 @@ if (user?.favorites) {
 
     isWatchlisted = Boolean(
       user?.watchlist?.some(
-        (item) => item.movieId === id.toString() && (item.mediaType || "movie") === "movie"
+        (item) => item.movieId === id.toString() && (item.mediaType || "movie") === "tv"
       )
     );
 
     const journalEntry = await JournalEntry.findOne({
       userEmail: session.user.email,
       movieId: id.toString(),
-      mediaType: { $in: ["movie", null] },
+      mediaType: "tv",
     }).lean<{ rating?: number } | null>();
 
     isWatched = Boolean(journalEntry);
     personalRating = personalRating || journalEntry?.rating || 0;
   }
 
-  const releaseYear = movie.release_date ? movie.release_date.split("-")[0] : "TBA";
-  const runtime = typeof movie.runtime === "number" ? movie.runtime : 0;
-  const hours = Math.floor(runtime / 60);
-  const minutes = runtime % 60;
-  const runtimeLabel = runtime > 0 ? `${hours}h ${minutes}m` : "Runtime TBA";
+  const releaseYear = tv.first_air_date ? tv.first_air_date.split("-")[0] : "TBA";
   const ratingLabel =
-    typeof movie.vote_average === "number" ? movie.vote_average.toFixed(1) : "N/A";
+    typeof tv.vote_average === "number" ? tv.vote_average.toFixed(1) : "N/A";
 
-  const directors = credits.crew.filter((member) => member.job === "Director");
-  const producers = credits.crew.filter((member) => member.job === "Producer");
   const topCast = [...credits.cast].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).slice(0, 6);
+
+  const show = {
+    id: tv.id.toString(),
+    title: tv.name,
+    poster_path: tv.poster_path,
+    vote_average: tv.vote_average || 0,
+    release_date: tv.first_air_date,
+    mediaType: "tv" as const,
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden pb-20 text-white">
       <div className="absolute inset-x-0 top-0 h-[42vh] opacity-50 sm:h-[52vh]">
-        {movie.backdrop_path && (
+        {tv.backdrop_path && (
           <Image
-            src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
+            src={`https://image.tmdb.org/t/p/original${tv.backdrop_path}`}
             alt=""
             fill
             priority
@@ -111,10 +113,10 @@ if (user?.favorites) {
       <div className="relative z-10 mx-auto max-w-6xl px-4 pt-28 sm:px-6 sm:pt-32">
         <div className="grid gap-8 lg:grid-cols-[minmax(260px,360px)_1fr] lg:gap-12">
           <div className="mx-auto w-full max-w-67.5 sm:max-w-82.5 lg:max-w-none">
-            {movie.poster_path ? (
+            {tv.poster_path ? (
               <Image
-                src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                alt={movie.title}
+                src={`https://image.tmdb.org/t/p/w500${tv.poster_path}`}
+                alt={tv.name}
                 width={320}
                 height={480}
                 priority
@@ -122,7 +124,7 @@ if (user?.favorites) {
               />
             ) : (
               <div className="flex aspect-2/3 w-full rotate-1 items-center justify-center rounded-lg border border-white/10 bg-neutral-900 shadow-[0_28px_80px_-44px_rgba(0,0,0,0.95)] transition-transform duration-500 hover:rotate-0">
-                <Film className="h-10 w-10 text-neutral-700" />
+                <Clapperboard className="h-10 w-10 text-neutral-700" />
               </div>
             )}
           </div>
@@ -132,11 +134,11 @@ if (user?.favorites) {
               {releaseYear}
             </p>
             <h1 className="max-w-3xl text-4xl font-bold leading-tight text-white sm:text-5xl">
-              {movie.title}
+              {tv.name}
             </h1>
-            {movie.tagline && (
+            {tv.tagline && (
               <p className="mt-3 max-w-2xl text-base leading-7 text-neutral-400 sm:text-lg">
-                {movie.tagline}
+                {tv.tagline}
               </p>
             )}
 
@@ -145,13 +147,15 @@ if (user?.favorites) {
                 <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
                 <span>{ratingLabel}</span>
               </div>
-              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 backdrop-blur-md">
-                <Clock className="h-4 w-4 text-neutral-400" />
-                <span>{runtimeLabel}</span>
-              </div>
+              {tv.number_of_seasons != null && (
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 backdrop-blur-md">
+                  <Layers className="h-4 w-4 text-neutral-400" />
+                  <span>{tv.number_of_seasons} {tv.number_of_seasons === 1 ? "season" : "seasons"}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 backdrop-blur-md">
                 <Calendar className="h-4 w-4 text-neutral-400" />
-                <span>{movie.release_date || "Release date TBA"}</span>
+                <span>{tv.first_air_date || "Release date TBA"}</span>
               </div>
               {personalRating > 0 && (
                 <div className="flex items-center gap-2 rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1.5 text-yellow-300">
@@ -163,77 +167,18 @@ if (user?.favorites) {
 
             <div className="mt-8 rounded-lg border border-white/10 bg-neutral-950/70 p-4 backdrop-blur-xl sm:p-5">
               <div className="flex flex-wrap items-center gap-3">
-                <FavoriteButton 
-                  movie={{
-                    id: movie.id.toString(),
-                    title: movie.title,
-                    poster_path: movie.poster_path,
-                    vote_average: movie.vote_average || 0,
-                    release_date: movie.release_date
-                  }}
-                  initialIsFavorite={isFavorite}
-                />
-                <WatchedButton
-                  movie={{
-                    id: movie.id.toString(),
-                    title: movie.title,
-                    poster_path: movie.poster_path,
-                  }}
-                  initialIsWatched={isWatched}
-                />
-                <WatchlistButton
-                  movie={{
-                    id: movie.id.toString(),
-                    title: movie.title,
-                    poster_path: movie.poster_path,
-                    vote_average: movie.vote_average || 0,
-                    release_date: movie.release_date,
-                  }}
-                  initialIsWatchlisted={isWatchlisted}
-                />
-<div className="mt-3 w-full sm:mt-0 sm:w-auto sm:flex-1 sm:min-w-0">
-                  <MovieRatingControl
-                    movie={{
-                      id: movie.id.toString(),
-                      title: movie.title,
-                      poster_path: movie.poster_path,
-                      vote_average: movie.vote_average || 0,
-                      release_date: movie.release_date,
-                    }}
-                    initialRating={personalRating}
-                  />
+                <FavoriteButton movie={show} initialIsFavorite={isFavorite} />
+                <WatchedButton movie={show} initialIsWatched={isWatched} />
+                <WatchlistButton movie={show} initialIsWatchlisted={isWatchlisted} />
+                <div className="mt-3 w-full sm:mt-0 sm:w-auto sm:flex-1 sm:min-w-0">
+                  <MovieRatingControl movie={show} initialRating={personalRating} />
                 </div>
               </div>
             </div>
 
             <p className="mt-8 max-w-3xl text-base leading-8 text-neutral-300 sm:text-lg">
-              {movie.overview || "No overview is available for this movie yet."}
+              {tv.overview || "No overview is available for this show yet."}
             </p>
-
-            {(directors.length > 0 || producers.length > 0) && (
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                {directors.length > 0 && (
-                  <div className="rounded-lg border border-white/10 bg-neutral-900/50 p-4">
-                    <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                      Director{directors.length > 1 ? "s" : ""}
-                    </h3>
-                    <p className="text-base font-semibold text-white">
-                      {directors.map((member) => member.name).join(", ")}
-                    </p>
-                  </div>
-                )}
-                {producers.length > 0 && (
-                  <div className="rounded-lg border border-white/10 bg-neutral-900/50 p-4">
-                    <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
-                      Producer{producers.length > 1 ? "s" : ""}
-                    </h3>
-                    <p className="text-base font-semibold text-white">
-                      {producers.map((member) => member.name).join(", ")}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
@@ -269,13 +214,12 @@ if (user?.favorites) {
         )}
 
         <Suspense fallback={null}>
-          <MovieReviewsAndLists movieId={id} />
+          <MovieReviewsAndLists movieId={id} mediaType="tv" />
         </Suspense>
 
         <Suspense fallback={null}>
-          <SimilarMovies movieId={id} />
+          <SimilarShows showId={id} />
         </Suspense>
-        
       </div>
     </div>
   );

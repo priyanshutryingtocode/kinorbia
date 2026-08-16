@@ -2,11 +2,18 @@ import Link from "next/link";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
+import { mediaMatch, mediaEquals } from "@/lib/media";
 
-export default async function MovieReviewsAndLists({ movieId }: { movieId: string }) {
+export default async function MovieReviewsAndLists({
+  movieId,
+  mediaType = "movie",
+}: {
+  movieId: string;
+  mediaType?: "movie" | "tv";
+}) {
   await dbConnect();
   const [publicReviews, publicLists] = await Promise.all([
-    Review.find({ movieId, visibility: "public" })
+    Review.find({ movieId, ...mediaMatch(mediaType), visibility: "public" })
       .sort({ createdAt: -1 })
       .limit(4)
       .lean<{
@@ -16,7 +23,7 @@ export default async function MovieReviewsAndLists({ movieId }: { movieId: strin
         body: string;
         createdAt: Date;
       }[]>(),
-    MovieList.find({ "movies.movieId": movieId, visibility: "public" })
+    MovieList.find({ "movies.movieId": movieId, "movies.mediaType": mediaEquals(mediaType), visibility: "public" })
       .sort({ createdAt: -1 })
       .limit(4)
       .lean<{

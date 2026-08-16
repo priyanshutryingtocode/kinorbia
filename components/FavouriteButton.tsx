@@ -12,6 +12,7 @@ interface FavButtonProps {
     poster_path: string | null;
     vote_average: number;
     release_date?: string;
+    mediaType?: "movie" | "tv";
   };
   initialIsFavorite: boolean;
 }
@@ -34,6 +35,7 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
           posterPath: movie.poster_path,
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
+          mediaType: movie.mediaType || "movie",
         }),
       });
 

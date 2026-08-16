@@ -8,6 +8,7 @@ export const movieRefSchema = z.object({
   voteAverage: z.coerce.number().min(0).max(10).optional().default(0),
   releaseDate: z.string().trim().max(40).nullish().transform((v) => v ?? null),
   personalRating: z.coerce.number().min(0).max(10).optional(),
+  mediaType: z.enum(["movie", "tv"]).optional().default("movie"),
 });
 
 export const rateMovieSchema = movieRefSchema.extend({
@@ -17,6 +18,7 @@ export const rateMovieSchema = movieRefSchema.extend({
 export const rateFavoriteSchema = z.object({
   movieId: z.union([z.string(), z.number()]).transform(String),
   rating: z.coerce.number().min(1).max(10),
+  mediaType: z.enum(["movie", "tv"]).optional().default("movie"),
 });
 
 export const updateProfileSchema = z.object({

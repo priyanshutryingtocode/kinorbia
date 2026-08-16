@@ -43,12 +43,21 @@ export const POST = withRateLimit(
         return badRequest("List and movie are required.");
       }
 
+      const mediaMatch = body.movie.mediaType === "tv" ? "tv" : { $ne: "tv" };
+
       await dbConnect();
       const result = await MovieList.updateOne(
         {
           _id: body.listId,
           userEmail: email,
-          "movies.movieId": { $ne: body.movie.movieId },
+          movies: {
+            $not: {
+              $elemMatch: {
+                movieId: body.movie.movieId,
+                mediaType: mediaMatch,
+              },
+            },
+          },
         },
         {
           $push: {
@@ -59,6 +68,7 @@ export const POST = withRateLimit(
               voteAverage: body.movie.voteAverage,
               releaseDate: body.movie.releaseDate,
               personalRating: body.movie.personalRating,
+              mediaType: body.movie.mediaType,
             },
           },
         }

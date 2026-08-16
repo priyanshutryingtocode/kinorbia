@@ -118,13 +118,13 @@ export default async function ListsPage() {
                     <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
                       {favorites.map((movie) => (
                         <label
-                          key={movie.movieId}
+                          key={`${movie.mediaType || "movie"}-${movie.movieId}`}
                           className="flex items-center gap-3 bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 cursor-pointer hover:border-red-500/50"
                         >
                           <input
                             type="checkbox"
                             name="movieIds"
-                            value={movie.movieId}
+                            value={`${movie.mediaType || "movie"}:${movie.movieId}`}
                             className="accent-red-600"
                           />
                           <span className="text-sm text-neutral-200 truncate">{movie.title}</span>
@@ -275,14 +275,18 @@ export default async function ListsPage() {
                             <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
                               {favorites.map((movie) => (
                                 <label
-                                  key={movie.movieId}
+                                  key={`${movie.mediaType || "movie"}-${movie.movieId}`}
                                   className="flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-neutral-200"
                                 >
                                   <input
                                     type="checkbox"
                                     name="movieIds"
-                                    value={movie.movieId}
-                                    defaultChecked={list.movies.some((item) => item.movieId === movie.movieId)}
+                                    value={`${movie.mediaType || "movie"}:${movie.movieId}`}
+                                    defaultChecked={list.movies.some(
+                                      (item) =>
+                                        item.movieId === movie.movieId &&
+                                        (item.mediaType || "movie") === (movie.mediaType || "movie")
+                                    )}
                                     className="accent-red-600"
                                   />
                                   <span className="truncate">{movie.title}</span>

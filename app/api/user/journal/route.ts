@@ -5,11 +5,13 @@ import { getSessionUser } from "@/lib/session";
 import { parseBody, badRequest } from "@/lib/validators";
 import { z } from "zod";
 import { withRateLimit } from "@/lib/rateLimit";
+import { mediaEquals } from "@/lib/media";
 
 const markWatchedSchema = z.object({
   movieId: z.union([z.string(), z.number()]).transform(String),
   movieTitle: z.string().trim().min(1).max(120),
   posterPath: z.string().trim().max(500).nullish().transform((v) => v ?? null),
+  mediaType: z.enum(["movie", "tv"]).optional().default("movie"),
 });
 
 export const POST = withRateLimit(
@@ -31,12 +33,14 @@ export const POST = withRateLimit(
         {
           userEmail: email,
           movieId: body.movieId,
+          mediaType: mediaEquals(body.mediaType),
         },
         {
           $setOnInsert: {
             userEmail: email,
             userName: name || "KinOrbia user",
             movieId: body.movieId,
+            mediaType: body.mediaType,
             movieTitle: body.movieTitle,
             posterPath: body.posterPath,
             watchedAt: new Date(),

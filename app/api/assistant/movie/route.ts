@@ -6,7 +6,7 @@ import JournalEntry from "@/models/JournalEntry";
 import Conversation, { MAX_CONVERSATION_MESSAGES } from "@/models/Conversation";
 import { assistantPromptSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
-import { searchMovies, getRecommendationMovies } from "@/lib/tmdb";
+import { searchMovies, getRecommendationMovies, searchTv, getTvRecommendations } from "@/lib/tmdb";
 import type { FavoriteMovie, MovieSummary } from "@/types";
 
 type Role = "user" | "assistant";
@@ -76,6 +76,10 @@ function hasQualifier(prompt: string) {
   return qualifiers.test(prompt);
 }
 
+function isTvRequest(prompt: string) {
+  return /\b(?:tv show|tv series|tv|series|show|shows|episode|season|bingewatch|binge-watch)\b/i.test(prompt);
+}
+
 async function getUserContext(email?: string | null) {
   if (!email) {
     return {
@@ -104,7 +108,8 @@ async function getGeminiPlan(
   prompt: string,
   history: AssistantMessage[],
   context: Awaited<ReturnType<typeof getUserContext>>,
-  seed?: GeminiSeed
+  seed?: GeminiSeed,
+  mediaType: "movie" | "tv" = "movie"
 ) {
   const apiKey = process.env.GEMINI_API_KEY;
 
@@ -112,12 +117,16 @@ async function getGeminiPlan(
     throw new Error("Missing GEMINI_API_KEY");
   }
 
+  const isTv = mediaType === "tv";
+  const noun = isTv ? "TV show" : "movie";
+  const nounPlural = isTv ? "TV shows" : "movies";
+
   const systemPrompt = [
-    "You are KinOrbia's movie assistant.",
-    "Recommend movies based on the user's mood, constraints, and history.",
-    "Avoid recommending movies the user has already watched unless they explicitly ask for rewatches.",
-    "Return only JSON with this shape: {\"reply\":\"short helpful response\",\"titles\":[\"Movie title\", \"Movie title\"]}.",
-    "Use 3 to 6 movie titles. Keep reply under 70 words.",
+    `You are KinOrbia's ${isTv ? "TV show" : "movie"} assistant.`,
+    `Recommend ${nounPlural} based on the user's mood, constraints, and history.`,
+    `Avoid recommending ${nounPlural} the user has already watched unless they explicitly ask for rewatches.`,
+    `Return only JSON with this shape: {"reply":"short helpful response","titles":["${isTv ? "Show title" : "Movie title"}", "${isTv ? "Show title" : "Movie title"}"]}.`,
+    `Use 3 to 6 ${noun} titles. Keep reply under 70 words.`,
   ].join(" ");
 
   const historyText = history.length
@@ -179,8 +188,8 @@ async function getGeminiPlan(
   return parseGeminiJson(text);
 }
 
-async function searchTmdbTitle(title: string) {
-  const data = await searchMovies(title);
+async function searchTmdbTitle(title: string, mediaType: "movie" | "tv" = "movie") {
+  const data = mediaType === "tv" ? await searchTv(title) : await searchMovies(title);
 
   if (!data?.results?.length) {
     return null;
@@ -189,8 +198,9 @@ async function searchTmdbTitle(title: string) {
   return data.results.find((movie) => movie.poster_path) || data.results[0];
 }
 
-async function getTmdbRecommendations(movieId: string) {
-  const data = await getRecommendationMovies(movieId);
+async function getTmdbRecommendations(id: string, mediaType: "movie" | "tv" = "movie") {
+  const data =
+    mediaType === "tv" ? await getTvRecommendations(id) : await getRecommendationMovies(id);
   return (data?.results || []).slice(0, 6);
 }
 
@@ -271,18 +281,24 @@ export const POST = withRateLimit(
       }
 
       const prompt = body.message;
+      const mediaType = isTvRequest(prompt) ? "tv" : "movie";
       const session = await auth();
       const email = session?.user?.email ? session.user.email.toLowerCase() : null;
       const context = await getUserContext(email);
 
       const referencedTitle = getReferencedTitle(prompt);
-      const referencedMovie = referencedTitle ? await searchTmdbTitle(referencedTitle) : null;
+      const referencedMovie = referencedTitle
+        ? await searchTmdbTitle(referencedTitle, mediaType)
+        : null;
       const referenceMovies = referencedMovie
-        ? await getTmdbRecommendations(referencedMovie.id.toString())
+        ? await getTmdbRecommendations(referencedMovie.id.toString(), mediaType)
         : [];
 
       if (referencedMovie && !hasQualifier(prompt) && referenceMovies.length > 0) {
-        const reply = `Here are a few films similar to "${referencedMovie.title}".`;
+        const reply =
+          mediaType === "tv"
+            ? `Here are a few shows similar to "${referencedMovie.title}".`
+            : `Here are a few films similar to "${referencedMovie.title}".`;
         await persistConversation(email, prompt, reply, referenceMovies);
         return NextResponse.json({ reply, movies: referenceMovies });
       }
@@ -296,9 +312,9 @@ export const POST = withRateLimit(
       const plan = await getGeminiPlan(prompt, history, context, {
         title: referencedMovie?.title,
         movies: referenceMovies,
-      });
+      }, mediaType);
 
-      const settled = await Promise.allSettled(plan.titles.map(searchTmdbTitle));
+      const settled = await Promise.allSettled(plan.titles.map((title) => searchTmdbTitle(title, mediaType)));
       const rawMovies = settled.map((result) => (result.status === "fulfilled" ? result.value : null));
       const seen = new Set<string>();
       let movies = rawMovies.filter((movie): movie is MovieSummary => {

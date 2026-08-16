@@ -25,6 +25,7 @@ export async function createJournalEntry(formData: FormData) {
   let movieTitle = getRequiredString(formData, "movieTitle");
   let movieId = getRequiredString(formData, "movieId");
   let posterPath = getRequiredString(formData, "posterPath");
+  let mediaType = getRequiredString(formData, "mediaType") || "movie";
   const note = getRequiredString(formData, "note");
   const watchedAtValue = getRequiredString(formData, "watchedAt");
   const ratingValue = formData.get("rating");
@@ -38,14 +39,21 @@ export async function createJournalEntry(formData: FormData) {
 
   await dbConnect();
   if (favoriteMovieId) {
+    const [favMediaType, ...favIdParts] = favoriteMovieId.split(":");
+    const favId = favIdParts.join(":");
     const user = await User.findOne({ email });
     const favorites = (user?.favorites || []) as FavoriteMovie[];
-    const favorite = favorites.find((movie) => movie.movieId === favoriteMovieId);
+    const favorite = favorites.find(
+      (movie) =>
+        movie.movieId === favId &&
+        (favMediaType === "tv" ? "tv" : "movie") === (movie.mediaType || "movie")
+    );
 
     if (favorite) {
       movieId = favorite.movieId;
       movieTitle = favorite.title;
       posterPath = favorite.posterPath || "";
+      mediaType = favorite.mediaType || "movie";
     }
   }
 
@@ -57,6 +65,7 @@ export async function createJournalEntry(formData: FormData) {
     userEmail: email,
     userName: session.user.name || "KinOrbia user",
     movieId: movieId || undefined,
+    mediaType: mediaType === "tv" ? "tv" : "movie",
     movieTitle,
     posterPath: posterPath || undefined,
     rating: Number.isFinite(rating) ? Math.min(10, Math.max(1, rating as number)) : undefined,

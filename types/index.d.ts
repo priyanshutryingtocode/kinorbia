@@ -1,3 +1,5 @@
+export type MediaType = "movie" | "tv";
+
 export type MovieSummary = {
   id: number | string;
   title: string;
@@ -7,6 +9,7 @@ export type MovieSummary = {
   personalRating?: number;
   genre_ids?: number[];
   original_language?: string;
+  mediaType?: MediaType;
 };
 
 export type FavoriteMovie = {
@@ -16,6 +19,7 @@ export type FavoriteMovie = {
   voteAverage: number;
   releaseDate?: string;
   personalRating?: number;
+  mediaType?: MediaType;
 };
 
 export type WatchlistMovie = FavoriteMovie;
@@ -39,6 +43,28 @@ export type TmdbCredit = {
 };
 
 export type TmdbMovieCredits = {
+  id: number;
+  cast: TmdbCredit[];
+  crew: TmdbCredit[];
+};
+
+export type TmdbTvDetails = {
+  id: number | string;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  overview: string;
+  first_air_date: string;
+  vote_average: number;
+  tagline: string;
+  genres?: { id: number; name: string }[];
+  networks?: { id: number; name: string }[];
+  number_of_seasons?: number;
+  number_of_episodes?: number;
+  status?: string;
+};
+
+export type TmdbTvCredits = {
   id: number;
   cast: TmdbCredit[];
   crew: TmdbCredit[];
@@ -80,4 +106,6 @@ export type JournalItem = {
   watchedAt: string;
   note?: string;
   createdAt: string;
+  movieId?: string;
+  mediaType?: MediaType;
 };

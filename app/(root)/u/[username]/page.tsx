@@ -96,7 +96,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
           {favorites.length > 0 ? (
             <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
               {favorites.slice(0, 6).map((movie) => (
-                <Link key={movie.movieId} href={`/movie/${movie.movieId}`} className="relative aspect-2/3 overflow-hidden rounded-lg border border-white/10 bg-neutral-900">
+                <Link key={`${movie.mediaType || "movie"}-${movie.movieId}`} href={movie.mediaType === "tv" ? `/tv/${movie.movieId}` : `/movie/${movie.movieId}`} className="relative aspect-2/3 overflow-hidden rounded-lg border border-white/10 bg-neutral-900">
                   {posterUrl(movie.posterPath) ? (
                     <Image src={posterUrl(movie.posterPath) as string} alt={movie.title} fill sizes="150px" className="object-cover" />
                   ) : (

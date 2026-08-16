@@ -26,19 +26,27 @@ export async function createReview(formData: FormData) {
   const body = getRequiredString(formData, "body");
   let movieId = getRequiredString(formData, "movieId");
   let posterPath = getRequiredString(formData, "posterPath");
+  let mediaType = getRequiredString(formData, "mediaType") || "movie";
   const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
   const rating = Number(formData.get("rating"));
 
   await dbConnect();
   if (favoriteMovieId) {
+    const [favMediaType, ...favIdParts] = favoriteMovieId.split(":");
+    const favId = favIdParts.join(":");
     const user = await User.findOne({ email });
     const favorites = (user?.favorites || []) as FavoriteMovie[];
-    const favorite = favorites.find((movie) => movie.movieId === favoriteMovieId);
+    const favorite = favorites.find(
+      (movie) =>
+        movie.movieId === favId &&
+        (favMediaType === "tv" ? "tv" : "movie") === (movie.mediaType || "movie")
+    );
 
     if (favorite) {
       movieId = favorite.movieId;
       movieTitle = favorite.title;
       posterPath = favorite.posterPath || "";
+      mediaType = favorite.mediaType || "movie";
     }
   }
 
@@ -50,6 +58,7 @@ export async function createReview(formData: FormData) {
     userEmail: email,
     userName: session.user.name || "KinOrbia user",
     movieId: movieId || undefined,
+    mediaType: mediaType === "tv" ? "tv" : "movie",
     movieTitle,
     posterPath: posterPath || undefined,
     rating: Math.min(10, Math.max(1, rating)),
