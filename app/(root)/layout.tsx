@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MovieAssistant from "@/components/MovieAssistant";
+import BackToTop from "@/components/BackToTop";
 
 export default function MainLayout({
   children,
@@ -15,6 +16,7 @@ export default function MainLayout({
       </main>
       <Footer />
       <MovieAssistant />
+      <BackToTop />
     </>
   );
 }

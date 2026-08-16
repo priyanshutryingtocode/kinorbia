@@ -10,7 +10,17 @@ import Review from "@/models/Review";
 import ProfileActions from "@/components/profileActions";
 import Link from "next/link";
 import ProfileFavorites from "@/components/ProfileFavorites";
+import ProfileInsights from "@/components/ProfileInsights";
+import { buildInsights } from "@/lib/insights";
+import { BarChart3 } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
 import type { FavoriteMovie, JournalItem, MovieListItem, ReviewItem, WatchlistMovie } from "@/types";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Profile",
+  description: "Your favorites, watch history, watchlist, reviews, lists, journal, and insights.",
+};
 
 type RawFavoriteMovie = FavoriteMovie & {
   _id?: { toString: () => string };
@@ -112,25 +122,37 @@ export default async function ProfilePage() {
   const dbUser = await User.findOne({ email: session.user.email }).lean<ProfileUser | null>();
   const favorites = serializeFavorites(dbUser?.favorites);
   const watchlist = serializeFavorites(dbUser?.watchlist || []);
-  const [watchedMovieIds, listsCreated, rawJournalEntries, rawReviews, rawLists] = await Promise.all([
-    JournalEntry.distinct("movieId", { userEmail: session.user.email }),
-    MovieList.countDocuments({ userEmail: session.user.email }),
-    JournalEntry.find({ userEmail: session.user.email })
-      .sort({ watchedAt: -1, createdAt: -1 })
-      .limit(8)
-      .lean<RawJournalEntry[]>(),
-    Review.find({ userEmail: session.user.email })
-      .sort({ createdAt: -1 })
-      .limit(6)
-      .lean<RawReview[]>(),
-    MovieList.find({ userEmail: session.user.email })
-      .sort({ createdAt: -1 })
-      .limit(6)
-      .lean<RawMovieList[]>(),
-  ]);
-  const journalEntries = rawJournalEntries.map(serializeJournal);
+const [watchedMovieIds, listsCreated, rawJournalEntries, rawReviews, rawLists, journalHistory] =
+    await Promise.all([
+      JournalEntry.distinct("movieId", { userEmail: session.user.email }),
+      MovieList.countDocuments({ userEmail: session.user.email }),
+      JournalEntry.find({ userEmail: session.user.email })
+        .sort({ watchedAt: -1, createdAt: -1 })
+        .limit(8)
+        .lean<RawJournalEntry[]>(),
+      Review.find({ userEmail: session.user.email })
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .lean<RawReview[]>(),
+      MovieList.find({ userEmail: session.user.email })
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .lean<RawMovieList[]>(),
+      JournalEntry.find({ userEmail: session.user.email })
+        .select("movieTitle posterPath rating watchedAt mediaType movieId")
+        .lean<{
+          movieTitle: string;
+          posterPath?: string | null;
+          rating?: number;
+          watchedAt: Date;
+          mediaType?: "movie" | "tv";
+          movieId?: string;
+        }[]>(),
+    ]);
+const journalEntries = rawJournalEntries.map(serializeJournal);
   const reviews = rawReviews.map(serializeReview);
   const lists = rawLists.map(serializeList);
+  const insights = buildInsights(journalHistory, favorites);
   const ratedMovies = [
     ...favorites.filter((movie) => movie.personalRating && movie.personalRating > 0),
     ...journalEntries.filter((entry) => entry.rating && entry.rating > 0).map((entry) => ({
@@ -224,8 +246,9 @@ export default async function ProfilePage() {
            </div>
         </div>
 
-        <nav className="border-t border-white/10 pt-8 mb-8 flex flex-wrap gap-3 text-sm">
+<nav className="border-t border-white/10 pt-8 mb-8 flex flex-wrap gap-3 text-sm">
           {[
+            ["Insights", "#insights"],
             ["Favorites", "#favorites"],
             ["Watched", "#watched"],
             ["Watchlist", "#watchlist"],
@@ -239,7 +262,15 @@ export default async function ProfilePage() {
           ))}
         </nav>
 
-        <section id="favorites" className="pt-2">
+        <section id="insights" className="scroll-mt-24 pt-2">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-emerald-400" />
+            Insights
+          </h3>
+          <ProfileInsights insights={insights} />
+        </section>
+
+        <section id="favorites" className="scroll-mt-24 pt-2 mt-12">
           <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
             <Heart className="w-5 h-5 text-red-500 fill-current" /> 
             Favorite Films
@@ -258,7 +289,7 @@ export default async function ProfilePage() {
           )}
         </section>
 
-        <section id="watched" className="border-t border-white/10 pt-10 mt-12">
+        <section id="watched" className="scroll-mt-24 border-t border-white/10 pt-10 mt-12">
           <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
             <Film className="w-5 h-5 text-blue-400" />
             Recently Watched
@@ -266,7 +297,7 @@ export default async function ProfilePage() {
           <ProfileMovieStrip items={journalEntries} emptyText="You have not marked any movies as watched yet." />
         </section>
 
-        <section id="watchlist" className="border-t border-white/10 pt-10 mt-12">
+        <section id="watchlist" className="scroll-mt-24 border-t border-white/10 pt-10 mt-12">
           <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
             <Bookmark className="w-5 h-5 text-blue-400" />
             Watchlist
@@ -294,11 +325,11 @@ export default async function ProfilePage() {
               ))}
             </div>
           ) : (
-            <EmptyPanel text="Your watchlist is empty." />
+            <EmptyState title="Your watchlist is empty" description="Add movies and shows you plan to watch." />
           )}
         </section>
 
-        <section id="reviews" className="border-t border-white/10 pt-10 mt-12">
+        <section id="reviews" className="scroll-mt-24 border-t border-white/10 pt-10 mt-12">
           <h3 className="text-xl font-bold mb-6">Your Reviews</h3>
           {reviews.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -306,7 +337,7 @@ export default async function ProfilePage() {
                 <Link key={review._id} href="/reviews" className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 hover:border-red-500/40 transition">
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <h4 className="font-bold text-white truncate">{review.movieTitle}</h4>
-                    <span className="text-yellow-400 text-sm font-bold">{review.rating}/10</span>
+                    <span className="text-yellow-400 text-sm font-bold">{(review.rating / 2).toFixed(1)}</span>
                   </div>
                   <p className="text-xs text-neutral-500 uppercase tracking-wider mb-3">{review.visibility}</p>
                   <p className="text-sm text-neutral-300 line-clamp-3">{review.body}</p>
@@ -314,11 +345,11 @@ export default async function ProfilePage() {
               ))}
             </div>
           ) : (
-            <EmptyPanel text="You have not written any reviews yet." />
+            <EmptyState title="No reviews yet" description="You have not written any reviews yet." />
           )}
         </section>
 
-        <section id="lists" className="border-t border-white/10 pt-10 mt-12">
+        <section id="lists" className="scroll-mt-24 border-t border-white/10 pt-10 mt-12">
           <h3 className="text-xl font-bold mb-6">Your Lists</h3>
           {lists.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -334,11 +365,11 @@ export default async function ProfilePage() {
               ))}
             </div>
           ) : (
-            <EmptyPanel text="You have not created any lists yet." />
+            <EmptyState title="No lists yet" description="You have not created any lists yet." />
           )}
         </section>
 
-        <section id="journal" className="border-t border-white/10 pt-10 mt-12">
+        <section id="journal" className="scroll-mt-24 border-t border-white/10 pt-10 mt-12">
           <h3 className="text-xl font-bold mb-6">Journal Notes</h3>
           {journalEntries.length > 0 ? (
             <div className="space-y-3">
@@ -353,7 +384,7 @@ export default async function ProfilePage() {
               ))}
             </div>
           ) : (
-            <EmptyPanel text="Your journal is empty." />
+            <EmptyState title="Your journal is empty" description="Log your first watch to build your watch history." />
           )}
         </section>
 
@@ -376,7 +407,7 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string
 
 function ProfileMovieStrip({ items, emptyText }: { items: JournalItem[]; emptyText: string }) {
   if (items.length === 0) {
-    return <EmptyPanel text={emptyText} />;
+    return <EmptyState title="No watches yet" description={emptyText} />;
   }
 
   return (
@@ -407,15 +438,7 @@ function ProfileMovieStrip({ items, emptyText }: { items: JournalItem[]; emptyTe
             <p className="text-xs text-neutral-500 mt-1">{new Date(item.watchedAt).toLocaleDateString()}</p>
           </div>
         </Link>
-      ))}
-    </div>
-  );
-}
-
-function EmptyPanel({ text }: { text: string }) {
-  return (
-    <div className="border border-dashed border-white/10 rounded-xl p-8 text-center text-neutral-500">
-      {text}
+))}
     </div>
   );
 }

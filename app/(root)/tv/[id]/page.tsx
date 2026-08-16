@@ -11,6 +11,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Calendar, Clapperboard, Layers, Star } from "lucide-react";
 import type { FavoriteMovie, TmdbTvCredits, TmdbTvDetails } from "@/types";
+import type { Metadata } from "next";
 import SimilarShows from "@/components/SimilarShows";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import { getTvWithStatus, getTvCredits } from "@/lib/tmdb";
@@ -37,6 +38,18 @@ async function getCredits(id: string): Promise<TmdbTvCredits> {
 type Props = {
   params: Promise<{ id: string }>;
 };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const tv = await getTvDetails(id);
+  const year = tv.first_air_date ? tv.first_air_date.split("-")[0] : "";
+
+  return {
+    title: `${tv.name}${year ? ` (${year})` : ""}`,
+    description:
+      tv.tagline || (tv.overview ? tv.overview.slice(0, 160) : `Learn more about ${tv.name} on KinOrbia.`),
+  };
+}
 
 export default async function TvPage({ params }: Props) {
   const { id } = await params;

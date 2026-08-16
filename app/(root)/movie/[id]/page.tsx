@@ -11,6 +11,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Calendar, Clock, Film, Star } from "lucide-react";
 import type { FavoriteMovie, TmdbMovieCredits, TmdbMovieDetails } from "@/types";
+import type { Metadata } from "next";
 import SimilarMovies from "@/components/SimilarMovies";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import { getMovieWithStatus, getMovieCredits } from "@/lib/tmdb";
@@ -37,6 +38,18 @@ async function getCredits(id: string): Promise<TmdbMovieCredits> {
 type Props = {
   params: Promise<{ id: string }>;
 };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const movie = await getMovieDetails(id);
+  const year = movie.release_date ? movie.release_date.split("-")[0] : "";
+
+  return {
+    title: `${movie.title}${year ? ` (${year})` : ""}`,
+    description:
+      movie.tagline || (movie.overview ? movie.overview.slice(0, 160) : `Learn more about ${movie.title} on KinOrbia.`),
+  };
+}
 
 export default async function MoviePage({ params }: Props) {
 

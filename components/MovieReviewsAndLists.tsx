@@ -3,6 +3,7 @@ import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import { mediaMatch, mediaEquals } from "@/lib/media";
+import EmptyState from "@/components/EmptyState";
 
 export default async function MovieReviewsAndLists({
   movieId,
@@ -56,7 +57,7 @@ export default async function MovieReviewsAndLists({
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-white/10 p-6 text-center text-neutral-500">No public reviews yet.</div>
+          <EmptyState title="No public reviews yet" description="Be the first to review this." />
         )}
       </div>
 
@@ -76,7 +77,7 @@ export default async function MovieReviewsAndLists({
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-white/10 p-6 text-center text-neutral-500">No public lists include this yet.</div>
+          <EmptyState title="Not in any lists yet" description="No public lists include this title." />
         )}
       </div>
     </section>

@@ -31,7 +31,7 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           movieId: movie.id,
-          title: movie.title,
+          movieTitle: movie.title,
           posterPath: movie.poster_path,
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,

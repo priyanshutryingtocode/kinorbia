@@ -1,7 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Film, Search } from "lucide-react";
+import type { Metadata } from "next";
 import SearchHistory from "@/components/SearchHistory";
+import EmptyState from "@/components/EmptyState";
 import {
   searchMovies as searchTmdbMovies,
   discoverMovies,
@@ -60,6 +62,19 @@ async function searchContent({
 type SearchPageProps = {
   searchParams: Promise<{ q?: string; year?: string; minRating?: string; genre?: string; runtime?: string; language?: string; sort?: string; type?: string }> | { q?: string; year?: string; minRating?: string; genre?: string; runtime?: string; language?: string; sort?: string; type?: string };
 };
+
+export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
+  const { q, type } = await Promise.resolve(searchParams);
+  const query = typeof q === "string" ? q.trim() : "";
+  const mediaType = type === "tv" ? "Shows" : "Movies";
+
+  return {
+    title: query ? `Search results for "${query}"` : "Search KinOrbia",
+    description: query
+      ? `Search results for "${query}" across ${mediaType.toLowerCase()} on KinOrbia.`
+      : "Find movies and shows by title, genre, rating, runtime, language, and year.",
+  };
+}
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q, year, minRating, genre, runtime, language, sort, type } = await Promise.resolve(searchParams);
@@ -232,13 +247,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </form>
 
         {!query && !releaseYear && !selectedGenre && !minimumRating && !maxRuntime && !selectedLanguage ? (
-          <div className="border border-dashed border-white/10 rounded-xl p-10 text-center text-neutral-500">
-            Type a {mediaType === "tv" ? "show" : "movie"} title or choose filters to start discovering.
-          </div>
+          <EmptyState
+            title="Start discovering"
+            description={`Type a ${mediaType === "tv" ? "show" : "movie"} title or choose filters to begin.`}
+          />
         ) : movies.length === 0 ? (
-          <div className="border border-dashed border-white/10 rounded-xl p-10 text-center text-neutral-500">
-            No {mediaType === "tv" ? "shows" : "movies"} found for <span className="text-neutral-300">{query}</span>.
-          </div>
+          <EmptyState
+            title={`No ${mediaType === "tv" ? "shows" : "movies"} found`}
+            description={
+              query
+                ? `We couldn't find any results for "${query}". Try a different title or adjust your filters.`
+                : "Try adjusting your filters to find more results."
+            }
+          />
         ) : (
           <>
             <h2 className="text-2xl font-bold mb-6">

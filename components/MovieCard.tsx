@@ -55,7 +55,7 @@ export default function MovieCard({
           }`}
         >
           <Star className={`w-3 h-3 ${movie.personalRating > 0 ? "fill-current" : ""}`} />
-          <span>{movie.personalRating > 0 ? `${movie.personalRating}/10` : "Rate"}</span>
+          <span>{movie.personalRating > 0 ? `${(movie.personalRating / 2).toFixed(1)}` : "Rate"}</span>
         </button>
       )}
     </div>

@@ -1,7 +1,9 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { MessageSquare, Star } from "lucide-react";
+import type { Metadata } from "next";
 import { auth } from "@/auth";
+import EmptyState from "@/components/EmptyState";
 import dbConnect from "@/lib/dbConnect";
 import Review from "@/models/Review";
 import User from "@/models/User";
@@ -35,6 +37,11 @@ function serializeReview(review: RawReview): ReviewItem {
 function posterUrl(path?: string | null) {
   return path ? `https://image.tmdb.org/t/p/w342${path}` : null;
 }
+
+export const metadata: Metadata = {
+  title: "Reviews",
+  description: "Share quick reactions and longer takes on the films and shows you watch.",
+};
 
 export default async function ReviewsPage() {
   const session = await auth();
@@ -205,7 +212,7 @@ export default async function ReviewsPage() {
                   <div className="p-5 min-w-0">
                     <div className="flex items-center gap-2 text-yellow-400 text-sm font-bold mb-2">
                       <Star className="w-4 h-4 fill-current" />
-                      {review.rating}/10
+                      {(review.rating / 2).toFixed(1)}
                     </div>
                     <h3 className="text-lg font-bold text-white truncate">{review.movieTitle}</h3>
                     <p className="text-xs text-neutral-500 mt-1">
@@ -291,8 +298,11 @@ export default async function ReviewsPage() {
                 </article>
               ))
             ) : (
-              <div className="md:col-span-2 border border-dashed border-white/10 rounded-xl p-10 text-center text-neutral-500">
-                No reviews yet. Be the first to publish one.
+              <div className="md:col-span-2">
+                <EmptyState
+                  title="No reviews yet"
+                  description="Be the first to publish a review."
+                />
               </div>
             )}
           </div>

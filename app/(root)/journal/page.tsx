@@ -1,6 +1,8 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { BookOpen, CalendarDays, Star } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
@@ -39,6 +41,11 @@ function todayInputValue() {
 function dateInputValue(date: string) {
   return new Date(date).toISOString().slice(0, 10);
 }
+
+export const metadata: Metadata = {
+  title: "Watch Journal",
+  description: "Log what you watched, when you watched it, and the notes worth keeping.",
+};
 
 export default async function JournalPage() {
   const session = await auth();
@@ -188,7 +195,7 @@ export default async function JournalPage() {
                       {entry.rating && (
                         <span className="flex items-center gap-1 text-yellow-400 font-bold">
                           <Star className="w-3.5 h-3.5 fill-current" />
-                          {entry.rating}/10
+                          {(entry.rating / 2).toFixed(1)}
                         </span>
                       )}
                     </div>
@@ -242,9 +249,10 @@ export default async function JournalPage() {
                 </article>
               ))
             ) : (
-              <div className="border border-dashed border-white/10 rounded-xl p-10 text-center text-neutral-500">
-                Your journal is empty. Log your first watch.
-              </div>
+              <EmptyState
+                title="Your journal is empty"
+                description="Log your first watch to start building your watch history."
+              />
             )}
           </div>
         </section>

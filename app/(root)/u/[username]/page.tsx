@@ -7,6 +7,7 @@ import JournalEntry from "@/models/JournalEntry";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import User from "@/models/User";
+import EmptyState from "@/components/EmptyState";
 import type { FavoriteMovie } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -108,7 +109,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
               ))}
             </div>
           ) : (
-            <Empty text="No public favorites yet." />
+            <EmptyState title="No public favorites yet" description="This user hasn't shared any favorites." />
           )}
         </section>
 
@@ -122,7 +123,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                 </div>
                 <p className="mt-3 line-clamp-3 text-sm text-neutral-300">{review.body}</p>
               </Link>
-            )) : <Empty text="No public reviews yet." />}
+            )) : <EmptyState title="No public reviews yet" description="This user hasn't shared any reviews." />}
           </Panel>
 
           <Panel title="Public Lists">
@@ -134,7 +135,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                 </div>
                 {list.description && <p className="mt-3 line-clamp-2 text-sm text-neutral-300">{list.description}</p>}
               </Link>
-            )) : <Empty text="No public lists yet." />}
+            )) : <EmptyState title="No public lists yet" description="This user hasn't shared any lists." />}
           </Panel>
         </section>
       </div>
@@ -159,8 +160,4 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
       <div className="space-y-3">{children}</div>
     </section>
   );
-}
-
-function Empty({ text }: { text: string }) {
-  return <div className="rounded-lg border border-dashed border-white/10 p-6 text-center text-neutral-500">{text}</div>;
 }

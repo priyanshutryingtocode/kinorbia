@@ -60,7 +60,7 @@ export default function AssistantMovieActions({ movie }: { movie: MovieSummary }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           movieId: movie.id.toString(),
-          title: movie.title,
+          movieTitle: movie.title,
           posterPath: movie.poster_path,
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
@@ -168,7 +168,7 @@ export default function AssistantMovieActions({ movie }: { movie: MovieSummary }
           listId: selectedList,
           movie: {
             movieId: movie.id.toString(),
-            title: movie.title,
+            movieTitle: movie.title,
             posterPath: movie.poster_path,
             voteAverage: movie.vote_average,
             releaseDate: movie.release_date,

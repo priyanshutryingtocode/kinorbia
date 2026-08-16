@@ -10,6 +10,13 @@ import { createMovieList, deleteMovieList, updateMovieList } from "./actions";
 import type { FavoriteMovie, MovieListItem } from "@/types";
 import SubmitButton from "@/components/SubmitButton";
 import SocialActionButton from "@/components/SocialActionButton";
+import EmptyState from "@/components/EmptyState";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Lists",
+  description: "Create and organize custom lists for movies and shows.",
+};
 
 type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
@@ -322,8 +329,11 @@ export default async function ListsPage() {
                 </article>
               ))
             ) : (
-              <div className="md:col-span-2 border border-dashed border-white/10 rounded-xl p-10 text-center text-neutral-500">
-                No lists yet. Create the first collection from your favorites.
+              <div className="md:col-span-2">
+                <EmptyState
+                  title="No lists yet"
+                  description="Create the first collection from your favorites."
+                />
               </div>
             )}
           </div>

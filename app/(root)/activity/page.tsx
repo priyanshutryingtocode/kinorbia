@@ -1,11 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { List, MessageSquare, Star } from "lucide-react";
+import type { Metadata } from "next";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Activity",
+  description: "The latest reviews and lists shared by the KinOrbia community.",
+};
 
 function posterUrl(path?: string | null) {
   return path ? `https://image.tmdb.org/t/p/w185${path}` : null;

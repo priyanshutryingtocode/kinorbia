@@ -2,6 +2,12 @@ import MovieCard, { MovieProp } from "@/components/MovieCard";
 import LoadMore from "@/components/LoadMore";
 import TvGenreFilter from "@/components/TvGenreFilter";
 import { fetchTvShows } from "../../actions";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "TV Shows",
+  description: "Browse popular TV shows across genres on KinOrbia.",
+};
 
 type Props = {
   searchParams: Promise<{ genre?: string }>;
