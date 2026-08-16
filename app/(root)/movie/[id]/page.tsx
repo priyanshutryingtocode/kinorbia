@@ -94,7 +94,7 @@ if (user?.favorites) {
 
   return (
     <div className="relative min-h-screen overflow-hidden pb-20 text-white">
-      <div className="absolute inset-x-0 top-0 h-[42vh] opacity-50 sm:h-[52vh]">
+      <div className="absolute inset-x-0 top-0 h-[55svh] opacity-50 sm:h-[70svh] lg:h-svh">
         {movie.backdrop_path && (
           <Image
             src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
