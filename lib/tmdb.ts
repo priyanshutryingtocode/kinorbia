@@ -4,32 +4,48 @@ const BASE = "https://api.themoviedb.org/3";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const RETRIABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+function shouldRetryStatus(status: number) {
+  return RETRIABLE_STATUS.has(status);
+}
+
 async function tmdbFetch<T>(
   path: string,
   revalidate: number | false = 3600,
-  retries = 0
+  retries = 2
 ): Promise<T | null> {
   const separator = path.includes("?") ? "&" : "?";
   const url = `${BASE}${path}${separator}api_key=${process.env.TMDB_API_KEY}`;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
+    let controller: AbortController | undefined;
+
     try {
+      controller = new AbortController();
+      const timeout = setTimeout(() => controller?.abort(), 8000);
+
       const res = await fetch(url, {
         next: revalidate === false ? undefined : { revalidate },
+        signal: controller.signal,
       });
 
-      if (!res.ok) {
-        return null;
-      }
+      clearTimeout(timeout);
 
-      return (await res.json()) as T;
+      if (!res.ok) {
+        if (attempt === retries || !shouldRetryStatus(res.status)) {
+          return null;
+        }
+      } else {
+        return (await res.json()) as T;
+      }
     } catch {
       if (attempt === retries) {
         return null;
       }
-
-      await sleep(350);
     }
+
+    await sleep(350 * (attempt + 1));
   }
 
   return null;
@@ -38,12 +54,12 @@ async function tmdbFetch<T>(
 type ResultList<T> = { results?: T[] };
 
 export const getPopularMovies = (page = 1) =>
-  tmdbFetch<ResultList<MovieSummary>>(`/movie/popular?language=en-US&page=${page}`, 3600);
+  tmdbFetch<ResultList<MovieSummary>>(`/movie/popular?language=en-US&page=${page}`, 300);
 
 export const getDiscoverMovies = (page = 1, genre?: string) =>
   tmdbFetch<ResultList<MovieSummary>>(
     `/discover/movie?with_genres=${genre}&language=en-US&page=${page}`,
-    3600
+    300
   );
 
 export const discoverMovies = (extraParams = "", page = 1) => {
@@ -115,14 +131,14 @@ export function normalizeTvResult(result: RawTvResult): MovieSummary {
 }
 
 export const getPopularTv = (page = 1) =>
-  tmdbFetch<ResultList<RawTvResult>>(`/tv/popular?language=en-US&page=${page}`, 3600).then((data) => ({
+  tmdbFetch<ResultList<RawTvResult>>(`/tv/popular?language=en-US&page=${page}`, 300).then((data) => ({
     results: data?.results?.map(normalizeTvResult) || [],
   }));
 
 export const getDiscoverTv = (page = 1, genre?: string) =>
   tmdbFetch<ResultList<RawTvResult>>(
     `/discover/tv?with_genres=${genre}&language=en-US&page=${page}`,
-    3600
+    300
   ).then((data) => ({
     results: data?.results?.map(normalizeTvResult) || [],
   }));

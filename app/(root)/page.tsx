@@ -5,6 +5,8 @@ import { fetchMovies } from "../actions";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
+import EmptyState from "@/components/EmptyState";
+import RetryButton from "@/components/RetryButton";
 import { getRecommendationMovies, getTvRecommendations } from "@/lib/tmdb";
 import type { FavoriteMovie } from "@/types";
 
@@ -80,13 +82,22 @@ export default async function Home({ searchParams }: Props) {
 
         <GenreFilter />
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {movies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} />
-          ))}
-        </div>
+        {movies.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {movies.map((movie) => (
+              <MovieCard key={movie.id} movie={movie} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="Couldn't load movies right now"
+            description="Popular movies are temporarily unavailable. Refresh to try again."
+          >
+            <RetryButton />
+          </EmptyState>
+        )}
 
-        <LoadMore key={genre || "all"} genre={genre} />
+        {movies.length > 0 && <LoadMore key={genre || "all"} genre={genre} />}
 
       </div>
     </main>
