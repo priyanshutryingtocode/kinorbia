@@ -8,7 +8,8 @@ import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import User from "@/models/User";
 import EmptyState from "@/components/EmptyState";
-import type { FavoriteMovie } from "@/types";
+import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
+import type { FavoriteMovie, MediaType } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,8 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
     Review.find({ userEmail: user.email, visibility: "public" }).sort({ createdAt: -1 }).limit(6).lean<{
       _id: { toString: () => string };
       movieTitle: string;
-      rating: number;
+      movieId?: string;
+      mediaType?: MediaType;
       body: string;
       createdAt: Date;
     }[]>(),
@@ -57,7 +59,8 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
     }[]>(),
   ]);
 
-  const favorites = user.favorites || [];
+  const favorites = dedupeFavorites(user.favorites || []);
+  const ratingMap = buildRatingMap(favorites);
 
   return (
     <div className="min-h-screen px-6 py-12 text-white">
@@ -115,15 +118,20 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
 
         <section className="mt-12 grid gap-6 md:grid-cols-2">
           <Panel title="Public Reviews">
-            {reviews.length > 0 ? reviews.map((review) => (
+            {reviews.length > 0 ? reviews.map((review) => {
+              const reviewRating = ratingMap.get(`${review.mediaType || "movie"}:${review.movieId}`) || 0;
+              return (
               <Link key={review._id.toString()} href="/reviews" className="block rounded-lg border border-white/10 bg-neutral-900/50 p-4 hover:border-red-500/40">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="font-bold">{review.movieTitle}</h3>
-                  <span className="text-sm font-bold text-yellow-400">{(review.rating / 2).toFixed(1)} stars</span>
+                  {reviewRating > 0 && (
+                    <span className="text-sm font-bold text-yellow-400">{(reviewRating / 2).toFixed(1)} stars</span>
+                  )}
                 </div>
                 <p className="mt-3 line-clamp-3 text-sm text-neutral-300">{review.body}</p>
               </Link>
-            )) : <EmptyState title="No public reviews yet" description="This user hasn't shared any reviews." />}
+              );
+            }) : <EmptyState title="No public reviews yet" description="This user hasn't shared any reviews." />}
           </Panel>
 
           <Panel title="Public Lists">

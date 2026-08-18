@@ -23,9 +23,6 @@ const ListMovieSchema = new mongoose.Schema({
   releaseDate: {
     type: String,
   },
-  personalRating: {
-    type: Number,
-  },
 }, { _id: false });
 
 const MovieListSchema = new mongoose.Schema({

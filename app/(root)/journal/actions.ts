@@ -28,8 +28,6 @@ export async function createJournalEntry(formData: FormData) {
   let mediaType = getRequiredString(formData, "mediaType") || "movie";
   const note = getRequiredString(formData, "note");
   const watchedAtValue = getRequiredString(formData, "watchedAt");
-  const ratingValue = formData.get("rating");
-  const rating = ratingValue ? Number(ratingValue) : undefined;
 
   if (!movieTitle || !watchedAtValue) {
     if (!favoriteMovieId) {
@@ -68,7 +66,6 @@ export async function createJournalEntry(formData: FormData) {
     mediaType: mediaType === "tv" ? "tv" : "movie",
     movieTitle,
     posterPath: posterPath || undefined,
-    rating: Number.isFinite(rating) ? Math.min(10, Math.max(1, rating as number)) : undefined,
     watchedAt: new Date(watchedAtValue),
     note,
   });
@@ -87,8 +84,6 @@ export async function updateJournalEntry(formData: FormData) {
   const entryId = getRequiredString(formData, "entryId");
   const note = getRequiredString(formData, "note");
   const watchedAtValue = getRequiredString(formData, "watchedAt");
-  const ratingValue = formData.get("rating");
-  const rating = ratingValue ? Number(ratingValue) : undefined;
 
   if (!entryId || !watchedAtValue) {
     return;
@@ -101,7 +96,6 @@ export async function updateJournalEntry(formData: FormData) {
       $set: {
         watchedAt: new Date(watchedAtValue),
         note,
-        rating: Number.isFinite(rating) ? Math.min(10, Math.max(1, rating as number)) : undefined,
       },
     }
   );

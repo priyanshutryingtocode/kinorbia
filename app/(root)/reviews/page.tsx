@@ -1,10 +1,12 @@
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MessageSquare, Star } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import EmptyState from "@/components/EmptyState";
 import dbConnect from "@/lib/dbConnect";
+import { buildReviewerRatingMaps, dedupeFavorites, lookupRating } from "@/lib/reviewRatings";
 import Review from "@/models/Review";
 import User from "@/models/User";
 import { createReview, deleteReview, updateReview } from "./actions";
@@ -24,10 +26,10 @@ function serializeReview(review: RawReview): ReviewItem {
     userName: review.userName,
     movieTitle: review.movieTitle,
     posterPath: review.posterPath,
-    rating: review.rating,
     body: review.body,
     visibility: review.visibility || "public",
     movieId: review.movieId,
+    mediaType: review.mediaType,
     likedBy: review.likedBy || [],
     savedBy: review.savedBy || [],
     createdAt: review.createdAt.toISOString(),
@@ -63,11 +65,13 @@ export default async function ReviewsPage() {
     .limit(24)
     .lean<RawReview[]>();
   const reviews = rawReviews.map(serializeReview);
+  const ratingMaps = await buildReviewerRatingMaps(reviews);
 
   const user = await User.findOne({ email: currentUserEmail }).lean<{
     favorites?: FavoriteMovie[];
   } | null>();
-  const favorites = (user?.favorites || []) as FavoriteMovie[];
+  const favorites = dedupeFavorites((user?.favorites || []) as FavoriteMovie[]);
+  const ratedFavorites = favorites.filter((movie) => (movie.personalRating || 0) > 0);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white px-6 py-12">
@@ -93,98 +97,84 @@ export default async function ReviewsPage() {
               <h2 className="font-bold text-lg">Write a Review</h2>
             </div>
 
-            <form action={createReview} className="space-y-4">
-                {favorites.length > 0 && (
+            {ratedFavorites.length > 0 ? (
+              <form action={createReview} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                      Pick from Favorites
+                      Pick a rated movie
                     </label>
                     <select
                       name="favoriteMovieId"
+                      required
                       className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
                       defaultValue=""
                     >
-                      <option value="">Manual movie title</option>
-                      {favorites.map((movie) => (
+                      <option value="" disabled>
+                        Choose a rated movie
+                      </option>
+                      {ratedFavorites.map((movie) => (
                         <option key={`${movie.mediaType || "movie"}-${movie.movieId}`} value={`${movie.mediaType || "movie"}:${movie.movieId}`}>
                           {movie.title}
                         </option>
                       ))}
                     </select>
                   </div>
-                )}
 
-                <div>
-                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                    Movie Title
-                  </label>
-                  <input
-                    name="movieTitle"
-                    placeholder="For manual reviews"
-                    className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                    Rating
-                  </label>
-                  <input
-                    name="rating"
-                    type="number"
-                    min="1"
-                    max="10"
-                    required
-                    placeholder="8"
-                    className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                    Review
-                  </label>
-                  <textarea
-                    name="body"
-                    required
-                    maxLength={1200}
-                    rows={6}
-                    placeholder="What stayed with you?"
-                    className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500 resize-none"
-                  />
-                </div>
-
-                <fieldset>
-                  <legend className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                    Visibility
-                  </legend>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
-                      <input
-                        type="radio"
-                        name="visibility"
-                        value="public"
-                        defaultChecked
-                        className="accent-red-600"
-                      />
-                      Public
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                      Review
                     </label>
-                    <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
-                      <input
-                        type="radio"
-                        name="visibility"
-                        value="private"
-                        className="accent-red-600"
-                      />
-                      Private
-                    </label>
+                    <textarea
+                      name="body"
+                      required
+                      maxLength={1200}
+                      rows={6}
+                      placeholder="What stayed with you?"
+                      className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500 resize-none"
+                    />
                   </div>
-                </fieldset>
 
-                <SubmitButton pendingLabel="Publishing..." className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition">
-                  Publish Review
-                </SubmitButton>
+                  <fieldset>
+                    <legend className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                      Visibility
+                    </legend>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
+                        <input
+                          type="radio"
+                          name="visibility"
+                          value="public"
+                          defaultChecked
+                          className="accent-red-600"
+                        />
+                        Public
+                      </label>
+                      <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
+                        <input
+                          type="radio"
+                          name="visibility"
+                          value="private"
+                          className="accent-red-600"
+                        />
+                        Private
+                      </label>
+                    </div>
+                  </fieldset>
+
+                  <SubmitButton pendingLabel="Publishing..." className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition">
+                    Publish Review
+                  </SubmitButton>
               </form>
+            ) : (
+              <div className="rounded-xl border border-dashed border-white/10 bg-neutral-950/70 p-6 text-center">
+<p className="mb-2 text-sm text-neutral-400">
+                  Your rating lives on each movie page &mdash; tap the stars to rate, then come back here to review it.
+                </p>
+                <Link href="/" className="text-red-500 hover:text-red-400 text-sm hover:underline">
+                  Browse movies to rate
+                </Link>
+              </div>
+            )}
           </aside>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -210,10 +200,12 @@ export default async function ReviewsPage() {
                     )}
                   </div>
                   <div className="p-5 min-w-0">
-                    <div className="flex items-center gap-2 text-yellow-400 text-sm font-bold mb-2">
-                      <Star className="w-4 h-4 fill-current" />
-                      {(review.rating / 2).toFixed(1)}
-                    </div>
+                    {ratingMaps.get(review.userEmail)?.get(`${review.mediaType || "movie"}:${review.movieId}`) ? (
+                      <div className="flex items-center gap-2 text-yellow-400 text-sm font-bold mb-2">
+                        <Star className="w-4 h-4 fill-current" />
+                        {(lookupRating(ratingMaps, review) / 2).toFixed(1)}
+                      </div>
+                    ) : null}
                     <h3 className="text-lg font-bold text-white truncate">{review.movieTitle}</h3>
                     <p className="text-xs text-neutral-500 mt-1">
                       by {review.userName} - {new Date(review.createdAt).toLocaleDateString()}
@@ -257,15 +249,6 @@ export default async function ReviewsPage() {
                         </summary>
                         <form action={updateReview} className="mt-4 space-y-3">
                           <input type="hidden" name="reviewId" value={review._id} />
-                          <input
-                            name="rating"
-                            type="number"
-                            min="1"
-                            max="10"
-                            required
-                            defaultValue={review.rating}
-                            className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
-                          />
                           <textarea
                             name="body"
                             required

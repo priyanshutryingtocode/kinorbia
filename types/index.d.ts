@@ -24,6 +24,15 @@ export type FavoriteMovie = {
 
 export type WatchlistMovie = FavoriteMovie;
 
+export type ListMovie = {
+  movieId: string;
+  title: string;
+  posterPath: string | null;
+  voteAverage: number;
+  releaseDate?: string;
+  mediaType?: MediaType;
+};
+
 export type TmdbMovieDetails = MovieSummary & {
   backdrop_path: string | null;
   overview: string;
@@ -76,10 +85,10 @@ export type ReviewItem = {
   userName: string;
   movieTitle: string;
   posterPath?: string | null;
-  rating: number;
   body: string;
   visibility: "public" | "private";
   movieId?: string;
+  mediaType?: MediaType;
   likedBy?: string[];
   savedBy?: string[];
   createdAt: string;
@@ -91,7 +100,7 @@ export type MovieListItem = {
   userName: string;
   title: string;
   description?: string;
-  movies: FavoriteMovie[];
+  movies: ListMovie[];
   visibility: "public" | "private";
   likedBy?: string[];
   savedBy?: string[];
@@ -102,7 +111,6 @@ export type JournalItem = {
   _id: string;
   movieTitle: string;
   posterPath?: string | null;
-  rating?: number;
   watchedAt: string;
   note?: string;
   createdAt: string;

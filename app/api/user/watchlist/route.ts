@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import { getSessionEmail } from "@/lib/session";
-import { movieRefSchema, parseBody, badRequest } from "@/lib/validators";
+import { movieRefSchema, parseMovieBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
 import { hasCapacity, MAX_WATCHLIST } from "@/lib/bounds";
 
@@ -13,7 +13,7 @@ export const POST = withRateLimit(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await parseBody(req, movieRefSchema);
+    const body = await parseMovieBody(req, movieRefSchema);
     if (!body) {
       return badRequest("A valid movie is required.");
     }

@@ -84,7 +84,7 @@ async function getUserContext(email?: string | null) {
   if (!email) {
     return {
       favorites: [] as FavoriteMovie[],
-      watched: [] as { movieTitle: string; rating?: number }[],
+      watched: [] as { movieTitle: string }[],
     };
   }
 
@@ -95,7 +95,7 @@ async function getUserContext(email?: string | null) {
     JournalEntry.find({ userEmail: email })
       .sort({ watchedAt: -1 })
       .limit(20)
-      .lean<{ movieTitle: string; rating?: number }[]>(),
+      .lean<{ movieTitle: string }[]>(),
   ]);
 
   return {
@@ -139,7 +139,7 @@ async function getGeminiPlan(
 
   const contextText = [
     `Favorites: ${context.favorites.map((movie) => `${movie.title}${movie.personalRating ? ` (${movie.personalRating}/10)` : ""}`).join(", ") || "none"}`,
-    `Watched: ${context.watched.map((movie) => `${movie.movieTitle}${movie.rating ? ` (${movie.rating}/10)` : ""}`).join(", ") || "none"}`,
+    `Watched: ${context.watched.map((movie) => movie.movieTitle).join(", ") || "none"}`,
   ].join("\n");
 
   const res = await fetch(

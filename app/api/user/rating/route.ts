@@ -3,7 +3,7 @@ import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
 import { getSessionUser } from "@/lib/session";
-import { rateMovieSchema, parseBody, badRequest } from "@/lib/validators";
+import { rateMovieSchema, parseMovieBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
 import { hasCapacity, MAX_FAVORITES } from "@/lib/bounds";
 import { mediaEquals } from "@/lib/media";
@@ -16,7 +16,7 @@ export const POST = withRateLimit(
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
       }
 
-      const body = await parseBody(req, rateMovieSchema);
+      const body = await parseMovieBody(req, rateMovieSchema);
       if (!body) {
         return badRequest("Movie and rating are required.");
       }
@@ -79,7 +79,6 @@ export const POST = withRateLimit(
         { userEmail: email, movieId: normalizedMovieId, mediaType: mediaEquals(normalizedMediaType) },
         {
           $set: {
-            rating: clampedRating,
             movieTitle: body.movieTitle,
             posterPath: body.posterPath || undefined,
           },

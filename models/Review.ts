@@ -25,12 +25,6 @@ const ReviewSchema = new mongoose.Schema({
   posterPath: {
     type: String,
   },
-  rating: {
-    type: Number,
-    required: true,
-    min: 1,
-    max: 10,
-  },
   body: {
     type: String,
     required: true,

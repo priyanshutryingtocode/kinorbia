@@ -1,12 +1,13 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { BookOpen, CalendarDays, Star } from "lucide-react";
+import { BookOpen, CalendarDays } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
+import { dedupeFavorites } from "@/lib/reviewRatings";
 import { createJournalEntry, deleteJournalEntry, updateJournalEntry } from "./actions";
 import type { FavoriteMovie, JournalItem } from "@/types";
 import SubmitButton from "@/components/SubmitButton";
@@ -22,10 +23,10 @@ function serializeEntry(entry: RawJournalEntry): JournalItem {
     _id: entry._id.toString(),
     movieTitle: entry.movieTitle,
     posterPath: entry.posterPath,
-    rating: entry.rating,
     watchedAt: entry.watchedAt.toISOString(),
     note: entry.note,
     createdAt: entry.createdAt.toISOString(),
+    movieId: entry.movieId,
     mediaType: entry.mediaType || "movie",
   };
 }
@@ -55,7 +56,7 @@ export default async function JournalPage() {
 
   await dbConnect();
   const user = await User.findOne({ email: session.user.email });
-  const favorites = (user?.favorites || []) as FavoriteMovie[];
+  const favorites = dedupeFavorites((user?.favorites || []) as FavoriteMovie[]);
   const rawEntries = await JournalEntry.find({ userEmail: session.user.email })
     .sort({ watchedAt: -1, createdAt: -1 })
     .limit(40)
@@ -116,32 +117,17 @@ export default async function JournalPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                    Watched
-                  </label>
-                  <input
-                    name="watchedAt"
-                    type="date"
-                    required
-                    defaultValue={todayInputValue()}
-                    className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                    Rating
-                  </label>
-                  <input
-                    name="rating"
-                    type="number"
-                    min="1"
-                    max="10"
-                    placeholder="8"
-                    className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                  Watched
+                </label>
+                <input
+                  name="watchedAt"
+                  type="date"
+                  required
+                  defaultValue={todayInputValue()}
+                  className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
+                />
               </div>
 
               <div>
@@ -192,12 +178,6 @@ export default async function JournalPage() {
                         <CalendarDays className="w-3.5 h-3.5" />
                         {new Date(entry.watchedAt).toLocaleDateString()}
                       </span>
-                      {entry.rating && (
-                        <span className="flex items-center gap-1 text-yellow-400 font-bold">
-                          <Star className="w-3.5 h-3.5 fill-current" />
-                          {(entry.rating / 2).toFixed(1)}
-                        </span>
-                      )}
                     </div>
                     <h3 className="text-lg font-bold text-white">{entry.movieTitle}</h3>
                     {entry.note && (
@@ -209,24 +189,13 @@ export default async function JournalPage() {
                       </summary>
                       <form action={updateJournalEntry} className="mt-4 space-y-3">
                         <input type="hidden" name="entryId" value={entry._id} />
-                        <div className="grid grid-cols-2 gap-3">
-                          <input
-                            name="watchedAt"
-                            type="date"
-                            required
-                            defaultValue={dateInputValue(entry.watchedAt)}
-                            className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
-                          />
-                          <input
-                            name="rating"
-                            type="number"
-                            min="1"
-                            max="10"
-                            defaultValue={entry.rating}
-                            placeholder="Rating"
-                            className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
-                          />
-                        </div>
+                        <input
+                          name="watchedAt"
+                          type="date"
+                          required
+                          defaultValue={dateInputValue(entry.watchedAt)}
+                          className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                        />
                         <textarea
                           name="note"
                           maxLength={1000}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import { getSessionEmail } from "@/lib/session";
-import { addToListSchema, parseBody, badRequest } from "@/lib/validators";
+import { parseAddToListBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
 
 type ListSummary = {
@@ -38,7 +38,7 @@ export const POST = withRateLimit(
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
       }
 
-      const body = await parseBody(req, addToListSchema);
+      const body = await parseAddToListBody(req);
       if (!body) {
         return badRequest("List and movie are required.");
       }
@@ -67,7 +67,6 @@ export const POST = withRateLimit(
               posterPath: body.movie.posterPath,
               voteAverage: body.movie.voteAverage,
               releaseDate: body.movie.releaseDate,
-              personalRating: body.movie.personalRating,
               mediaType: body.movie.mediaType,
             },
           },

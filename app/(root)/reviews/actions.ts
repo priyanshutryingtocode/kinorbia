@@ -28,15 +28,15 @@ export async function createReview(formData: FormData) {
   let posterPath = getRequiredString(formData, "posterPath");
   let mediaType = getRequiredString(formData, "mediaType") || "movie";
   const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
-  const rating = Number(formData.get("rating"));
 
   await dbConnect();
+  let favorite: FavoriteMovie | undefined;
   if (favoriteMovieId) {
     const [favMediaType, ...favIdParts] = favoriteMovieId.split(":");
     const favId = favIdParts.join(":");
     const user = await User.findOne({ email });
     const favorites = (user?.favorites || []) as FavoriteMovie[];
-    const favorite = favorites.find(
+    favorite = favorites.find(
       (movie) =>
         movie.movieId === favId &&
         (favMediaType === "tv" ? "tv" : "movie") === (movie.mediaType || "movie")
@@ -50,7 +50,11 @@ export async function createReview(formData: FormData) {
     }
   }
 
-  if (!movieTitle || !body || !Number.isFinite(rating)) {
+  if (!movieTitle || !body) {
+    return;
+  }
+
+  if (!favorite || !(favorite.personalRating && favorite.personalRating > 0)) {
     return;
   }
 
@@ -61,7 +65,6 @@ export async function createReview(formData: FormData) {
     mediaType: mediaType === "tv" ? "tv" : "movie",
     movieTitle,
     posterPath: posterPath || undefined,
-    rating: Math.min(10, Math.max(1, rating)),
     body,
     visibility,
   });
@@ -80,9 +83,8 @@ export async function updateReview(formData: FormData) {
   const reviewId = getRequiredString(formData, "reviewId");
   const body = getRequiredString(formData, "body");
   const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
-  const rating = Number(formData.get("rating"));
 
-  if (!reviewId || !body || !Number.isFinite(rating)) {
+  if (!reviewId || !body) {
     return;
   }
 
@@ -91,7 +93,6 @@ export async function updateReview(formData: FormData) {
     { _id: reviewId, userEmail: email },
     {
       $set: {
-        rating: Math.min(10, Math.max(1, rating)),
         body,
         visibility,
       },

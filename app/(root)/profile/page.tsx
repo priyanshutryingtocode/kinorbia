@@ -13,6 +13,7 @@ import ProfileFavorites from "@/components/ProfileFavorites";
 import ProfileInsights from "@/components/ProfileInsights";
 import { buildInsights } from "@/lib/insights";
 import { BarChart3 } from "lucide-react";
+import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
 import EmptyState from "@/components/EmptyState";
 import type { FavoriteMovie, JournalItem, MovieListItem, ReviewItem, WatchlistMovie } from "@/types";
 import type { Metadata } from "next";
@@ -71,7 +72,6 @@ function serializeJournal(entry: RawJournalEntry): JournalItem {
     _id: entry._id.toString(),
     movieTitle: entry.movieTitle,
     posterPath: entry.posterPath,
-    rating: entry.rating,
     watchedAt: entry.watchedAt.toISOString(),
     note: entry.note,
     createdAt: entry.createdAt.toISOString(),
@@ -87,9 +87,12 @@ function serializeReview(review: RawReview): ReviewItem {
     userName: review.userName,
     movieTitle: review.movieTitle,
     posterPath: review.posterPath,
-    rating: review.rating,
     body: review.body,
     visibility: review.visibility || "public",
+    movieId: review.movieId,
+    mediaType: review.mediaType || "movie",
+    likedBy: review.likedBy || [],
+    savedBy: review.savedBy || [],
     createdAt: review.createdAt.toISOString(),
   };
 }
@@ -120,7 +123,8 @@ export default async function ProfilePage() {
 
   await dbConnect();
   const dbUser = await User.findOne({ email: session.user.email }).lean<ProfileUser | null>();
-  const favorites = serializeFavorites(dbUser?.favorites);
+  const favorites = dedupeFavorites(serializeFavorites(dbUser?.favorites));
+const ownRatingMap = buildRatingMap(favorites);
   const watchlist = serializeFavorites(dbUser?.watchlist || []);
 const [watchedMovieIds, listsCreated, rawJournalEntries, rawReviews, rawLists, journalHistory] =
     await Promise.all([
@@ -138,31 +142,23 @@ const [watchedMovieIds, listsCreated, rawJournalEntries, rawReviews, rawLists, j
         .sort({ createdAt: -1 })
         .limit(6)
         .lean<RawMovieList[]>(),
-      JournalEntry.find({ userEmail: session.user.email })
-        .select("movieTitle posterPath rating watchedAt mediaType movieId")
+JournalEntry.find({ userEmail: session.user.email })
+        .select("movieTitle posterPath watchedAt mediaType movieId")
         .lean<{
           movieTitle: string;
           posterPath?: string | null;
-          rating?: number;
           watchedAt: Date;
           mediaType?: "movie" | "tv";
           movieId?: string;
         }[]>(),
     ]);
-const journalEntries = rawJournalEntries.map(serializeJournal);
+  const journalEntries = rawJournalEntries.map(serializeJournal);
   const reviews = rawReviews.map(serializeReview);
   const lists = rawLists.map(serializeList);
   const insights = buildInsights(journalHistory, favorites);
-  const ratedMovies = [
-    ...favorites.filter((movie) => movie.personalRating && movie.personalRating > 0),
-    ...journalEntries.filter((entry) => entry.rating && entry.rating > 0).map((entry) => ({
-      movieId: entry._id,
-      title: entry.movieTitle,
-      posterPath: entry.posterPath || null,
-      voteAverage: 0,
-      personalRating: entry.rating || 0,
-    })),
-  ];
+  const ratedMovies = favorites.filter(
+    (movie) => movie.personalRating && movie.personalRating > 0
+  );
   const averageRating = ratedMovies.length
     ? (ratedMovies.reduce((sum, movie) => sum + (movie.personalRating || 0), 0) / ratedMovies.length / 2).toFixed(1)
     : "0.0";
@@ -333,16 +329,21 @@ const journalEntries = rawJournalEntries.map(serializeJournal);
           <h3 className="text-xl font-bold mb-6">Your Reviews</h3>
           {reviews.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {reviews.map((review) => (
-                <Link key={review._id} href="/reviews" className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 hover:border-red-500/40 transition">
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <h4 className="font-bold text-white truncate">{review.movieTitle}</h4>
-                    <span className="text-yellow-400 text-sm font-bold">{(review.rating / 2).toFixed(1)}</span>
-                  </div>
-                  <p className="text-xs text-neutral-500 uppercase tracking-wider mb-3">{review.visibility}</p>
-                  <p className="text-sm text-neutral-300 line-clamp-3">{review.body}</p>
-                </Link>
-              ))}
+{reviews.map((review) => {
+                const reviewRating = ownRatingMap.get(`${review.mediaType || "movie"}:${review.movieId}`) || 0;
+                return (
+                  <Link key={review._id} href="/reviews" className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 hover:border-red-500/40 transition">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <h4 className="font-bold text-white truncate">{review.movieTitle}</h4>
+                      {reviewRating > 0 && (
+                        <span className="text-yellow-400 text-sm font-bold">{(reviewRating / 2).toFixed(1)}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-3">{review.visibility}</p>
+                    <p className="text-sm text-neutral-300 line-clamp-3">{review.body}</p>
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <EmptyState title="No reviews yet" description="You have not written any reviews yet." />

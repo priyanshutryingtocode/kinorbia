@@ -7,7 +7,6 @@ export const movieRefSchema = z.object({
   posterPath: z.string().trim().max(500).nullish().transform((v) => v ?? null),
   voteAverage: z.coerce.number().min(0).max(10).optional().default(0),
   releaseDate: z.string().trim().max(40).nullish().transform((v) => v ?? null),
-  personalRating: z.coerce.number().min(0).max(10).optional(),
   mediaType: z.enum(["movie", "tv"]).optional().default("movie"),
 });
 
@@ -52,6 +51,35 @@ export async function parseBody<T extends z.ZodType>(req: Request, schema: T): P
   try {
     const json = await req.json();
     const result = schema.safeParse(json);
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeMovieRef(raw: Record<string, unknown>): Record<string, unknown> {
+  if (raw && typeof raw === "object" && !("movieTitle" in raw) && "title" in raw) {
+    return { ...raw, movieTitle: raw.title };
+  }
+  return raw;
+}
+
+export async function parseMovieBody<T extends z.ZodType>(req: Request, schema: T): Promise<z.infer<T> | null> {
+  try {
+    const json = await req.json();
+    const normalized = Array.isArray(json) ? json : normalizeMovieRef(json);
+    const result = schema.safeParse(normalized);
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function parseAddToListBody(req: Request): Promise<z.infer<typeof addToListSchema> | null> {
+  try {
+    const json = await req.json();
+    const movie = json && typeof json === "object" && json.movie ? normalizeMovieRef(json.movie) : json?.movie;
+    const result = addToListSchema.safeParse({ ...json, movie });
     return result.success ? result.data : null;
   } catch {
     return null;

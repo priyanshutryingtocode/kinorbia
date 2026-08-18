@@ -35,7 +35,6 @@ export type InsightsData = {
 
 type JournalLike = {
   watchedAt: string | Date;
-  rating?: number;
   mediaType?: MediaType;
   movieTitle: string;
   posterPath?: string | null;
@@ -137,12 +136,6 @@ export function buildInsights(journal: JournalLike[], favorites: FavoriteMovie[]
   const { current, best } = computeStreaks([...new Set(dayStrs)].sort());
 
   const starCounts = new Map<number, number>();
-  for (const entry of journal) {
-    const stars = toStars(entry.rating);
-    if (stars > 0) {
-      starCounts.set(stars, (starCounts.get(stars) || 0) + 1);
-    }
-  }
   for (const favorite of favorites) {
     const stars = toStars(favorite.personalRating);
     if (stars > 0) {
@@ -155,31 +148,16 @@ export function buildInsights(journal: JournalLike[], favorites: FavoriteMovie[]
     count: starCounts.get(stars) || 0,
   }));
 
-  const rated: TopRatedItem[] = [
-    ...journal
-      .filter((entry) => entry.rating && entry.rating > 0)
-      .map((entry) => ({
-        title: entry.movieTitle,
-        posterPath: entry.posterPath || null,
-        rating: entry.rating as number,
-        mediaType: (entry.mediaType || "movie") as MediaType,
-        movieId: entry.movieId || "",
-        href:
-          (entry.mediaType || "movie") === "tv"
-            ? `/tv/${entry.movieId || ""}`
-            : `/movie/${entry.movieId || ""}`,
-      })),
-    ...favorites
-      .filter((favorite) => favorite.personalRating && favorite.personalRating > 0)
-      .map((favorite) => ({
-        title: favorite.title,
-        posterPath: favorite.posterPath || null,
-        rating: favorite.personalRating as number,
-        mediaType: (favorite.mediaType || "movie") as MediaType,
-        movieId: favorite.movieId,
-        href: (favorite.mediaType || "movie") === "tv" ? `/tv/${favorite.movieId}` : `/movie/${favorite.movieId}`,
-      })),
-  ]
+  const rated: TopRatedItem[] = favorites
+    .filter((favorite) => favorite.personalRating && favorite.personalRating > 0)
+    .map((favorite) => ({
+      title: favorite.title,
+      posterPath: favorite.posterPath || null,
+      rating: favorite.personalRating as number,
+      mediaType: (favorite.mediaType || "movie") as MediaType,
+      movieId: favorite.movieId,
+      href: (favorite.mediaType || "movie") === "tv" ? `/tv/${favorite.movieId}` : `/movie/${favorite.movieId}`,
+    }))
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 5);
 

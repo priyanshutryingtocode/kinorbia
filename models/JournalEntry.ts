@@ -25,11 +25,6 @@ const JournalEntrySchema = new mongoose.Schema({
   posterPath: {
     type: String,
   },
-  rating: {
-    type: Number,
-    min: 1,
-    max: 10,
-  },
   watchedAt: {
     type: Date,
     required: true,

@@ -6,11 +6,22 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import MovieList from "@/models/MovieList";
-import type { FavoriteMovie } from "@/types";
+import type { FavoriteMovie, ListMovie } from "@/types";
 
 function getRequiredString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function toListMovie(movie: FavoriteMovie): ListMovie {
+  return {
+    movieId: movie.movieId,
+    mediaType: movie.mediaType || "movie",
+    title: movie.title,
+    posterPath: movie.posterPath,
+    voteAverage: movie.voteAverage,
+    releaseDate: movie.releaseDate,
+  };
 }
 
 function parseMovieRef(value: string) {
@@ -44,11 +55,13 @@ export async function createMovieList(formData: FormData) {
   await dbConnect();
   const user = await User.findOne({ email });
   const favorites = (user?.favorites || []) as FavoriteMovie[];
-  const selectedMovies = favorites.filter((movie) =>
-    refs.some(
-      (ref) => ref.movieId === movie.movieId && ref.mediaType === (movie.mediaType || "movie")
+  const selectedMovies = favorites
+    .filter((movie) =>
+      refs.some(
+        (ref) => ref.movieId === movie.movieId && ref.mediaType === (movie.mediaType || "movie")
+      )
     )
-  );
+    .map(toListMovie);
 
   await MovieList.create({
     userEmail: email,
@@ -87,12 +100,13 @@ export async function updateMovieList(formData: FormData) {
   const user = await User.findOne({ email }).lean<{
     favorites?: FavoriteMovie[];
   } | null>();
-  const favorites = user?.favorites || [];
-  const selectedMovies = favorites.filter((movie) =>
-    refs.some(
-      (ref) => ref.movieId === movie.movieId && ref.mediaType === (movie.mediaType || "movie")
+  const selectedMovies = (user?.favorites || [])
+    .filter((movie) =>
+      refs.some(
+        (ref) => ref.movieId === movie.movieId && ref.mediaType === (movie.mediaType || "movie")
+      )
     )
-  );
+    .map(toListMovie);
 
   await MovieList.updateOne(
     { _id: listId, userEmail: email },

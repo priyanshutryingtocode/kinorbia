@@ -3,6 +3,8 @@ import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import { mediaMatch, mediaEquals } from "@/lib/media";
+import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
+import type { MediaType } from "@/types";
 import EmptyState from "@/components/EmptyState";
 
 export default async function MovieReviewsAndLists({
@@ -20,7 +22,9 @@ export default async function MovieReviewsAndLists({
       .lean<{
         _id: { toString: () => string };
         userName: string;
-        rating: number;
+        userEmail: string;
+        movieId?: string;
+        mediaType?: MediaType;
         body: string;
         createdAt: Date;
       }[]>(),
@@ -36,6 +40,14 @@ export default async function MovieReviewsAndLists({
       }[]>(),
   ]);
 
+  const ratingMaps = await buildReviewerRatingMaps(
+    publicReviews.map((review) => ({
+      userEmail: review.userEmail,
+      movieId: review.movieId,
+      mediaType: review.mediaType,
+    }))
+  );
+
   if (publicReviews.length === 0 && publicLists.length === 0) {
     return null;
   }
@@ -46,15 +58,24 @@ export default async function MovieReviewsAndLists({
         <h2 className="mb-5 text-2xl font-bold">Reviews</h2>
         {publicReviews.length > 0 ? (
           <div className="space-y-3">
-            {publicReviews.map((review) => (
-              <article key={review._id.toString()} className="rounded-lg border border-white/10 bg-neutral-900/50 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-neutral-400">by {review.userName}</p>
-                  <span className="text-sm font-bold text-yellow-400">{(review.rating / 2).toFixed(1)} stars</span>
-                </div>
-                <p className="mt-3 line-clamp-4 text-sm leading-6 text-neutral-300">{review.body}</p>
-              </article>
-            ))}
+            {publicReviews.map((review) => {
+              const reviewRating = lookupRating(ratingMaps, {
+                userEmail: review.userEmail,
+                movieId: review.movieId,
+                mediaType: review.mediaType,
+              });
+              return (
+                <article key={review._id.toString()} className="rounded-lg border border-white/10 bg-neutral-900/50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm text-neutral-400">by {review.userName}</p>
+                    {reviewRating > 0 && (
+                      <span className="text-sm font-bold text-yellow-400">{(reviewRating / 2).toFixed(1)} stars</span>
+                    )}
+                  </div>
+                  <p className="mt-3 line-clamp-4 text-sm leading-6 text-neutral-300">{review.body}</p>
+                </article>
+              );
+            })}
           </div>
         ) : (
           <EmptyState title="No public reviews yet" description="Be the first to review this." />

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { List, MessageSquare, Star } from "lucide-react";
 import type { Metadata } from "next";
 import dbConnect from "@/lib/dbConnect";
+import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
+import type { MediaType } from "@/types";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 
@@ -23,9 +25,11 @@ export default async function ActivityPage() {
     Review.find({ visibility: "public" }).sort({ createdAt: -1 }).limit(12).lean<{
       _id: { toString: () => string };
       userName: string;
+      userEmail: string;
       movieTitle: string;
       posterPath?: string;
-      rating: number;
+      movieId?: string;
+      mediaType?: MediaType;
       body: string;
       createdAt: Date;
     }[]>(),
@@ -38,6 +42,14 @@ export default async function ActivityPage() {
       createdAt: Date;
     }[]>(),
   ]);
+
+  const ratingMaps = await buildReviewerRatingMaps(
+    reviews.map((review) => ({
+      userEmail: review.userEmail,
+      movieId: review.movieId,
+      mediaType: review.mediaType,
+    }))
+  );
 
   const items = [
     ...reviews.map((review) => ({ kind: "review" as const, date: review.createdAt, review })),
@@ -68,10 +80,12 @@ export default async function ActivityPage() {
               <div className="min-w-0">
                 <p className="text-xs uppercase tracking-widest text-neutral-500">{item.review.userName} reviewed</p>
                 <h2 className="mt-1 font-bold">{item.review.movieTitle}</h2>
-                <p className="mt-1 flex items-center gap-1 text-sm font-bold text-yellow-400">
-                  <Star className="h-3.5 w-3.5 fill-current" />
-                  {(item.review.rating / 2).toFixed(1)} stars
-                </p>
+                {lookupRating(ratingMaps, item.review) > 0 && (
+                  <p className="mt-1 flex items-center gap-1 text-sm font-bold text-yellow-400">
+                    <Star className="h-3.5 w-3.5 fill-current" />
+                    {(lookupRating(ratingMaps, item.review) / 2).toFixed(1)} stars
+                  </p>
+                )}
                 <p className="mt-3 line-clamp-2 text-sm text-neutral-300">{item.review.body}</p>
               </div>
             </article>
