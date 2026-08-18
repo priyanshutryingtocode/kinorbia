@@ -2,6 +2,11 @@
 
 Kinorbia is a modern, full-stack movie discovery, tracking, and journaling platform. Built with Next.js and designed with a sleek, immersive "Modern Deep Space" aesthetic using Tailwind CSS v4, it allows users to explore movies, curate personalized lists, write reviews, and maintain a cinematic journal.
 
+Demo users (password demo1234 for all, log in via email + password):
+- demo1@kinorbia.dev — Ava Moreno (ava.moreno)
+- demo2@kinorbia.dev — Leo Kim (leo.kim)
+- demo3@kinorbia.dev — Maya Patel (maya.patel)
+
 ## 🚀 Features
 
 * **Movie Discovery:** Search and browse through an extensive database of movies, including similar movie recommendations.
