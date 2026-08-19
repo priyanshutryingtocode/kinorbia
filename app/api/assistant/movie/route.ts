@@ -258,18 +258,26 @@ function serializeMessages(messages: unknown[] = []) {
     }));
 }
 
-export async function GET() {
-  const session = await auth();
-  const email = session?.user?.email ? session.user.email.toLowerCase() : null;
+export const GET = withRateLimit(
+  async () => {
+    try {
+      const session = await auth();
+      const email = session?.user?.email ? session.user.email.toLowerCase() : null;
 
-  if (!email) {
-    return NextResponse.json({ messages: [] });
-  }
+      if (!email) {
+        return NextResponse.json({ messages: [] });
+      }
 
-  await dbConnect();
-  const conv = await Conversation.findOne({ userEmail: email }).lean<{ messages?: unknown[] }>();
-  return NextResponse.json({ messages: serializeMessages(conv?.messages) });
-}
+      await dbConnect();
+      const conv = await Conversation.findOne({ userEmail: email }).lean<{ messages?: unknown[] }>();
+      return NextResponse.json({ messages: serializeMessages(conv?.messages) });
+    } catch (error) {
+      console.error("Error loading assistant history:", error);
+      return NextResponse.json({ message: "Error loading assistant history" }, { status: 500 });
+    }
+  },
+  { windowMs: 60 * 1000, limit: 120 }
+);
 
 export const POST = withRateLimit(
   async (req: Request) => {

@@ -13,6 +13,7 @@ type MovieRatingControlProps = {
     vote_average: number;
     release_date?: string;
     mediaType?: "movie" | "tv";
+    genre_ids?: number[];
   };
   initialRating: number;
 };
@@ -42,6 +43,7 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
           releaseDate: movie.release_date,
           rating: nextRating,
           mediaType: movie.mediaType || "movie",
+          genreIds: movie.genre_ids || [],
         }),
       });
 

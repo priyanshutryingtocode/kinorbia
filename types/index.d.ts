@@ -20,6 +20,8 @@ export type FavoriteMovie = {
   releaseDate?: string;
   personalRating?: number;
   mediaType?: MediaType;
+  genreIds?: number[];
+  addedAt?: string;
 };
 
 export type WatchlistMovie = FavoriteMovie;
@@ -39,6 +41,7 @@ export type TmdbMovieDetails = MovieSummary & {
   release_date: string;
   runtime: number;
   tagline: string;
+  genres?: { id: number; name: string }[];
 };
 
 export type TmdbCredit = {
@@ -87,6 +90,7 @@ export type ReviewItem = {
   posterPath?: string | null;
   body: string;
   visibility: "public" | "private";
+  spoiler?: boolean;
   movieId?: string;
   mediaType?: MediaType;
   likedBy?: string[];
@@ -116,4 +120,29 @@ export type JournalItem = {
   createdAt: string;
   movieId?: string;
   mediaType?: MediaType;
+};
+
+export type CommentItem = {
+  _id: string;
+  parentType: "review" | "list";
+  parentId: string;
+  userEmail: string;
+  userName: string;
+  body: string;
+  createdAt: string;
+};
+
+export type NotificationItem = {
+  _id: string;
+  userEmail: string;
+  type: "like" | "save" | "comment" | "follow";
+  actorEmail: string;
+  actorName: string;
+  targetType: "review" | "list" | "user";
+  targetId: string;
+  targetTitle: string;
+  movieId?: string;
+  mediaType?: MediaType;
+  read: boolean;
+  createdAt: string;
 };

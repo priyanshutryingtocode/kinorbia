@@ -69,6 +69,7 @@ export const POST = withRateLimit(
                 releaseDate: body.releaseDate,
                 personalRating: clampedRating,
                 mediaType: normalizedMediaType,
+                genreIds: body.genreIds || [],
               },
             },
           }

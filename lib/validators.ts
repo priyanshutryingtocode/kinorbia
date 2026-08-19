@@ -8,6 +8,7 @@ export const movieRefSchema = z.object({
   voteAverage: z.coerce.number().min(0).max(10).optional().default(0),
   releaseDate: z.string().trim().max(40).nullish().transform((v) => v ?? null),
   mediaType: z.enum(["movie", "tv"]).optional().default("movie"),
+  genreIds: z.array(z.number()).optional().default([]),
 });
 
 export const rateMovieSchema = movieRefSchema.extend({

@@ -105,6 +105,7 @@ export default async function TvPage({ params }: Props) {
     vote_average: tv.vote_average || 0,
     release_date: tv.first_air_date,
     mediaType: "tv" as const,
+    genre_ids: tv.genres?.map((genre) => genre.id) || [],
   };
 
   return (

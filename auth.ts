@@ -96,6 +96,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
           session.user.name = dbUser.name;
           session.user.image = dbUser.image;
+          session.user.email = dbUser.email.toLowerCase();
+        } else {
+          session.user.email = session.user.email.toLowerCase();
         }
       }
 

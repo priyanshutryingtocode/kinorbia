@@ -1,7 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { MessageSquare, Star } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import EmptyState from "@/components/EmptyState";
@@ -9,10 +8,10 @@ import dbConnect from "@/lib/dbConnect";
 import { buildReviewerRatingMaps, dedupeFavorites, lookupRating } from "@/lib/reviewRatings";
 import Review from "@/models/Review";
 import User from "@/models/User";
-import { createReview, deleteReview, updateReview } from "./actions";
+import { createReview } from "./actions";
 import type { FavoriteMovie, ReviewItem } from "@/types";
 import SubmitButton from "@/components/SubmitButton";
-import SocialActionButton from "@/components/SocialActionButton";
+import ReviewCard from "@/components/ReviewCard";
 
 type RawReview = Omit<ReviewItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
@@ -28,16 +27,13 @@ function serializeReview(review: RawReview): ReviewItem {
     posterPath: review.posterPath,
     body: review.body,
     visibility: review.visibility || "public",
+    spoiler: Boolean(review.spoiler),
     movieId: review.movieId,
     mediaType: review.mediaType,
     likedBy: review.likedBy || [],
     savedBy: review.savedBy || [],
     createdAt: review.createdAt.toISOString(),
   };
-}
-
-function posterUrl(path?: string | null) {
-  return path ? `https://image.tmdb.org/t/p/w342${path}` : null;
 }
 
 export const metadata: Metadata = {
@@ -161,6 +157,11 @@ export default async function ReviewsPage() {
                     </div>
                   </fieldset>
 
+                  <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
+                    <input type="checkbox" name="spoiler" className="accent-red-600" />
+                    Contains spoilers
+                  </label>
+
                   <SubmitButton pendingLabel="Publishing..." className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition">
                     Publish Review
                   </SubmitButton>
@@ -180,105 +181,13 @@ export default async function ReviewsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {reviews.length > 0 ? (
               reviews.map((review) => (
-                <article
+                <ReviewCard
                   key={review._id}
-                  className="bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden flex"
-                >
-                  <div className="relative w-24 sm:w-32 shrink-0 bg-neutral-900">
-                    {posterUrl(review.posterPath) ? (
-                      <Image
-                        src={posterUrl(review.posterPath) as string}
-                        alt={review.movieTitle}
-                        fill
-                        sizes="128px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-neutral-700">
-                        <MessageSquare className="w-8 h-8" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-5 min-w-0">
-                    {ratingMaps.get(review.userEmail)?.get(`${review.mediaType || "movie"}:${review.movieId}`) ? (
-                      <div className="flex items-center gap-2 text-yellow-400 text-sm font-bold mb-2">
-                        <Star className="w-4 h-4 fill-current" />
-                        {(lookupRating(ratingMaps, review) / 2).toFixed(1)}
-                      </div>
-                    ) : null}
-                    <h3 className="text-lg font-bold text-white truncate">{review.movieTitle}</h3>
-                    <p className="text-xs text-neutral-500 mt-1">
-                      by {review.userName} - {new Date(review.createdAt).toLocaleDateString()}
-                    </p>
-                    <span
-                      className={`inline-flex mt-3 text-[11px] font-bold uppercase tracking-wider rounded-full px-2 py-1 ${
-                        review.visibility === "private"
-                          ? "bg-white/10 text-neutral-300 border border-white/10"
-                          : "bg-red-500/10 text-red-300 border border-red-500/20"
-                      }`}
-                    >
-                      {review.visibility}
-                    </span>
-                    <p className="text-sm text-neutral-300 leading-relaxed mt-4 line-clamp-5">
-                      {review.body}
-                    </p>
-                    {review.visibility === "public" && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <SocialActionButton
-                          type="review"
-                          id={review._id}
-                          action="like"
-                          count={review.likedBy?.length || 0}
-                          active={Boolean(review.likedBy?.includes(currentUserEmail.toLowerCase()))}
-                          path="/reviews"
-                        />
-                        <SocialActionButton
-                          type="review"
-                          id={review._id}
-                          action="save"
-                          count={review.savedBy?.length || 0}
-                          active={Boolean(review.savedBy?.includes(currentUserEmail.toLowerCase()))}
-                          path="/reviews"
-                        />
-                      </div>
-                    )}
-                    {review.userEmail === currentUserEmail && (
-                      <details className="mt-4 border-t border-white/10 pt-4">
-                        <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white">
-                          Manage
-                        </summary>
-                        <form action={updateReview} className="mt-4 space-y-3">
-                          <input type="hidden" name="reviewId" value={review._id} />
-                          <textarea
-                            name="body"
-                            required
-                            maxLength={1200}
-                            rows={4}
-                            defaultValue={review.body}
-                            className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 resize-none"
-                          />
-                          <select
-                            name="visibility"
-                            defaultValue={review.visibility}
-                            className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
-                          >
-                            <option value="public">Public</option>
-                            <option value="private">Private</option>
-                          </select>
-                          <SubmitButton pendingLabel="Saving..." className="w-full bg-white/10 hover:bg-white/15 text-white font-bold py-2 rounded-lg transition">
-                            Save Review
-                          </SubmitButton>
-                        </form>
-                        <form action={deleteReview} className="mt-2">
-                          <input type="hidden" name="reviewId" value={review._id} />
-                          <SubmitButton pendingLabel="Deleting..." className="w-full border border-red-500/30 text-red-300 hover:bg-red-500/10 font-bold py-2 rounded-lg transition">
-                            Delete Review
-                          </SubmitButton>
-                        </form>
-                      </details>
-                    )}
-                  </div>
-                </article>
+                  review={review}
+                  rating={lookupRating(ratingMaps, review)}
+                  currentUserEmail={currentUserEmail}
+                  path="/reviews"
+                />
               ))
             ) : (
               <div className="md:col-span-2">

@@ -65,6 +65,7 @@ export default function AssistantMovieActions({ movie }: { movie: MovieSummary }
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
           mediaType: movie.mediaType || "movie",
+          genreIds: movie.genre_ids || [],
         }),
       });
 
@@ -134,6 +135,7 @@ export default function AssistantMovieActions({ movie }: { movie: MovieSummary }
           releaseDate: movie.release_date,
           rating,
           mediaType: movie.mediaType || "movie",
+          genreIds: movie.genre_ids || [],
         }),
       });
 

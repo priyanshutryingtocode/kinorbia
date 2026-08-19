@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Image from "next/image";
-import { Film, Heart, List, Calendar, User as UserIcon, Bookmark, Star } from "lucide-react";
+import { Film, Heart, List, Calendar, User as UserIcon, Bookmark, Star, Download } from "lucide-react";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
@@ -11,7 +11,9 @@ import ProfileActions from "@/components/profileActions";
 import Link from "next/link";
 import ProfileFavorites from "@/components/ProfileFavorites";
 import ProfileInsights from "@/components/ProfileInsights";
-import { buildInsights } from "@/lib/insights";
+import ReviewCard from "@/components/ReviewCard";
+import { buildInsights, yearsFromJournal } from "@/lib/insights";
+import { buildCommunityComparison } from "@/lib/community";
 import { BarChart3 } from "lucide-react";
 import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
 import EmptyState from "@/components/EmptyState";
@@ -23,9 +25,9 @@ export const metadata: Metadata = {
   description: "Your favorites, watch history, watchlist, reviews, lists, journal, and insights.",
 };
 
-type RawFavoriteMovie = FavoriteMovie & {
+type RawFavoriteMovie = Omit<FavoriteMovie, "addedAt"> & {
   _id?: { toString: () => string };
-  addedAt?: Date;
+  addedAt?: Date | string;
 };
 
 type ProfileUser = {
@@ -37,6 +39,7 @@ type ProfileUser = {
   createdAt?: Date;
   favorites?: RawFavoriteMovie[];
   watchlist?: WatchlistMovie[];
+  following?: string[];
 };
 
 type RawJournalEntry = Omit<JournalItem, "_id" | "createdAt" | "watchedAt"> & {
@@ -64,6 +67,8 @@ function serializeFavorites(favorites: RawFavoriteMovie[] = []): FavoriteMovie[]
     releaseDate: favorite.releaseDate,
     personalRating: favorite.personalRating || 0,
     mediaType: favorite.mediaType || "movie",
+    genreIds: favorite.genreIds || [],
+    addedAt: favorite.addedAt ? new Date(favorite.addedAt).toISOString() : undefined,
   }));
 }
 
@@ -89,6 +94,7 @@ function serializeReview(review: RawReview): ReviewItem {
     posterPath: review.posterPath,
     body: review.body,
     visibility: review.visibility || "public",
+    spoiler: Boolean(review.spoiler),
     movieId: review.movieId,
     mediaType: review.mediaType || "movie",
     likedBy: review.likedBy || [],
@@ -121,15 +127,17 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  await dbConnect();
+await dbConnect();
   const dbUser = await User.findOne({ email: session.user.email }).lean<ProfileUser | null>();
+  const currentUserEmail = session.user.email || "";
   const favorites = dedupeFavorites(serializeFavorites(dbUser?.favorites));
 const ownRatingMap = buildRatingMap(favorites);
   const watchlist = serializeFavorites(dbUser?.watchlist || []);
-const [watchedMovieIds, listsCreated, rawJournalEntries, rawReviews, rawLists, journalHistory] =
+const [watchedMovieIds, listsCreated, followerCount, rawJournalEntries, rawReviews, rawLists, journalHistory] =
     await Promise.all([
       JournalEntry.distinct("movieId", { userEmail: session.user.email }),
       MovieList.countDocuments({ userEmail: session.user.email }),
+      User.countDocuments({ following: session.user.email }),
       JournalEntry.find({ userEmail: session.user.email })
         .sort({ watchedAt: -1, createdAt: -1 })
         .limit(8)
@@ -156,6 +164,12 @@ JournalEntry.find({ userEmail: session.user.email })
   const reviews = rawReviews.map(serializeReview);
   const lists = rawLists.map(serializeList);
   const insights = buildInsights(journalHistory, favorites);
+  const years = yearsFromJournal(journalHistory);
+  const byYear: Record<string, ReturnType<typeof buildInsights>> = {};
+  for (const year of years) {
+    byYear[String(year)] = buildInsights(journalHistory, favorites, year);
+  }
+  const community = await buildCommunityComparison(favorites, currentUserEmail);
   const ratedMovies = favorites.filter(
     (movie) => movie.personalRating && movie.personalRating > 0
   );
@@ -224,11 +238,19 @@ JournalEntry.find({ userEmail: session.user.email })
             </div>
           </div>
 
-          <ProfileActions user={{ name: userData.name, bio: userData.bio, email: userData.email }} />
+<ProfileActions user={{ name: userData.name, bio: userData.bio, email: userData.email }} />
+
+          <a
+            href="/api/user/export"
+            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/10 hover:text-white"
+          >
+            <Download className="h-4 w-4" />
+            Export data
+          </a>
           
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-12">
+<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-12">
            <StatCard icon={<Film className="w-5 h-5 text-blue-400" />} label="Movies Watched" value={watchedMovieIds.length.toString()} />
            <StatCard 
              icon={<Heart className="w-5 h-5 text-red-500" />} 
@@ -237,9 +259,21 @@ JournalEntry.find({ userEmail: session.user.email })
            />
            <StatCard icon={<List className="w-5 h-5 text-yellow-400" />} label="Lists Created" value={listsCreated.toString()} />
            <StatCard icon={<Bookmark className="w-5 h-5 text-blue-400" />} label="Watchlist" value={watchlist.length.toString()} />
-           <div className="col-span-2 md:col-span-1">
-             <StatCard icon={<Star className="w-5 h-5 text-yellow-400" />} label="Avg Stars" value={averageRating} />
-           </div>
+           <StatCard icon={<Star className="w-5 h-5 text-yellow-400" />} label="Avg Stars" value={averageRating} />
+           {userData.username ? (
+             <Link href={`/u/${userData.username}/following`}>
+               <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Following" value={String(dbUser?.following?.length || 0)} />
+             </Link>
+           ) : (
+             <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Following" value={String(dbUser?.following?.length || 0)} />
+           )}
+           {userData.username ? (
+             <Link href={`/u/${userData.username}/followers`}>
+               <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Followers" value={followerCount.toString()} />
+             </Link>
+           ) : (
+             <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Followers" value={followerCount.toString()} />
+           )}
         </div>
 
 <nav className="border-t border-white/10 pt-8 mb-8 flex flex-wrap gap-3 text-sm">
@@ -263,7 +297,7 @@ JournalEntry.find({ userEmail: session.user.email })
             <BarChart3 className="w-5 h-5 text-emerald-400" />
             Insights
           </h3>
-          <ProfileInsights insights={insights} />
+          <ProfileInsights insights={insights} byYear={byYear} years={years} community={community} />
         </section>
 
         <section id="favorites" className="scroll-mt-24 pt-2 mt-12">
@@ -325,23 +359,20 @@ JournalEntry.find({ userEmail: session.user.email })
           )}
         </section>
 
-        <section id="reviews" className="scroll-mt-24 border-t border-white/10 pt-10 mt-12">
+<section id="reviews" className="scroll-mt-24 border-t border-white/10 pt-10 mt-12">
           <h3 className="text-xl font-bold mb-6">Your Reviews</h3>
           {reviews.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-{reviews.map((review) => {
+              {reviews.map((review) => {
                 const reviewRating = ownRatingMap.get(`${review.mediaType || "movie"}:${review.movieId}`) || 0;
                 return (
-                  <Link key={review._id} href="/reviews" className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 hover:border-red-500/40 transition">
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <h4 className="font-bold text-white truncate">{review.movieTitle}</h4>
-                      {reviewRating > 0 && (
-                        <span className="text-yellow-400 text-sm font-bold">{(reviewRating / 2).toFixed(1)}</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-3">{review.visibility}</p>
-                    <p className="text-sm text-neutral-300 line-clamp-3">{review.body}</p>
-                  </Link>
+                  <ReviewCard
+                    key={review._id}
+                    review={review}
+                    rating={reviewRating}
+                    currentUserEmail={currentUserEmail}
+                    path="/profile"
+                  />
                 );
               })}
             </div>

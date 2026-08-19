@@ -6,6 +6,8 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import MovieList from "@/models/MovieList";
+import Comment from "@/models/Comment";
+import Notification from "@/models/Notification";
 import type { FavoriteMovie, ListMovie } from "@/types";
 
 function getRequiredString(formData: FormData, key: string) {
@@ -133,6 +135,8 @@ export async function deleteMovieList(formData: FormData) {
 
   await dbConnect();
   await MovieList.deleteOne({ _id: listId, userEmail: email });
+  await Comment.deleteMany({ parentType: "list", parentId: listId });
+  await Notification.deleteMany({ targetType: "list", targetId: listId });
 
   revalidatePath("/lists");
   revalidatePath(`/lists/${listId}`);

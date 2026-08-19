@@ -55,9 +55,11 @@ const UserSchema = new mongoose.Schema({
       releaseDate: { type: String },
       personalRating: { type: Number, default: 0 },
       mediaType: { type: String, enum: ["movie", "tv"], default: "movie" },
+      genreIds: { type: [Number], default: [] },
       addedAt: { type: Date, default: Date.now },
     },
   ],
+  following: { type: [String], default: [] },
   watchlist: [
     {
       movieId: { type: String, required: true },
@@ -69,8 +71,6 @@ const UserSchema = new mongoose.Schema({
       addedAt: { type: Date, default: Date.now },
     },
   ],
-  savedReviewIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
-  savedListIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "MovieList" }],
 }, { timestamps: true });
 
 export default mongoose.models?.User || mongoose.model("User", UserSchema);

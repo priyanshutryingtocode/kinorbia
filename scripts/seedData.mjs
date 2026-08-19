@@ -146,14 +146,6 @@ function daysAgo(n) {
   return date;
 }
 
-function pad(value) {
-  return String(value).padStart(2, "0");
-}
-
-function iso(date) {
-  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
-}
-
 function pickUnique(pool, start, count) {
   const out = [];
   const seen = new Set();
@@ -227,6 +219,7 @@ function buildFavorites(userConfig, moviePool, tvPool) {
       releaseDate: anchorMovie.releaseDate,
       personalRating: 8,
       mediaType: "movie",
+      genreIds: anchorMovie.genreIds || [],
       addedAt: daysAgo(60),
     });
     used.add(anchorMovie.movieId);
@@ -250,6 +243,7 @@ function buildFavorites(userConfig, moviePool, tvPool) {
       releaseDate: movie.releaseDate,
       personalRating: rating,
       mediaType: movie.endpoint === "tv" ? "tv" : "movie",
+      genreIds: movie.genreIds || [],
       addedAt: daysAgo(90 - index * 4),
     });
     index += 1;
@@ -269,6 +263,7 @@ function buildWatchlist(userConfig, moviePool, tvPool) {
     voteAverage: movie.voteAverage,
     releaseDate: movie.releaseDate,
     mediaType: movie.endpoint === "tv" ? "tv" : "movie",
+    genreIds: movie.genreIds || [],
     addedAt: daysAgo(i * 2 + 1),
   }));
 }
@@ -307,6 +302,7 @@ function buildReviews(userConfig, favorites) {
       posterPath: favorite.posterPath,
       body: template.replace("{title}", favorite.title),
       visibility,
+      spoiler: i === 3,
       createdAt: daysAgo([20, 16, 12, 8, 4][i]),
     };
   });
@@ -430,9 +426,14 @@ try {
   await db.collection("reviews").deleteMany({ userEmail: { $in: demoEmails } });
   await db.collection("movielists").deleteMany({ userEmail: { $in: demoEmails } });
   await db.collection("conversations").deleteMany({ userEmail: { $in: demoEmails } });
+  await db.collection("comments").deleteMany({ userEmail: { $in: demoEmails } });
+  await db.collection("notifications").deleteMany({ userEmail: { $in: demoEmails } });
 
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
   const now = new Date();
+
+  const insertedReviews = {};
+  const insertedLists = {};
 
   for (const config of DEMO_USERS) {
     const favorites = buildFavorites(config, moviePool, tvPool);
@@ -455,8 +456,7 @@ try {
           emailVerified: now,
           favorites,
           watchlist,
-          savedReviewIds: [],
-          savedListIds: [],
+          following: [],
         },
         $setOnInsert: { createdAt: now, updatedAt: now },
       },
@@ -482,13 +482,18 @@ try {
         posterPath: review.posterPath,
         body: review.body,
         visibility: review.visibility,
+        spoiler: Boolean(review.spoiler),
         createdAt: review.createdAt,
         updatedAt: review.createdAt,
       };
       addSocial(doc, config.email, i);
       return doc;
     });
-    await db.collection("reviews").insertMany(reviewDocs);
+    const reviewInsert = await db.collection("reviews").insertMany(reviewDocs);
+    insertedReviews[config.email] = reviewDocs.map((doc, i) => ({
+      id: reviewInsert.insertedIds[i],
+      ...doc,
+    }));
 
     const listDocs = lists.map((list, i) => {
       const doc = {
@@ -504,7 +509,11 @@ try {
       addSocial(doc, config.email, i + 1);
       return doc;
     });
-    await db.collection("movielists").insertMany(listDocs);
+    const listInsert = await db.collection("movielists").insertMany(listDocs);
+    insertedLists[config.email] = listDocs.map((doc, i) => ({
+      id: listInsert.insertedIds[i],
+      ...doc,
+    }));
 
     console.log(
       `  ${config.name.padEnd(12)} favorites=${favorites.length} watchlist=${watchlist.length} ` +
@@ -517,15 +526,81 @@ try {
     ...buildConversation(moviePool, tvPool),
   });
 
+  const FOLLOW_MAP = {
+    "demo1@kinorbia.dev": ["demo2@kinorbia.dev", "demo3@kinorbia.dev"],
+    "demo2@kinorbia.dev": ["demo1@kinorbia.dev", "demo3@kinorbia.dev"],
+    "demo3@kinorbia.dev": ["demo1@kinorbia.dev", "demo2@kinorbia.dev"],
+  };
+
+  for (const [email, following] of Object.entries(FOLLOW_MAP)) {
+    await db.collection("users").updateOne({ email }, { $set: { following } });
+  }
+
+  const COMMENT_PLAN = [
+    { from: "demo2@kinorbia.dev", parentUser: "demo1@kinorbia.dev", kind: "review", index: 0, body: "Totally agree — the ending still has me thinking.", createdAt: daysAgo(12) },
+    { from: "demo3@kinorbia.dev", parentUser: "demo1@kinorbia.dev", kind: "review", index: 1, body: "Adding this to my watchlist tonight. Great write-up!", createdAt: daysAgo(9) },
+    { from: "demo1@kinorbia.dev", parentUser: "demo2@kinorbia.dev", kind: "list", index: 0, body: "This list is basically my whole weekend plan.", createdAt: daysAgo(4) },
+    { from: "demo2@kinorbia.dev", parentUser: "demo3@kinorbia.dev", kind: "review", index: 0, body: "You sold me on this one.", createdAt: daysAgo(2) },
+  ];
+
+  const commentDocs = COMMENT_PLAN.map((plan) => {
+    const parents = plan.kind === "review" ? insertedReviews : insertedLists;
+    const parent = parents[plan.parentUser][plan.index];
+    const author = DEMO_USERS.find((user) => user.email === plan.from);
+    return {
+      parentType: plan.kind,
+      parentId: parent.id,
+      userEmail: plan.from,
+      userName: author.name,
+      body: plan.body,
+      createdAt: plan.createdAt,
+      updatedAt: plan.createdAt,
+    };
+  });
+
+  if (commentDocs.length > 0) {
+    await db.collection("comments").insertMany(commentDocs);
+  }
+
+  const byEmail = Object.fromEntries(DEMO_USERS.map((user) => [user.email, user]));
+  const notif = (userEmail, type, actor, targetType, parent, read, days) => ({
+    userEmail,
+    type,
+    actorEmail: actor.email,
+    actorName: actor.name,
+    targetType,
+    targetId: parent ? parent.id.toString() : actor.email,
+    targetTitle: parent ? parent.movieTitle || parent.title || "" : actor.username,
+    movieId: parent ? parent.movieId || "" : "",
+    mediaType: parent && parent.movieId ? parent.mediaType || "movie" : "movie",
+    read,
+    createdAt: daysAgo(days),
+  });
+
+  const notifications = [
+    notif("demo1@kinorbia.dev", "follow", byEmail["demo2@kinorbia.dev"], "user", null, false, 14),
+    notif("demo1@kinorbia.dev", "like", byEmail["demo3@kinorbia.dev"], "review", insertedReviews["demo1@kinorbia.dev"][0], false, 11),
+    notif("demo1@kinorbia.dev", "comment", byEmail["demo2@kinorbia.dev"], "review", insertedReviews["demo1@kinorbia.dev"][0], false, 8),
+    notif("demo1@kinorbia.dev", "save", byEmail["demo2@kinorbia.dev"], "list", insertedLists["demo1@kinorbia.dev"][0], true, 6),
+    notif("demo2@kinorbia.dev", "follow", byEmail["demo1@kinorbia.dev"], "user", null, false, 15),
+    notif("demo2@kinorbia.dev", "like", byEmail["demo1@kinorbia.dev"], "review", insertedReviews["demo2@kinorbia.dev"][0], false, 7),
+    notif("demo2@kinorbia.dev", "comment", byEmail["demo3@kinorbia.dev"], "list", insertedLists["demo2@kinorbia.dev"][0], true, 3),
+    notif("demo3@kinorbia.dev", "follow", byEmail["demo1@kinorbia.dev"], "user", null, false, 15),
+    notif("demo3@kinorbia.dev", "like", byEmail["demo1@kinorbia.dev"], "review", insertedReviews["demo3@kinorbia.dev"][0], false, 5),
+  ];
+
+  await db.collection("notifications").insertMany(notifications);
+
   const totals = {};
-  for (const name of ["users", "journalentries", "reviews", "movielists", "conversations"]) {
+  for (const name of ["users", "journalentries", "reviews", "movielists", "conversations", "comments", "notifications"]) {
     totals[name] = await db.collection(name).countDocuments({});
   }
 
   console.log("\nSeed complete.");
   console.log(
     `Totals -> users:${totals.users} journalentries:${totals.journalentries} ` +
-      `reviews:${totals.reviews} movielists:${totals.movielists} conversations:${totals.conversations}`
+      `reviews:${totals.reviews} movielists:${totals.movielists} conversations:${totals.conversations} ` +
+      `comments:${totals.comments} notifications:${totals.notifications}`
   );
   console.log(`\nDemo login (all): ${DEMO_PASSWORD}`);
   for (const user of DEMO_USERS) {

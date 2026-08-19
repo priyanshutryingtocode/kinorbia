@@ -36,6 +36,10 @@ const ReviewSchema = new mongoose.Schema({
     default: "public",
     index: true,
   },
+  spoiler: {
+    type: Boolean,
+    default: false,
+  },
   likedBy: {
     type: [String],
     default: [],

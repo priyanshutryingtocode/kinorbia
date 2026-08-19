@@ -4,8 +4,10 @@ import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import { mediaMatch, mediaEquals } from "@/lib/media";
 import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
+import { renderRichText } from "@/lib/renderRichText";
 import type { MediaType } from "@/types";
 import EmptyState from "@/components/EmptyState";
+import CommentSection from "@/components/CommentSection";
 
 export default async function MovieReviewsAndLists({
   movieId,
@@ -26,6 +28,7 @@ export default async function MovieReviewsAndLists({
         movieId?: string;
         mediaType?: MediaType;
         body: string;
+        spoiler?: boolean;
         createdAt: Date;
       }[]>(),
     MovieList.find({ "movies.movieId": movieId, "movies.mediaType": mediaEquals(mediaType), visibility: "public" })
@@ -52,6 +55,8 @@ export default async function MovieReviewsAndLists({
     return null;
   }
 
+  const reviewPath = mediaType === "tv" ? `/tv/${movieId}` : `/movie/${movieId}`;
+
   return (
     <section className="mt-14 grid gap-6 border-t border-white/10 pt-8 lg:grid-cols-2">
       <div>
@@ -72,7 +77,19 @@ export default async function MovieReviewsAndLists({
                       <span className="text-sm font-bold text-yellow-400">{(reviewRating / 2).toFixed(1)} stars</span>
                     )}
                   </div>
-                  <p className="mt-3 line-clamp-4 text-sm leading-6 text-neutral-300">{review.body}</p>
+                  {review.spoiler && (
+                    <span className="mt-2 inline-flex rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-yellow-300">
+                      Spoiler
+                    </span>
+                  )}
+                  <p className={`mt-3 line-clamp-4 text-sm leading-6 text-neutral-300 ${review.spoiler ? "select-none opacity-40 blur-sm" : ""}`}>
+                    {review.spoiler ? review.body : renderRichText(review.body)}
+                  </p>
+                  <CommentSection
+                    parentType="review"
+                    parentId={review._id.toString()}
+                    path={reviewPath}
+                  />
                 </article>
               );
             })}

@@ -10,25 +10,33 @@ type ListSummary = {
   title: string;
 };
 
-export async function GET() {
-  const email = await getSessionEmail();
-  if (!email) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+export const GET = withRateLimit(
+  async () => {
+    try {
+      const email = await getSessionEmail();
+      if (!email) {
+        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      }
 
-  await dbConnect();
-  const lists = await MovieList.find({ userEmail: email })
-    .sort({ createdAt: -1 })
-    .select({ title: 1 })
-    .lean<ListSummary[]>();
+      await dbConnect();
+      const lists = await MovieList.find({ userEmail: email })
+        .sort({ createdAt: -1 })
+        .select({ title: 1 })
+        .lean<ListSummary[]>();
 
-  return NextResponse.json({
-    lists: lists.map((list) => ({
-      id: list._id.toString(),
-      title: list.title,
-    })),
-  });
-}
+      return NextResponse.json({
+        lists: lists.map((list) => ({
+          id: list._id.toString(),
+          title: list.title,
+        })),
+      });
+    } catch (error) {
+      console.error("Error loading lists:", error);
+      return NextResponse.json({ message: "Error loading lists" }, { status: 500 });
+    }
+  },
+  { windowMs: 60 * 1000, limit: 120 }
+);
 
 export const POST = withRateLimit(
   async (req: Request) => {

@@ -1,4 +1,5 @@
 import type { FavoriteMovie, MediaType } from "@/types";
+import { genreName } from "@/lib/genres";
 
 export type MonthlyPoint = {
   label: string;
@@ -7,6 +8,11 @@ export type MonthlyPoint = {
 
 export type StarBucket = {
   stars: number;
+  count: number;
+};
+
+export type GenreBreakdown = {
+  name: string;
   count: number;
 };
 
@@ -31,6 +37,9 @@ export type InsightsData = {
   topRated: TopRatedItem[];
   movieCount: number;
   showCount: number;
+  genreBreakdown: GenreBreakdown[];
+  bestMonthLabel: string | null;
+  topGenre: string | null;
 };
 
 type JournalLike = {
@@ -99,20 +108,63 @@ function toStars(rating?: number) {
   return Math.min(5, Math.max(1, Math.round(rating / 2)));
 }
 
-export function buildInsights(journal: JournalLike[], favorites: FavoriteMovie[]): InsightsData {
+export function yearsFromJournal(journal: JournalLike[]): number[] {
+  const years = new Set<number>();
+  for (const entry of journal) {
+    years.add(new Date(entry.watchedAt).getFullYear());
+  }
+  return [...years].sort((a, b) => b - a);
+}
+
+function monthKeysFor(now: Date, year?: number): { key: string; label: string }[] {
+  const keys: { key: string; label: string }[] = [];
+
+  if (year) {
+    for (let month = 0; month < 12; month += 1) {
+      keys.push({
+        key: `${year}-${pad(month + 1)}`,
+        label: new Date(year, month, 1).toLocaleDateString(undefined, { month: "short" }),
+      });
+    }
+  } else {
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      keys.push({
+        key: monthKey(date),
+        label: date.toLocaleDateString(undefined, { month: "short" }),
+      });
+    }
+  }
+
+  return keys;
+}
+
+export function buildInsights(
+  journal: JournalLike[],
+  favorites: FavoriteMovie[],
+  year?: number
+): InsightsData {
   const now = new Date();
 
-  const monthKeys: string[] = [];
-  for (let i = 11; i >= 0; i--) {
-    monthKeys.push(monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1)));
-  }
+  const filteredJournal = year
+    ? journal.filter((entry) => new Date(entry.watchedAt).getFullYear() === year)
+    : journal;
+
+  const filteredFavorites = year
+    ? favorites.filter((favorite) => {
+        const addedAt = favorite.addedAt ? new Date(favorite.addedAt).getTime() : NaN;
+        return !Number.isNaN(addedAt) && new Date(addedAt).getFullYear() === year;
+      })
+    : favorites;
+
+  const monthKeys = monthKeysFor(now, year);
 
   const monthCounts = new Map<string, number>();
   const dayStrs: string[] = [];
   let movieCount = 0;
   let showCount = 0;
 
-  for (const entry of journal) {
+  for (const entry of filteredJournal) {
     const date = new Date(entry.watchedAt);
     const key = monthKey(date);
     monthCounts.set(key, (monthCounts.get(key) || 0) + 1);
@@ -125,18 +177,24 @@ export function buildInsights(journal: JournalLike[], favorites: FavoriteMovie[]
     }
   }
 
-  const monthly: MonthlyPoint[] = monthKeys.map((key) => ({
-    label: new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, 1).toLocaleDateString(
-      undefined,
-      { month: "short" }
-    ),
+  const monthly: MonthlyPoint[] = monthKeys.map(({ key, label }) => ({
+    label,
     count: monthCounts.get(key) || 0,
   }));
+
+  let bestMonthLabel: string | null = null;
+  let bestMonthCount = 0;
+  for (const point of monthly) {
+    if (point.count > bestMonthCount) {
+      bestMonthCount = point.count;
+      bestMonthLabel = point.label;
+    }
+  }
 
   const { current, best } = computeStreaks([...new Set(dayStrs)].sort());
 
   const starCounts = new Map<number, number>();
-  for (const favorite of favorites) {
+  for (const favorite of filteredFavorites) {
     const stars = toStars(favorite.personalRating);
     if (stars > 0) {
       starCounts.set(stars, (starCounts.get(stars) || 0) + 1);
@@ -148,8 +206,15 @@ export function buildInsights(journal: JournalLike[], favorites: FavoriteMovie[]
     count: starCounts.get(stars) || 0,
   }));
 
-  const rated: TopRatedItem[] = favorites
-    .filter((favorite) => favorite.personalRating && favorite.personalRating > 0)
+  const ratedFavorites = filteredFavorites.filter(
+    (favorite) => favorite.personalRating && favorite.personalRating > 0
+  );
+
+  const ratedCount = ratedFavorites.length;
+  const ratingSum = ratedFavorites.reduce((sum, favorite) => sum + (favorite.personalRating || 0), 0);
+  const averageRating = ratedCount ? ratingSum / ratedCount / 2 : 0;
+
+  const topRated: TopRatedItem[] = ratedFavorites
     .map((favorite) => ({
       title: favorite.title,
       posterPath: favorite.posterPath || null,
@@ -161,12 +226,24 @@ export function buildInsights(journal: JournalLike[], favorites: FavoriteMovie[]
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 5);
 
-  const ratedCount = rated.length;
-  const ratingSum = rated.reduce((sum, item) => sum + item.rating, 0);
-  const averageRating = ratedCount ? ratingSum / ratedCount / 2 : 0;
+  const genreCounts = new Map<string, number>();
+  for (const favorite of filteredFavorites) {
+    const mediaType = favorite.mediaType || "movie";
+    for (const genreId of favorite.genreIds || []) {
+      const name = genreName(genreId, mediaType);
+      if (name) {
+        genreCounts.set(name, (genreCounts.get(name) || 0) + 1);
+      }
+    }
+  }
+
+  const genreBreakdown: GenreBreakdown[] = [...genreCounts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .slice(0, 8);
 
   return {
-    totalWatches: journal.length,
+    totalWatches: filteredJournal.length,
     moviesWatched: movieCount,
     showsWatched: showCount,
     averageRating,
@@ -174,8 +251,11 @@ export function buildInsights(journal: JournalLike[], favorites: FavoriteMovie[]
     currentStreak: current,
     bestStreak: best,
     ratingDistribution,
-    topRated: rated,
+    topRated,
     movieCount,
     showCount,
+    genreBreakdown,
+    bestMonthLabel,
+    topGenre: genreBreakdown[0]?.name || null,
   };
 }

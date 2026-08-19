@@ -6,6 +6,7 @@ import { Film, Search, User, LogOut, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
+import NotificationBell from "./NotificationBell";
 
 const NAV_LINKS = [
   { name: "Home", href: "/" },
@@ -58,7 +59,9 @@ export default function Navbar() {
           {status === "loading" ? (
              <div className="w-9 h-9 rounded-full bg-neutral-800 animate-pulse border border-white/5"></div>
           ) : session?.user ? (
-            <div className="relative group cursor-pointer h-9 flex items-center">
+            <>
+              <NotificationBell />
+              <div className="relative group cursor-pointer h-9 flex items-center">
               {session.user.image ? (
                 <Image
                   src={session.user.image}
@@ -100,7 +103,8 @@ export default function Navbar() {
                 </div>
               </div>
 
-            </div>
+              </div>
+            </>
           ) : (
             <Link href="/login" className="kin-focus rounded-full border border-white/10 bg-white/[0.03] p-2 text-neutral-400 transition hover:border-white/20 hover:bg-white/10 hover:text-white group">
               <User className="w-5 h-5 group-hover:scale-110 transition-transform" />

@@ -20,7 +20,7 @@ try {
 
   const usersResult = await db.collection("users").updateMany(
     {},
-    { $set: { favorites: [], watchlist: [], savedReviewIds: [], savedListIds: [] } }
+    { $set: { favorites: [], watchlist: [] } }
   );
   console.log(`users: reset content on ${usersResult.modifiedCount} docs`);
 

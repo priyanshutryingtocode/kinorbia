@@ -8,6 +8,7 @@ import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import type { MovieListItem } from "@/types";
 import SocialActionButton from "@/components/SocialActionButton";
+import CommentSection from "@/components/CommentSection";
 
 type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
@@ -151,6 +152,13 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
           <div className="border border-dashed border-white/10 rounded-xl p-10 text-center text-neutral-500">
             <ListVideo className="w-10 h-10 mx-auto mb-3 opacity-40" />
             This list has no movies yet.
+          </div>
+        )}
+
+        {list.visibility === "public" && (
+          <div className="mt-10 border-t border-white/10 pt-8 max-w-3xl">
+            <h2 className="mb-2 text-xl font-bold">Discussion</h2>
+            <CommentSection parentType="list" parentId={list._id} path={`/lists/${list._id}`} />
           </div>
         )}
       </div>

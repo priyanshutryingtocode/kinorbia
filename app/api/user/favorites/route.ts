@@ -61,6 +61,7 @@ export const POST = withRateLimit(
               voteAverage: body.voteAverage,
               releaseDate: body.releaseDate,
               mediaType: normalizedMediaType,
+              genreIds: body.genreIds || [],
             },
           },
         }

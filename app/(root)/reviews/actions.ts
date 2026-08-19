@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import Review from "@/models/Review";
+import Comment from "@/models/Comment";
+import Notification from "@/models/Notification";
 import User from "@/models/User";
 import type { FavoriteMovie } from "@/types";
 
@@ -28,6 +30,7 @@ export async function createReview(formData: FormData) {
   let posterPath = getRequiredString(formData, "posterPath");
   let mediaType = getRequiredString(formData, "mediaType") || "movie";
   const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
+  const spoiler = getRequiredString(formData, "spoiler") === "on";
 
   await dbConnect();
   let favorite: FavoriteMovie | undefined;
@@ -67,6 +70,7 @@ export async function createReview(formData: FormData) {
     posterPath: posterPath || undefined,
     body,
     visibility,
+    spoiler,
   });
 
   revalidatePath("/reviews");
@@ -83,6 +87,7 @@ export async function updateReview(formData: FormData) {
   const reviewId = getRequiredString(formData, "reviewId");
   const body = getRequiredString(formData, "body");
   const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
+  const spoiler = getRequiredString(formData, "spoiler") === "on";
 
   if (!reviewId || !body) {
     return;
@@ -95,6 +100,7 @@ export async function updateReview(formData: FormData) {
       $set: {
         body,
         visibility,
+        spoiler,
       },
     }
   );
@@ -118,6 +124,8 @@ export async function deleteReview(formData: FormData) {
 
   await dbConnect();
   await Review.deleteOne({ _id: reviewId, userEmail: email });
+  await Comment.deleteMany({ parentType: "review", parentId: reviewId });
+  await Notification.deleteMany({ targetType: "review", targetId: reviewId });
 
   revalidatePath("/reviews");
   revalidatePath("/profile");

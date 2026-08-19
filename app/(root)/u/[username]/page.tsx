@@ -2,12 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Calendar, Film, Heart, List, MessageSquare, User as UserIcon } from "lucide-react";
+import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import JournalEntry from "@/models/JournalEntry";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import User from "@/models/User";
 import EmptyState from "@/components/EmptyState";
+import FollowButton from "@/components/FollowButton";
 import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
 import type { FavoriteMovie, MediaType } from "@/types";
 
@@ -21,6 +23,7 @@ type PublicUser = {
   username?: string;
   createdAt?: Date;
   favorites?: FavoriteMovie[];
+  following?: string[];
 };
 
 function posterUrl(path?: string | null) {
@@ -33,6 +36,9 @@ type PublicProfilePageProps = {
 
 export default async function PublicProfilePage({ params }: PublicProfilePageProps) {
   const { username } = await Promise.resolve(params);
+  const session = await auth();
+  const currentEmail = session?.user?.email?.toLowerCase();
+
   await dbConnect();
 
   const user = await User.findOne({ username }).lean<PublicUser | null>();
@@ -40,7 +46,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
     notFound();
   }
 
-  const [watchedCount, reviews, lists] = await Promise.all([
+  const [watchedCount, reviews, lists, followerCount, currentUser] = await Promise.all([
     JournalEntry.distinct("movieId", { userEmail: user.email }),
     Review.find({ userEmail: user.email, visibility: "public" }).sort({ createdAt: -1 }).limit(6).lean<{
       _id: { toString: () => string };
@@ -48,6 +54,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
       movieId?: string;
       mediaType?: MediaType;
       body: string;
+      spoiler?: boolean;
       createdAt: Date;
     }[]>(),
     MovieList.find({ userEmail: user.email, visibility: "public" }).sort({ createdAt: -1 }).limit(6).lean<{
@@ -57,10 +64,18 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
       movies: FavoriteMovie[];
       createdAt: Date;
     }[]>(),
+    User.countDocuments({ following: user.email }),
+    currentEmail
+      ? User.findOne({ email: currentEmail })
+          .select("following")
+          .lean<{ following: string[] } | null>()
+      : Promise.resolve(null),
   ]);
 
   const favorites = dedupeFavorites(user.favorites || []);
   const ratingMap = buildRatingMap(favorites);
+  const isSelf = currentEmail === user.email.toLowerCase();
+  const isFollowing = Boolean(currentUser?.following?.includes(user.email.toLowerCase()));
 
   return (
     <div className="min-h-screen px-6 py-12 text-white">
@@ -85,14 +100,37 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                 Joined {user.createdAt ? new Date(user.createdAt).getFullYear() : "KinOrbia"}
               </p>
             </div>
+            {currentEmail && !isSelf && (
+              <FollowButton
+                targetEmail={user.email}
+                isFollowing={isFollowing}
+                path={`/u/${user.username}`}
+              />
+            )}
           </div>
         </section>
 
-        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           <Stat icon={<Film className="h-5 w-5 text-blue-400" />} label="Watched" value={watchedCount.length.toString()} />
           <Stat icon={<Heart className="h-5 w-5 text-red-400" />} label="Favorites" value={favorites.length.toString()} />
           <Stat icon={<MessageSquare className="h-5 w-5 text-green-400" />} label="Reviews" value={reviews.length.toString()} />
           <Stat icon={<List className="h-5 w-5 text-yellow-400" />} label="Lists" value={lists.length.toString()} />
+          <Link href={`/u/${user.username}/following`} className="group">
+            <Stat
+              icon={<UserIcon className="h-5 w-5 text-purple-400" />}
+              label="Following"
+              value={String(user.following?.length || 0)}
+              hoverable
+            />
+          </Link>
+          <Link href={`/u/${user.username}/followers`} className="group">
+            <Stat
+              icon={<UserIcon className="h-5 w-5 text-purple-400" />}
+              label="Followers"
+              value={followerCount.toString()}
+              hoverable
+            />
+          </Link>
         </div>
 
         <section className="mt-12">
@@ -128,7 +166,12 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                     <span className="text-sm font-bold text-yellow-400">{(reviewRating / 2).toFixed(1)} stars</span>
                   )}
                 </div>
-                <p className="mt-3 line-clamp-3 text-sm text-neutral-300">{review.body}</p>
+                {review.spoiler && (
+                  <span className="mt-2 inline-flex rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-yellow-300">
+                    Spoiler
+                  </span>
+                )}
+                <p className={`mt-3 line-clamp-3 text-sm text-neutral-300 ${review.spoiler ? "select-none opacity-40 blur-sm" : ""}`}>{review.body}</p>
               </Link>
               );
             }) : <EmptyState title="No public reviews yet" description="This user hasn't shared any reviews." />}
@@ -151,9 +194,9 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   );
 }
 
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Stat({ icon, label, value, hoverable = false }: { icon: React.ReactNode; label: string; value: string; hoverable?: boolean }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-neutral-900/50 p-4">
+    <div className={`rounded-lg border border-white/10 bg-neutral-900/50 p-4 transition ${hoverable ? "group-hover:border-red-500/40" : ""}`}>
       <div className="mb-3">{icon}</div>
       <p className="text-2xl font-bold">{value}</p>
       <p className="text-xs uppercase tracking-widest text-neutral-500">{label}</p>

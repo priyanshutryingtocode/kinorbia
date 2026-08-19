@@ -182,7 +182,8 @@ if (user?.favorites) {
                     title: movie.title,
                     poster_path: movie.poster_path,
                     vote_average: movie.vote_average || 0,
-                    release_date: movie.release_date
+                    release_date: movie.release_date,
+                    genre_ids: movie.genres?.map((genre) => genre.id) || [],
                   }}
                   initialIsFavorite={isFavorite}
                 />
@@ -212,6 +213,7 @@ if (user?.favorites) {
                       poster_path: movie.poster_path,
                       vote_average: movie.vote_average || 0,
                       release_date: movie.release_date,
+                      genre_ids: movie.genres?.map((genre) => genre.id) || [],
                     }}
                     initialRating={personalRating}
                   />
