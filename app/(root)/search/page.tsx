@@ -86,6 +86,20 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const selectedLanguage = typeof language === "string" ? language : "";
   const selectedSort = typeof sort === "string" ? sort : "";
   const mediaType = type === "tv" ? "tv" : "movie";
+
+  const buildTypeHref = (nextType: "movie" | "tv") => {
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (releaseYear) params.set("year", releaseYear);
+    if (minRating) params.set("minRating", minRating);
+    if (selectedGenre) params.set("genre", selectedGenre);
+    if (maxRuntime) params.set("runtime", maxRuntime);
+    if (selectedLanguage) params.set("language", selectedLanguage);
+    if (selectedSort) params.set("sort", selectedSort);
+    params.set("type", nextType);
+    return `?${params.toString()}`;
+  };
+
   const data = await searchContent({
     query,
     year: releaseYear,
@@ -120,7 +134,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
         <div className="mb-6 inline-flex items-center gap-1 rounded-full border border-white/10 bg-neutral-900/50 p-1">
           <Link
-            href={mediaType === "movie" ? "?type=movie" : "?type=movie"}
+            href={buildTypeHref("movie")}
             className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
               mediaType === "movie" ? "bg-red-600 text-white" : "text-neutral-400 hover:text-white"
             }`}
@@ -128,7 +142,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             Movies
           </Link>
           <Link
-            href="?type=tv"
+            href={buildTypeHref("tv")}
             className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
               mediaType === "tv" ? "bg-red-600 text-white" : "text-neutral-400 hover:text-white"
             }`}

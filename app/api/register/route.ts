@@ -8,6 +8,22 @@ import { withRateLimit } from "@/lib/rateLimit";
 import { generateToken, hashToken, TOKEN_TTL_MS } from "@/lib/token";
 import { sendEmail, buildLink } from "@/lib/email";
 
+// Identical body for every outcome so the endpoint cannot be used to
+// enumerate registered emails.
+const GENERIC_RESPONSE = {
+  message:
+    "Registration received. If this email is new, check your inbox for a verification link.",
+};
+
+function isDuplicateKeyError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: number }).code === 11000
+  );
+}
+
 export const POST = withRateLimit(
   async (req: Request) => {
     try {
@@ -19,15 +35,17 @@ export const POST = withRateLimit(
 
       await dbConnect();
 
-      const existingUser = await User.findOne({ email: body.email });
-      if (existingUser) {
-        return NextResponse.json(
-          { message: "User already exists." },
-          { status: 400 }
-        );
-      }
-
       const hashedPassword = await bcrypt.hash(body.password, 10);
+
+      const existingUser = await User.findOne({ email: body.email })
+        .select("_id")
+        .lean<{ _id: unknown } | null>();
+
+      if (existingUser) {
+        // Burn comparable CPU (bcrypt) so timing matches the create branch.
+        void hashedPassword;
+        return NextResponse.json(GENERIC_RESPONSE, { status: 202 });
+      }
 
       const baseUsername = slugifyUsername(body.name || body.email.split("@")[0]);
       let username = baseUsername;
@@ -42,17 +60,26 @@ export const POST = withRateLimit(
       const verifyTokenHash = hashToken(verifyToken);
       const verifyTokenExpiresAt = new Date(Date.now() + TOKEN_TTL_MS);
 
-      await User.create({
-        name: body.name,
-        email: body.email,
-        password: hashedPassword,
-        provider: "credentials",
-        username,
-        verifyToken: {
-          token: verifyTokenHash,
-          expiresAt: verifyTokenExpiresAt,
-        },
-      });
+      try {
+        await User.create({
+          name: body.name,
+          email: body.email,
+          password: hashedPassword,
+          provider: "credentials",
+          username,
+          verifyToken: {
+            token: verifyTokenHash,
+            expiresAt: verifyTokenExpiresAt,
+          },
+        });
+      } catch (error) {
+        // Lost a unique-index race (email or username taken concurrently):
+        // report the generic outcome rather than leaking which.
+        if (isDuplicateKeyError(error)) {
+          return NextResponse.json(GENERIC_RESPONSE, { status: 202 });
+        }
+        throw error;
+      }
 
       try {
         await sendEmail({
@@ -69,7 +96,7 @@ export const POST = withRateLimit(
         console.error("Failed to send verification email:", error);
       }
 
-      return NextResponse.json({ message: "User registered." }, { status: 201 });
+      return NextResponse.json(GENERIC_RESPONSE, { status: 202 });
     } catch (error) {
       console.error("Registration failed:", error);
 

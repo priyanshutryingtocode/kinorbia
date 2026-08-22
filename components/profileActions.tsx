@@ -14,7 +14,8 @@ export default function ProfileActions({ user }: { user: UserData }) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  
+  const [error, setError] = useState("");
+
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio || "");
 
@@ -28,6 +29,8 @@ export default function ProfileActions({ user }: { user: UserData }) {
 
   const handleSave = async () => {
     setLoading(true);
+    setError("");
+
     try {
       const res = await fetch("/api/user/profile", {
         method: "PUT",
@@ -38,9 +41,12 @@ export default function ProfileActions({ user }: { user: UserData }) {
       if (res.ok) {
         setIsEditing(false);
         router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.message || "Could not save your profile. Please try again.");
       }
     } catch {
-      console.error("Failed to save");
+      setError("Could not save your profile. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -105,7 +111,13 @@ export default function ProfileActions({ user }: { user: UserData }) {
                 <p className="text-right text-xs text-neutral-600 mt-1">{bio.length}/160</p>
               </div>
 
-              <button 
+              {error && (
+                <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
+
+              <button
                 onClick={handleSave}
                 disabled={loading}
                 className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition mt-2 flex items-center justify-center gap-2"

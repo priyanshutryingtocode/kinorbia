@@ -251,7 +251,7 @@ JournalEntry.find({ userEmail: session.user.email })
         </div>
 
 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-12">
-           <StatCard icon={<Film className="w-5 h-5 text-blue-400" />} label="Movies Watched" value={watchedMovieIds.length.toString()} />
+           <StatCard icon={<Film className="w-5 h-5 text-blue-400" />} label="Titles Watched" value={watchedMovieIds.length.toString()} />
            <StatCard 
              icon={<Heart className="w-5 h-5 text-red-500" />} 
              label="Favorites" 
@@ -409,7 +409,7 @@ JournalEntry.find({ userEmail: session.user.email })
                 <Link key={entry._id} href="/journal" className="block bg-neutral-900/50 border border-white/10 rounded-xl p-4 hover:border-red-500/40 transition">
                   <div className="flex items-center justify-between gap-3">
                     <h4 className="font-bold text-white">{entry.movieTitle}</h4>
-                    <span className="text-xs text-neutral-500">{new Date(entry.watchedAt).toLocaleDateString()}</span>
+                    <span className="text-xs text-neutral-500">{new Date(entry.watchedAt).toLocaleDateString(undefined, { timeZone: "UTC" })}</span>
                   </div>
                   {entry.note && <p className="text-sm text-neutral-300 mt-2 line-clamp-2">{entry.note}</p>}
                 </Link>
@@ -444,33 +444,50 @@ function ProfileMovieStrip({ items, emptyText }: { items: JournalItem[]; emptyTe
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {items.map((item) => (
-        <Link
-          key={item._id}
-          href={item.mediaType === "tv" ? `/tv/${item.movieId ?? item._id}` : `/movie/${item.movieId ?? item._id}`}
-          className="bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden"
-        >
-          <div className="relative aspect-2/3 bg-neutral-900">
-            {posterUrl(item.posterPath) ? (
-              <Image
-                src={posterUrl(item.posterPath) as string}
-                alt={item.movieTitle}
-                fill
-                sizes="(min-width: 768px) 25vw, 50vw"
-                className="object-cover"
-              />
-            ) : (
-              <div className="h-full flex items-center justify-center text-neutral-700">
-                <Film className="w-8 h-8" />
-              </div>
-            )}
-          </div>
-          <div className="p-3">
-            <h4 className="font-medium text-sm truncate">{item.movieTitle}</h4>
-            <p className="text-xs text-neutral-500 mt-1">{new Date(item.watchedAt).toLocaleDateString()}</p>
-          </div>
-        </Link>
-))}
+      {items.map((item) => {
+        const hasTmdbId = Boolean(item.movieId);
+        const card = (
+          <>
+            <div className="relative aspect-2/3 bg-neutral-900">
+              {posterUrl(item.posterPath) ? (
+                <Image
+                  src={posterUrl(item.posterPath) as string}
+                  alt={item.movieTitle}
+                  fill
+                  sizes="(min-width: 768px) 25vw, 50vw"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center text-neutral-700">
+                  <Film className="w-8 h-8" />
+                </div>
+              )}
+            </div>
+            <div className="p-3">
+              <h4 className="font-medium text-sm truncate">{item.movieTitle}</h4>
+              <p className="text-xs text-neutral-500 mt-1">{new Date(item.watchedAt).toLocaleDateString(undefined, { timeZone: "UTC" })}</p>
+            </div>
+          </>
+        );
+
+        if (!hasTmdbId) {
+          return (
+            <div key={item._id} className="bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden">
+              {card}
+            </div>
+          );
+        }
+
+        return (
+          <Link
+            key={item._id}
+            href={item.mediaType === "tv" ? `/tv/${item.movieId}` : `/movie/${item.movieId}`}
+            className="bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden"
+          >
+            {card}
+          </Link>
+        );
+      })}
     </div>
   );
 }

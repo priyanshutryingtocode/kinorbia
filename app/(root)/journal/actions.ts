@@ -6,11 +6,16 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import JournalEntry from "@/models/JournalEntry";
 import User from "@/models/User";
+import { isObjectId } from "@/lib/objectId";
 import type { FavoriteMovie } from "@/types";
 
 function getRequiredString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function parseWatchedDate(value: string) {
+  return new Date(`${value}T00:00:00Z`);
 }
 
 export async function createJournalEntry(formData: FormData) {
@@ -29,10 +34,8 @@ export async function createJournalEntry(formData: FormData) {
   const note = getRequiredString(formData, "note");
   const watchedAtValue = getRequiredString(formData, "watchedAt");
 
-  if (!movieTitle || !watchedAtValue) {
-    if (!favoriteMovieId) {
-      return;
-    }
+  if (!watchedAtValue || (!movieTitle && !favoriteMovieId)) {
+    return;
   }
 
   await dbConnect();
@@ -59,16 +62,21 @@ export async function createJournalEntry(formData: FormData) {
     return;
   }
 
-  await JournalEntry.create({
-    userEmail: email,
-    userName: session.user.name || "KinOrbia user",
-    movieId: movieId || undefined,
-    mediaType: mediaType === "tv" ? "tv" : "movie",
-    movieTitle,
-    posterPath: posterPath || undefined,
-    watchedAt: new Date(watchedAtValue),
-    note,
-  });
+  try {
+    await JournalEntry.create({
+      userEmail: email,
+      userName: session.user.name || "KinOrbia user",
+      movieId: movieId || undefined,
+      mediaType: mediaType === "tv" ? "tv" : "movie",
+      movieTitle,
+      posterPath: posterPath || undefined,
+      watchedAt: parseWatchedDate(watchedAtValue),
+      note,
+    });
+  } catch (error) {
+    console.error("Error creating journal entry:", error);
+    return;
+  }
 
   revalidatePath("/journal");
 }
@@ -85,20 +93,25 @@ export async function updateJournalEntry(formData: FormData) {
   const note = getRequiredString(formData, "note");
   const watchedAtValue = getRequiredString(formData, "watchedAt");
 
-  if (!entryId || !watchedAtValue) {
+  if (!entryId || !isObjectId(entryId) || !watchedAtValue) {
     return;
   }
 
-  await dbConnect();
-  await JournalEntry.updateOne(
-    { _id: entryId, userEmail: email },
-    {
-      $set: {
-        watchedAt: new Date(watchedAtValue),
-        note,
-      },
-    }
-  );
+  try {
+    await dbConnect();
+    await JournalEntry.updateOne(
+      { _id: entryId, userEmail: email },
+      {
+        $set: {
+          watchedAt: parseWatchedDate(watchedAtValue),
+          note,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error updating journal entry:", error);
+    return;
+  }
 
   revalidatePath("/journal");
   revalidatePath("/profile");
@@ -113,12 +126,17 @@ export async function deleteJournalEntry(formData: FormData) {
   const email = session.user.email.toLowerCase();
 
   const entryId = getRequiredString(formData, "entryId");
-  if (!entryId) {
+  if (!entryId || !isObjectId(entryId)) {
     return;
   }
 
-  await dbConnect();
-  await JournalEntry.deleteOne({ _id: entryId, userEmail: email });
+  try {
+    await dbConnect();
+    await JournalEntry.deleteOne({ _id: entryId, userEmail: email });
+  } catch (error) {
+    console.error("Error deleting journal entry:", error);
+    return;
+  }
 
   revalidatePath("/journal");
   revalidatePath("/profile");

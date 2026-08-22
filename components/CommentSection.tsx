@@ -26,7 +26,7 @@ export default async function CommentSection({ parentType, parentId, path }: Com
   await dbConnect();
   const rawComments = await Comment.find({ parentType, parentId })
     .sort({ createdAt: 1 })
-    .limit(20)
+    .limit(200)
     .lean<RawComment[]>();
 
   const comments: CommentItem[] = rawComments.map((comment) => ({

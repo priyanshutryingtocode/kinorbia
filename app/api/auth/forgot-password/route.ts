@@ -53,6 +53,11 @@ export const POST = withRateLimit(
         } catch (error) {
           console.error("Failed to send reset email:", error);
         }
+      } else {
+        // Do comparable work in every branch so response timing doesn't
+        // distinguish registered credentials accounts from unknown emails.
+        const decoyTokenHash = hashToken(generateToken());
+        void decoyTokenHash;
       }
 
       return NextResponse.json({

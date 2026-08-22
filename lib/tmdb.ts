@@ -53,14 +53,37 @@ async function tmdbFetch<T>(
 
 type ResultList<T> = { results?: T[] };
 
-export const getPopularMovies = (page = 1) =>
-  tmdbFetch<ResultList<MovieSummary>>(`/movie/popular?language=en-US&page=${page}`, 300);
+// Coerce untrusted page/genre values into safe URL fragments.
+function safePage(page: unknown) {
+  const n = Number(page);
+  return Number.isInteger(n) && n >= 1 && n <= 500 ? n : 1;
+}
 
-export const getDiscoverMovies = (page = 1, genre?: string) =>
-  tmdbFetch<ResultList<MovieSummary>>(
-    `/discover/movie?with_genres=${genre}&language=en-US&page=${page}`,
+function safeGenre(genre: string | undefined) {
+  if (!genre) {
+    return "";
+  }
+  const n = Number(genre);
+  return Number.isInteger(n) && n > 0 ? String(n) : "";
+}
+
+// TMDB ids are numeric; strip everything else so route params can't alter
+// the request path.
+function safeId(id: string | number) {
+  const digits = String(id).replace(/[^0-9]/g, "");
+  return digits || "0";
+}
+
+export const getPopularMovies = (page = 1) =>
+  tmdbFetch<ResultList<MovieSummary>>(`/movie/popular?language=en-US&page=${safePage(page)}`, 300);
+
+export const getDiscoverMovies = (page = 1, genre?: string) => {
+  const genreParam = safeGenre(genre);
+  return tmdbFetch<ResultList<MovieSummary>>(
+    `/discover/movie?${genreParam ? `with_genres=${genreParam}&` : ""}language=en-US&page=${safePage(page)}`,
     300
   );
+};
 
 export const discoverMovies = (extraParams = "", page = 1) => {
   const params = extraParams.replace(/^&/, "");
@@ -76,13 +99,13 @@ export const searchMovies = (query: string, extraParams = "") =>
     3600
   );
 
-export const getMovie = (id: string) => tmdbFetch<TmdbMovieDetails>(`/movie/${id}`, 3600);
+export const getMovie = (id: string) => tmdbFetch<TmdbMovieDetails>(`/movie/${safeId(id)}`, 3600);
 
 export async function getMovieWithStatus(id: string): Promise<{
   movie: TmdbMovieDetails | null;
   notFound: boolean;
 }> {
-  const url = `${BASE}/movie/${id}?api_key=${process.env.TMDB_API_KEY}`;
+  const url = `${BASE}/movie/${safeId(id)}?api_key=${process.env.TMDB_API_KEY}`;
 
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } });
@@ -102,10 +125,10 @@ export async function getMovieWithStatus(id: string): Promise<{
 }
 
 export const getMovieCredits = (id: string) =>
-  tmdbFetch<TmdbMovieCredits | null>(`/movie/${id}/credits?language=en-US`, 3600);
+  tmdbFetch<TmdbMovieCredits | null>(`/movie/${safeId(id)}/credits?language=en-US`, 3600);
 
 export const getRecommendationMovies = (id: string) =>
-  tmdbFetch<ResultList<MovieSummary>>(`/movie/${id}/recommendations?language=en-US&page=1`, 3600);
+  tmdbFetch<ResultList<MovieSummary>>(`/movie/${safeId(id)}/recommendations?language=en-US&page=1`, 3600);
 
 type RawTvResult = {
   id: number;
@@ -131,17 +154,19 @@ export function normalizeTvResult(result: RawTvResult): MovieSummary {
 }
 
 export const getPopularTv = (page = 1) =>
-  tmdbFetch<ResultList<RawTvResult>>(`/tv/popular?language=en-US&page=${page}`, 300).then((data) => ({
+  tmdbFetch<ResultList<RawTvResult>>(`/tv/popular?language=en-US&page=${safePage(page)}`, 300).then((data) => ({
     results: data?.results?.map(normalizeTvResult) || [],
   }));
 
-export const getDiscoverTv = (page = 1, genre?: string) =>
-  tmdbFetch<ResultList<RawTvResult>>(
-    `/discover/tv?with_genres=${genre}&language=en-US&page=${page}`,
+export const getDiscoverTv = (page = 1, genre?: string) => {
+  const genreParam = safeGenre(genre);
+  return tmdbFetch<ResultList<RawTvResult>>(
+    `/discover/tv?${genreParam ? `with_genres=${genreParam}&` : ""}language=en-US&page=${safePage(page)}`,
     300
   ).then((data) => ({
     results: data?.results?.map(normalizeTvResult) || [],
   }));
+};
 
 export const discoverTv = (extraParams = "", page = 1) => {
   const params = extraParams.replace(/^&/, "");
@@ -161,13 +186,13 @@ export const searchTv = (query: string, extraParams = "") =>
     results: data?.results?.map(normalizeTvResult) || [],
   }));
 
-export const getTv = (id: string) => tmdbFetch<TmdbTvDetails>(`/tv/${id}`, 3600);
+export const getTv = (id: string) => tmdbFetch<TmdbTvDetails>(`/tv/${safeId(id)}`, 3600);
 
 export async function getTvWithStatus(id: string): Promise<{
   tv: TmdbTvDetails | null;
   notFound: boolean;
 }> {
-  const url = `${BASE}/tv/${id}?api_key=${process.env.TMDB_API_KEY}`;
+  const url = `${BASE}/tv/${safeId(id)}?api_key=${process.env.TMDB_API_KEY}`;
 
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } });
@@ -187,10 +212,10 @@ export async function getTvWithStatus(id: string): Promise<{
 }
 
 export const getTvCredits = (id: string) =>
-  tmdbFetch<TmdbTvCredits | null>(`/tv/${id}/credits?language=en-US`, 3600);
+  tmdbFetch<TmdbTvCredits | null>(`/tv/${safeId(id)}/credits?language=en-US`, 3600);
 
 export const getTvRecommendations = (id: string) =>
-  tmdbFetch<ResultList<RawTvResult>>(`/tv/${id}/recommendations?language=en-US&page=1`, 3600).then(
+  tmdbFetch<ResultList<RawTvResult>>(`/tv/${safeId(id)}/recommendations?language=en-US&page=1`, 3600).then(
     (data) => ({
       results: data?.results?.map(normalizeTvResult) || [],
     })

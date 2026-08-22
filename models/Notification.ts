@@ -32,6 +32,10 @@ const NotificationSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  commentId: {
+    type: String,
+    default: "",
+  },
   movieId: {
     type: String,
     default: "",

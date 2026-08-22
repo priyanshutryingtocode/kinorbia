@@ -39,7 +39,11 @@ export const POST = withRateLimit(
       await User.updateOne(
         { _id: user._id },
         {
-          $set: { password: hashedPassword },
+          $set: {
+            password: hashedPassword,
+            // Invalidate every JWT session issued before this moment.
+            sessionsInvalidBefore: new Date(),
+          },
           $unset: { resetToken: 1 },
         }
       );

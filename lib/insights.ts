@@ -54,15 +54,24 @@ function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
+// Journal watch dates are stored as UTC midnight of the selected calendar
+// day, so all journal bucketing uses UTC getters to stay consistent.
 function monthKey(date: Date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}`;
 }
 
-function localDayStr(date: Date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+function utcDayStr(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Calendar-day number derived from the YYYY-MM-DD string itself, so streak
+// math is immune to timezone offsets and DST transitions.
+function dayNumber(day: string) {
+  const [y, m, d] = day.split("-").map(Number);
+  return Math.round(Date.UTC(y, m - 1, d) / DAY_MS);
+}
 
 function computeStreaks(dayStrs: string[]) {
   let best = 0;
@@ -70,30 +79,22 @@ function computeStreaks(dayStrs: string[]) {
   let prev: number | null = null;
 
   for (const day of dayStrs) {
-    const t = Date.parse(`${day}T00:00:00`);
-    if (prev !== null && t - prev === DAY_MS) {
-      run += 1;
-    } else {
-      run = 1;
-    }
+    const n = dayNumber(day);
+    run = prev !== null && n - prev === 1 ? run + 1 : 1;
     best = Math.max(best, run);
-    prev = t;
+    prev = n;
   }
 
   let current = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const lastDay = dayStrs.length ? Date.parse(`${dayStrs[dayStrs.length - 1]}T00:00:00`) : null;
-
-  if (lastDay !== null && (today.getTime() - lastDay) / DAY_MS <= 1) {
-    for (let i = dayStrs.length - 1; i >= 0; i--) {
-      const t = Date.parse(`${dayStrs[i]}T00:00:00`);
-      if (i === dayStrs.length - 1) {
-        current = 1;
-      } else if (t === Date.parse(`${dayStrs[i + 1]}T00:00:00`) - DAY_MS) {
-        current += 1;
-      } else {
-        break;
+  if (dayStrs.length > 0) {
+    const last = dayNumber(dayStrs[dayStrs.length - 1]);
+    if (dayNumber(utcDayStr(new Date())) - last <= 1) {
+      for (let i = dayStrs.length - 1; i >= 0; i--) {
+        if (i === dayStrs.length - 1 || dayNumber(dayStrs[i]) === dayNumber(dayStrs[i + 1]) - 1) {
+          current += 1;
+        } else {
+          break;
+        }
       }
     }
   }
@@ -111,7 +112,7 @@ function toStars(rating?: number) {
 export function yearsFromJournal(journal: JournalLike[]): number[] {
   const years = new Set<number>();
   for (const entry of journal) {
-    years.add(new Date(entry.watchedAt).getFullYear());
+    years.add(new Date(entry.watchedAt).getUTCFullYear());
   }
   return [...years].sort((a, b) => b - a);
 }
@@ -123,15 +124,17 @@ function monthKeysFor(now: Date, year?: number): { key: string; label: string }[
     for (let month = 0; month < 12; month += 1) {
       keys.push({
         key: `${year}-${pad(month + 1)}`,
-        label: new Date(year, month, 1).toLocaleDateString(undefined, { month: "short" }),
+        label: new Date(Date.UTC(year, month, 1)).toLocaleDateString(undefined, { month: "short", timeZone: "UTC" }),
       });
     }
   } else {
+    const utcYear = now.getUTCFullYear();
+    const utcMonth = now.getUTCMonth();
     for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const date = new Date(Date.UTC(utcYear, utcMonth - i, 1));
       keys.push({
         key: monthKey(date),
-        label: date.toLocaleDateString(undefined, { month: "short" }),
+        label: date.toLocaleDateString(undefined, { month: "short", timeZone: "UTC" }),
       });
     }
   }
@@ -147,7 +150,7 @@ export function buildInsights(
   const now = new Date();
 
   const filteredJournal = year
-    ? journal.filter((entry) => new Date(entry.watchedAt).getFullYear() === year)
+    ? journal.filter((entry) => new Date(entry.watchedAt).getUTCFullYear() === year)
     : journal;
 
   const filteredFavorites = year
@@ -168,7 +171,7 @@ export function buildInsights(
     const date = new Date(entry.watchedAt);
     const key = monthKey(date);
     monthCounts.set(key, (monthCounts.get(key) || 0) + 1);
-    dayStrs.push(localDayStr(date));
+    dayStrs.push(utcDayStr(date));
 
     if ((entry.mediaType || "movie") === "tv") {
       showCount += 1;

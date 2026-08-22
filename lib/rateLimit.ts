@@ -9,12 +9,18 @@ const buckets = new Map<string, Bucket>();
 const SWEEP_THRESHOLD = 5000;
 
 export function getClientIp(req: Request): string {
+  // The rightmost entry in x-forwarded-for is the value appended by our own
+  // trusted proxy (e.g. nginx) and cannot be spoofed by the client. The
+  // leftmost entry is client-supplied and must never be used for limiting.
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0].trim();
+    const hops = forwarded.split(",").map((hop) => hop.trim()).filter(Boolean);
+    if (hops.length > 0) {
+      return hops[hops.length - 1];
+    }
   }
 
-  return req.headers.get("x-real-ip") || "unknown";
+  return req.headers.get("x-real-ip") || req.headers.get("cf-connecting-ip") || "unknown";
 }
 
 export function rateLimit(
@@ -25,11 +31,16 @@ export function rateLimit(
   const current = buckets.get(identifier);
 
   if (!current || current.resetAt <= now) {
+    if (buckets.size >= SWEEP_THRESHOLD) {
+      for (const [key, bucket] of buckets) {
+        if (bucket.resetAt <= now) {
+          buckets.delete(key);
+        }
+      }
+    }
     buckets.set(identifier, { count: 1, resetAt: now + windowMs });
     return true;
-  }
-
-  if (buckets.size >= SWEEP_THRESHOLD) {
+  } else if (buckets.size >= SWEEP_THRESHOLD) {
     for (const [key, bucket] of buckets) {
       if (bucket.resetAt <= now) {
         buckets.delete(key);

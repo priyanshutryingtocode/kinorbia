@@ -36,6 +36,10 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  sessionsInvalidBefore: {
+    type: Date,
+    default: null,
+  },
   verifyToken: {
     token: String,
     expiresAt: Date,

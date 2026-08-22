@@ -236,7 +236,7 @@ export default async function ListsPage() {
 
                   <div className="grid grid-cols-5 gap-2">
                     {list.movies.slice(0, 5).map((movie) => (
-                      <div key={movie.movieId} className="relative aspect-2/3 bg-neutral-950 rounded-md overflow-hidden">
+                      <div key={`${movie.mediaType || "movie"}-${movie.movieId}`} className="relative aspect-2/3 bg-neutral-950 rounded-md overflow-hidden">
                         {posterUrl(movie.posterPath) ? (
                           <Image
                             src={posterUrl(movie.posterPath) as string}

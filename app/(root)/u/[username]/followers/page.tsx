@@ -17,7 +17,7 @@ type Props = {
 };
 
 export default async function FollowersPage({ params }: Props) {
-  const { username } = await Promise.resolve(params);
+  const username = (await Promise.resolve(params)).username.toLowerCase();
   const session = await auth();
   const currentEmail = session?.user?.email?.toLowerCase();
 

@@ -27,7 +27,11 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password.");
+      if (result.code === "EMAIL_NOT_VERIFIED") {
+        setError("Please verify your email before signing in. Check your inbox for the verification link.");
+      } else {
+        setError("Invalid email or password.");
+      }
       return;
     }
 

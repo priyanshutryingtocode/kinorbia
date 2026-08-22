@@ -9,7 +9,7 @@ import User from "@/models/User";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
-  return typeof value === "string" ? value : "";
+  return typeof value === "string" ? value.trim() : "";
 }
 
 export async function toggleFollow(formData: FormData) {
@@ -27,38 +27,52 @@ export async function toggleFollow(formData: FormData) {
   }
 
   await dbConnect();
-  const target = await User.findOne({ email: targetEmail }).select("email username").lean();
+  const target = await User.findOne({ email: targetEmail }).select("email username").lean<{ email: string; username?: string | null } | null>();
   if (!target) {
     return;
   }
 
-  const user = await User.findOne({ email }).select("following");
-  const following: string[] = user?.following || [];
-  const isFollowing = following.includes(targetEmail);
+  try {
+    // Atomic add-first toggle: whichever update actually modifies the
+    // document decides whether a notification is created or cleaned up.
+    const added = await User.updateOne(
+      { email, following: { $ne: targetEmail } },
+      { $addToSet: { following: targetEmail } }
+    );
 
-  await User.updateOne(
-    { email },
-    isFollowing ? { $pull: { following: targetEmail } } : { $addToSet: { following: targetEmail } }
-  );
-
-  if (isFollowing) {
-    await Notification.deleteOne({
-      userEmail: targetEmail,
-      type: "follow",
-      actorEmail: email,
-    });
-  } else {
-    await Notification.create({
-      userEmail: targetEmail,
-      type: "follow",
-      actorEmail: email,
-      actorName: session.user.name || "KinOrbia user",
-      targetType: "user",
-      targetId: targetEmail,
-      targetTitle: target.username || targetEmail,
-    });
+    if (added.modifiedCount > 0) {
+      await Notification.create({
+        userEmail: targetEmail,
+        type: "follow",
+        actorEmail: email,
+        actorName: session.user.name || "KinOrbia user",
+        targetType: "user",
+        targetId: targetEmail,
+        targetTitle: target.username || targetEmail,
+      });
+    } else {
+      const removed = await User.updateOne(
+        { email, following: targetEmail },
+        { $pull: { following: targetEmail } }
+      );
+      if (removed.modifiedCount > 0) {
+        await Notification.deleteOne({
+          userEmail: targetEmail,
+          type: "follow",
+          actorEmail: email,
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error toggling follow:", error);
+    return;
   }
 
   revalidatePath(path);
   revalidatePath("/profile");
+  if (target.username) {
+    revalidatePath(`/u/${target.username}`);
+    revalidatePath(`/u/${target.username}/followers`);
+    revalidatePath(`/u/${target.username}/following`);
+  }
 }

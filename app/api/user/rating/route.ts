@@ -5,8 +5,12 @@ import JournalEntry from "@/models/JournalEntry";
 import { getSessionUser } from "@/lib/session";
 import { rateMovieSchema, parseMovieBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
-import { hasCapacity, MAX_FAVORITES } from "@/lib/bounds";
+import { MAX_FAVORITES } from "@/lib/bounds";
 import { mediaEquals } from "@/lib/media";
+
+function isDuplicateKeyError(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && (error as { code?: number }).code === 11000;
+}
 
 export const POST = withRateLimit(
   async (req: Request) => {
@@ -26,38 +30,47 @@ export const POST = withRateLimit(
       const normalizedMediaType = body.mediaType;
 
       await dbConnect();
+
+      // Update metadata of an existing favorite in place. The positional
+      // projection matches the exact (movieId, mediaType) pair.
       const updateFavorite = await User.updateOne(
         {
           email,
-          "favorites.movieId": normalizedMovieId,
-          "favorites.mediaType": mediaEquals(normalizedMediaType),
+          favorites: {
+            $elemMatch: {
+              movieId: normalizedMovieId,
+              mediaType: mediaEquals(normalizedMediaType),
+            },
+          },
         },
         {
           $set: {
             "favorites.$.personalRating": clampedRating,
             "favorites.$.title": body.movieTitle,
-            "favorites.$.posterPath": body.posterPath,
-            "favorites.$.voteAverage": body.voteAverage,
-            "favorites.$.releaseDate": body.releaseDate,
+            ...(body.posterPath ? { "favorites.$.posterPath": body.posterPath } : {}),
+            ...(body.voteAverage !== undefined ? { "favorites.$.voteAverage": body.voteAverage } : {}),
+            ...(body.releaseDate ? { "favorites.$.releaseDate": body.releaseDate } : {}),
           },
         }
       );
 
       if (updateFavorite.matchedCount === 0) {
-        const userMovie = await User.findOne({ email }, { favorites: 1 });
-
-        if (!userMovie) {
-          return NextResponse.json({ message: "User record not found" }, { status: 404 });
-        }
-
-        if (!hasCapacity(userMovie.favorites, MAX_FAVORITES)) {
-          return NextResponse.json({ message: "Favorites list is full." }, { status: 409 });
-        }
-
-        await User.updateOne(
+        // No matching favorite yet: create one atomically with the rating
+        // included. The guard is composite so an entry of the *other* media
+        // type sharing the TMDB id cannot block it (TMDB ids collide across
+        // movie/tv namespaces), and capacity is enforced in the same query.
+        const pushedFavorite = await User.updateOne(
           {
             email,
-            "favorites.movieId": { $ne: normalizedMovieId },
+            favorites: {
+              $not: {
+                $elemMatch: {
+                  movieId: normalizedMovieId,
+                  mediaType: mediaEquals(normalizedMediaType),
+                },
+              },
+            },
+            $expr: { $lt: [{ $size: { $ifNull: ["$favorites", []] } }, MAX_FAVORITES] },
           },
           {
             $push: {
@@ -74,25 +87,43 @@ export const POST = withRateLimit(
             },
           }
         );
+
+        if (pushedFavorite.modifiedCount === 0) {
+          return NextResponse.json({ message: "Favorites list is full." }, { status: 409 });
+        }
       }
 
-      await JournalEntry.updateOne(
-        { userEmail: email, movieId: normalizedMovieId, mediaType: mediaEquals(normalizedMediaType) },
-        {
-          $set: {
-            movieTitle: body.movieTitle,
-            posterPath: body.posterPath || undefined,
+      // Mirror the rating onto the journal. Only overwrite stored fields the
+      // client actually sent; an absent posterPath must not erase the saved one.
+      const journalUpdate = () =>
+        JournalEntry.updateOne(
+          { userEmail: email, movieId: normalizedMovieId, mediaType: mediaEquals(normalizedMediaType) },
+          {
+            $set: {
+              movieTitle: body.movieTitle,
+              ...(body.posterPath ? { posterPath: body.posterPath } : {}),
+            },
+            $setOnInsert: {
+              userEmail: email,
+              userName: name || "KinOrbia user",
+              movieId: normalizedMovieId,
+              mediaType: normalizedMediaType,
+              watchedAt: new Date(),
+            },
           },
-          $setOnInsert: {
-            userEmail: email,
-            userName: name || "KinOrbia user",
-            movieId: normalizedMovieId,
-            mediaType: normalizedMediaType,
-            watchedAt: new Date(),
-          },
-        },
-        { upsert: true }
-      );
+          { upsert: true }
+        );
+
+      try {
+        await journalUpdate();
+      } catch (error) {
+        // Concurrent upserts can race past the missing-document check once a
+        // unique index exists; retrying applies the update to the winner's doc.
+        if (!isDuplicateKeyError(error)) {
+          throw error;
+        }
+        await journalUpdate();
+      }
 
       return NextResponse.json({ rating: clampedRating });
     } catch (error) {

@@ -176,7 +176,7 @@ export default async function JournalPage() {
                     <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-500 mb-2">
                       <span className="flex items-center gap-1">
                         <CalendarDays className="w-3.5 h-3.5" />
-                        {new Date(entry.watchedAt).toLocaleDateString()}
+                        {new Date(entry.watchedAt).toLocaleDateString(undefined, { timeZone: "UTC" })}
                       </span>
                     </div>
                     <h3 className="text-lg font-bold text-white">{entry.movieTitle}</h3>

@@ -11,15 +11,27 @@ type UserList = {
   title: string;
 };
 
-export default function AssistantMovieActions({ movie }: { movie: MovieSummary }) {
-  const [lists, setLists] = useState<UserList[]>([]);
+export default function AssistantMovieActions({
+  movie,
+  lists: listsProp,
+}: {
+  movie: MovieSummary;
+  lists?: UserList[];
+}) {
+  const [ownLists, setOwnLists] = useState<UserList[]>([]);
   const [selectedList, setSelectedList] = useState("");
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [rating, setRating] = useState("");
   const router = useRouter();
   const { showToast } = useToast();
 
+  // Only fetch when the parent didn't provide a shared lists snapshot;
+  // otherwise every rendered card would fire its own request (N+1).
   useEffect(() => {
+    if (listsProp) {
+      return;
+    }
+
     let active = true;
 
     fetch("/api/user/lists")
@@ -30,7 +42,7 @@ export default function AssistantMovieActions({ movie }: { movie: MovieSummary }
 
         const data = await res.json();
         if (active) {
-          setLists(data.lists || []);
+          setOwnLists(data.lists || []);
         }
       })
       .catch(() => {
@@ -39,7 +51,9 @@ export default function AssistantMovieActions({ movie }: { movie: MovieSummary }
     return () => {
       active = false;
     };
-  }, []);
+  }, [listsProp]);
+
+  const lists = listsProp ?? ownLists;
 
   const requireLogin = (status: number) => {
     if (status === 401) {

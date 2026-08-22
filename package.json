@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "reset:db": "node --env-file=.env.local scripts/resetDb.mjs",
-    "seed:data": "node --env-file=.env.local scripts/seedData.mjs"
+    "seed:data": "node --env-file=.env.local scripts/seedData.mjs",
+    "backfill:verified": "node --env-file=.env.local scripts/backfillVerified.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

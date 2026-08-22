@@ -35,4 +35,15 @@ const JournalEntrySchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+// One "watched" entry per (user, TMDB id, media type). Manual entries have no
+// movieId and are exempt via the partial filter. The backfill script dedupes
+// legacy data before this index builds.
+JournalEntrySchema.index(
+  { userEmail: 1, movieId: 1, mediaType: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { movieId: { $type: "string" } },
+  }
+);
+
 export default mongoose.models?.JournalEntry || mongoose.model("JournalEntry", JournalEntrySchema);

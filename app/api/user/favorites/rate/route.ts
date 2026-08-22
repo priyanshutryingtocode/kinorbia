@@ -21,7 +21,7 @@ export const POST = withRateLimit(
 
       await dbConnect();
 
-      await User.updateOne(
+      const result = await User.updateOne(
         {
           email,
           "favorites.movieId": body.movieId,
@@ -31,6 +31,13 @@ export const POST = withRateLimit(
           $set: { "favorites.$.personalRating": body.rating },
         }
       );
+
+      if (result.matchedCount === 0) {
+        return NextResponse.json(
+          { message: "Favorite not found. Rate it from your favorites list." },
+          { status: 404 }
+        );
+      }
 
       return NextResponse.json({ message: "Rating updated" });
     } catch (error) {

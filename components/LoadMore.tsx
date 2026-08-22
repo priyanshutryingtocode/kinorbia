@@ -15,19 +15,30 @@ export default function LoadMore({ genre, mediaType = "movie" }: LoadMoreProps) 
   const [movies, setMovies] = useState<MovieProp[]>([]);
   const [page, setPage] = useState(2);
   const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const fetcher = mediaType === "tv" ? fetchTvShows : fetchMovies;
 
   // By using onChange, we completely bypass the need for a useEffect
   const { ref } = useInView({
     onChange: (inView) => {
-      if (inView && !loading) {
+      if (inView && !loading && hasMore) {
         setLoading(true);
 
-        fetcher(page, genre).then((res) => {
-          setMovies((prevMovies) => [...prevMovies, ...res]);
-          setPage((prevPage) => prevPage + 1);
-          setLoading(false);
-        });
+        fetcher(page, genre)
+          .then((res) => {
+            if (res.length > 0) {
+              setMovies((prevMovies) => [...prevMovies, ...res]);
+              setPage((prevPage) => prevPage + 1);
+            } else {
+              setHasMore(false);
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to load more items:", error);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
       }
     },
   });

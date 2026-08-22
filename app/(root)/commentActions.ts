@@ -9,14 +9,11 @@ import MovieList from "@/models/MovieList";
 import Notification from "@/models/Notification";
 import Review from "@/models/Review";
 import { rateLimit } from "@/lib/rateLimit";
+import { isObjectId } from "@/lib/objectId";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
-}
-
-function isObjectId(value: string) {
-  return /^[0-9a-fA-F]{24}$/.test(value);
 }
 
 export async function createComment(formData: FormData) {
@@ -56,26 +53,32 @@ export async function createComment(formData: FormData) {
     return;
   }
 
-  await Comment.create({
-    parentType,
-    parentId,
-    userEmail: email,
-    userName: session.user.name || "KinOrbia user",
-    body,
-  });
-
-  if (parent.userEmail !== email) {
-    await Notification.create({
-      userEmail: parent.userEmail,
-      type: "comment",
-      actorEmail: email,
-      actorName: session.user.name || "KinOrbia user",
-      targetType: parentType as "review" | "list",
-      targetId: parentId,
-      targetTitle: parentType === "review" ? parent.movieTitle || "" : parent.title || "",
-      movieId: parentType === "review" ? parent.movieId || "" : "",
-      mediaType: parentType === "review" ? parent.mediaType || "movie" : "movie",
+  try {
+    const comment = await Comment.create({
+      parentType,
+      parentId,
+      userEmail: email,
+      userName: session.user.name || "KinOrbia user",
+      body,
     });
+
+    if (parent.userEmail !== email) {
+      await Notification.create({
+        userEmail: parent.userEmail,
+        type: "comment",
+        actorEmail: email,
+        actorName: session.user.name || "KinOrbia user",
+        targetType: parentType as "review" | "list",
+        targetId: parentId,
+        targetTitle: parentType === "review" ? parent.movieTitle || "" : parent.title || "",
+        commentId: comment._id.toString(),
+        movieId: parentType === "review" ? parent.movieId || "" : "",
+        mediaType: parentType === "review" ? parent.mediaType || "movie" : "movie",
+      });
+    }
+  } catch (error) {
+    console.error("Error creating comment:", error);
+    return;
   }
 
   if (path) {
@@ -98,23 +101,39 @@ export async function deleteComment(formData: FormData) {
 
   await dbConnect();
   const email = session.user.email.toLowerCase();
-  const comment = await Comment.findOne({ _id: commentId, userEmail: email }).select(
-    "parentType parentId userEmail"
-  );
+  try {
+    const comment = await Comment.findOne({ _id: commentId, userEmail: email }).select(
+      "parentType parentId userEmail"
+    );
 
-  if (!comment) {
+    if (!comment) {
+      return;
+    }
+
+    await Comment.deleteOne({ _id: commentId, userEmail: email });
+
+    if (comment.parentId && comment.parentType) {
+      // Scope cleanup to this specific comment so other comments by the same
+      // actor on the same target keep their notifications.
+      await Notification.deleteOne({
+        type: "comment",
+        actorEmail: email,
+        targetType: comment.parentType,
+        targetId: comment.parentId.toString(),
+        commentId,
+      });
+      // Legacy notifications created before commentId existed.
+      await Notification.deleteMany({
+        type: "comment",
+        actorEmail: email,
+        targetType: comment.parentType,
+        targetId: comment.parentId.toString(),
+        commentId: "",
+      });
+    }
+  } catch (error) {
+    console.error("Error deleting comment:", error);
     return;
-  }
-
-  await Comment.deleteOne({ _id: commentId, userEmail: email });
-
-  if (comment.parentId && comment.parentType) {
-    await Notification.deleteMany({
-      type: "comment",
-      actorEmail: email,
-      targetType: comment.parentType,
-      targetId: comment.parentId.toString(),
-    });
   }
 
   if (path) {

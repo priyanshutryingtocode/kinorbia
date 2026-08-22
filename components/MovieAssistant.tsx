@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Bot, Film, Loader2, Send, Sparkles, X } from "lucide-react";
 import type { MovieSummary } from "@/types";
 import AssistantMovieActions from "./AssistantMovieActions";
@@ -86,6 +86,29 @@ export default function MovieAssistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // One shared lists snapshot per assistant open, instead of every movie
+  // card firing its own /api/user/lists request.
+  const [lists, setLists] = useState<{ id: string; title: string }[]>([]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let active = true;
+    fetch("/api/user/lists")
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json();
+        if (active) setLists(data.lists || []);
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+      setLists([]);
+    };
+  }, [open]);
 
   const commitMessages = (next: ChatMessage[]) => {
     setMessages(next);
@@ -229,7 +252,7 @@ export default function MovieAssistant() {
                             </p>
                           </div>
                         </Link>
-                        <AssistantMovieActions movie={movie} />
+                        <AssistantMovieActions movie={movie} lists={lists} />
                       </div>
                     ))}
                   </div>

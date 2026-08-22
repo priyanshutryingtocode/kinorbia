@@ -4,6 +4,8 @@ import MovieList from "@/models/MovieList";
 import { getSessionEmail } from "@/lib/session";
 import { parseAddToListBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
+import { isObjectId } from "@/lib/objectId";
+import { MAX_LIST_MOVIES } from "@/lib/bounds";
 
 type ListSummary = {
   _id: { toString: () => string };
@@ -51,6 +53,10 @@ export const POST = withRateLimit(
         return badRequest("List and movie are required.");
       }
 
+      if (!isObjectId(body.listId)) {
+        return badRequest("A valid list is required.");
+      }
+
       const mediaMatch = body.movie.mediaType === "tv" ? "tv" : { $ne: "tv" };
 
       await dbConnect();
@@ -66,6 +72,7 @@ export const POST = withRateLimit(
               },
             },
           },
+          $expr: { $lt: [{ $size: { $ifNull: ["$movies", []] } }, MAX_LIST_MOVIES] },
         },
         {
           $push: {
@@ -82,9 +89,15 @@ export const POST = withRateLimit(
       );
 
       if (result.matchedCount === 0) {
-        const listExists = await MovieList.exists({ _id: body.listId, userEmail: email });
-        if (!listExists) {
+        const list = await MovieList.findOne({ _id: body.listId, userEmail: email })
+          .select("movies")
+          .lean<{ movies?: unknown[] } | null>();
+        if (!list) {
           return NextResponse.json({ message: "List not found" }, { status: 404 });
+        }
+
+        if ((list.movies?.length ?? 0) >= MAX_LIST_MOVIES) {
+          return NextResponse.json({ message: "List is full." }, { status: 409 });
         }
 
         return NextResponse.json({ message: "Movie is already in this list" }, { status: 409 });

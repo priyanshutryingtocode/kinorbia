@@ -2,17 +2,16 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Film, Mail, Lock, Chrome, User, Loader2 } from "lucide-react";
+import { Film, Mail, Lock, User as UserIcon, Chrome, Loader2, MailCheck } from "lucide-react";
 import { signIn } from "next-auth/react";
 
 export default function SignUpPage() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -38,21 +37,8 @@ export default function SignUpPage() {
       return;
     }
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
     setLoading(false);
-
-    if (result?.error) {
-      setError("Account created, but sign in failed. Try logging in.");
-      return;
-    }
-
-    router.push("/");
-    router.refresh();
+    setRegistered(true);
   };
 
   return (
@@ -73,24 +59,41 @@ export default function SignUpPage() {
           </Link>
 
           <div className="w-full max-w-70 space-y-4">
-            <button
-              type="button"
-              onClick={() => signIn("google", { callbackUrl: "/" })}
-              className="w-full flex items-center justify-center gap-3 bg-white/3 hover:bg-white/8 border border-white/10 rounded-xl py-3.5 px-4 transition-all duration-300 group shadow-lg"
-            >
-              <Chrome className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors" />
-              <span className="text-sm font-medium text-neutral-200 group-hover:text-white transition-colors">Sign up with Google</span>
-            </button>
+            {registered ? (
+              <div className="space-y-4">
+                <MailCheck className="w-10 h-10 mx-auto text-green-400" />
+                <h2 className="text-xl font-bold text-white">Check your inbox</h2>
+                <p className="text-sm text-neutral-300">
+                  We sent a verification link to <span className="font-semibold text-white">{email}</span>.
+                  Verify your email to activate your account, then sign in.
+                </p>
+                <Link
+                  href="/login"
+                  className="block w-full bg-red-600 hover:bg-red-500 text-white font-semibold text-sm py-3.5 rounded-xl transition-all"
+                >
+                  Go to Sign In
+                </Link>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => signIn("google", { callbackUrl: "/" })}
+                  className="w-full flex items-center justify-center gap-3 bg-white/3 hover:bg-white/8 border border-white/10 rounded-xl py-3.5 px-4 transition-all duration-300 group shadow-lg"
+                >
+                  <Chrome className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors" />
+                  <span className="text-sm font-medium text-neutral-200 group-hover:text-white transition-colors">Sign up with Google</span>
+                </button>
 
-            <div className="flex items-center gap-4 my-2">
-              <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1"></div>
-              <span className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">Or</span>
-              <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1"></div>
-            </div>
+                <div className="flex items-center gap-4 my-2">
+                  <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1"></div>
+                  <span className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">Or</span>
+                  <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1"></div>
+                </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="relative group">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 group-focus-within:text-red-400 transition-colors" />
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="relative group">
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500 group-focus-within:text-red-400 transition-colors" />
                 <input
                   type="text"
                   value={name}
@@ -144,6 +147,8 @@ export default function SignUpPage() {
                 Create Account
               </button>
             </form>
+              </>
+            )}
           </div>
 
           <p className="mt-8 text-xs text-neutral-500">

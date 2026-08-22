@@ -35,7 +35,7 @@ type PublicProfilePageProps = {
 };
 
 export default async function PublicProfilePage({ params }: PublicProfilePageProps) {
-  const { username } = await Promise.resolve(params);
+  const username = (await Promise.resolve(params)).username.toLowerCase();
   const session = await auth();
   const currentEmail = session?.user?.email?.toLowerCase();
 
@@ -46,8 +46,10 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
     notFound();
   }
 
-  const [watchedCount, reviews, lists, followerCount, currentUser] = await Promise.all([
+  const [watchedCount, publicReviewCount, publicListCount, reviews, lists, followerCount, currentUser] = await Promise.all([
     JournalEntry.distinct("movieId", { userEmail: user.email }),
+    Review.countDocuments({ userEmail: user.email, visibility: "public" }),
+    MovieList.countDocuments({ userEmail: user.email, visibility: "public" }),
     Review.find({ userEmail: user.email, visibility: "public" }).sort({ createdAt: -1 }).limit(6).lean<{
       _id: { toString: () => string };
       movieTitle: string;
@@ -113,8 +115,8 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           <Stat icon={<Film className="h-5 w-5 text-blue-400" />} label="Watched" value={watchedCount.length.toString()} />
           <Stat icon={<Heart className="h-5 w-5 text-red-400" />} label="Favorites" value={favorites.length.toString()} />
-          <Stat icon={<MessageSquare className="h-5 w-5 text-green-400" />} label="Reviews" value={reviews.length.toString()} />
-          <Stat icon={<List className="h-5 w-5 text-yellow-400" />} label="Lists" value={lists.length.toString()} />
+          <Stat icon={<MessageSquare className="h-5 w-5 text-green-400" />} label="Reviews" value={publicReviewCount.toString()} />
+          <Stat icon={<List className="h-5 w-5 text-yellow-400" />} label="Lists" value={publicListCount.toString()} />
           <Link href={`/u/${user.username}/following`} className="group">
             <Stat
               icon={<UserIcon className="h-5 w-5 text-purple-400" />}
