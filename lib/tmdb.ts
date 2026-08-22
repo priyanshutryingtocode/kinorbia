@@ -1,4 +1,11 @@
-import type { MovieSummary, TmdbMovieDetails, TmdbMovieCredits, TmdbTvDetails, TmdbTvCredits } from "@/types";
+import type {
+  MovieSummary,
+  TmdbMovieDetails,
+  TmdbMovieCredits,
+  TmdbTvDetails,
+  TmdbTvCredits,
+  TmdbVideo,
+} from "@/types";
 
 const BASE = "https://api.themoviedb.org/3";
 
@@ -127,6 +134,37 @@ export async function getMovieWithStatus(id: string): Promise<{
 export const getMovieCredits = (id: string) =>
   tmdbFetch<TmdbMovieCredits | null>(`/movie/${safeId(id)}/credits?language=en-US`, 3600);
 
+export const getMovieVideos = (id: string) =>
+  tmdbFetch<{ results?: TmdbVideo[] } | null>(`/movie/${safeId(id)}/videos?language=en-US`, 3600);
+
+// Prefer the newest official YouTube trailer, falling back through any
+// trailer, teaser, clip, and finally whatever exists.
+export function pickMainTrailer(videos: TmdbVideo[] | undefined | null): TmdbVideo | null {
+  if (!videos || videos.length === 0) {
+    return null;
+  }
+
+  const youtube = videos.filter((video) => video.site === "YouTube" && video.key);
+  if (youtube.length === 0) {
+    return null;
+  }
+
+  const byNewest = (a: TmdbVideo, b: TmdbVideo) =>
+    (b.published_at || "").localeCompare(a.published_at || "");
+
+  const byType = (types: string[]) =>
+    [...youtube]
+      .filter((video) => types.includes(video.type))
+      .sort((a, b) => Number(Boolean(b.official)) - Number(Boolean(a.official)) || byNewest(a, b))[0] || null;
+
+  return (
+    byType(["Trailer"]) ||
+    byType(["Teaser"]) ||
+    byType(["Clip", "Featurette", "Behind the Scenes"]) ||
+    [...youtube].sort(byNewest)[0]
+  );
+}
+
 export const getRecommendationMovies = (id: string) =>
   tmdbFetch<ResultList<MovieSummary>>(`/movie/${safeId(id)}/recommendations?language=en-US&page=1`, 3600);
 
@@ -213,6 +251,9 @@ export async function getTvWithStatus(id: string): Promise<{
 
 export const getTvCredits = (id: string) =>
   tmdbFetch<TmdbTvCredits | null>(`/tv/${safeId(id)}/credits?language=en-US`, 3600);
+
+export const getTvVideos = (id: string) =>
+  tmdbFetch<{ results?: TmdbVideo[] } | null>(`/tv/${safeId(id)}/videos?language=en-US`, 3600);
 
 export const getTvRecommendations = (id: string) =>
   tmdbFetch<ResultList<RawTvResult>>(`/tv/${safeId(id)}/recommendations?language=en-US&page=1`, 3600).then(

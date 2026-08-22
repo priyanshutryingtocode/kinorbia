@@ -14,7 +14,8 @@ import type { FavoriteMovie, TmdbMovieCredits, TmdbMovieDetails } from "@/types"
 import type { Metadata } from "next";
 import SimilarMovies from "@/components/SimilarMovies";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
-import { getMovieWithStatus, getMovieCredits } from "@/lib/tmdb";
+import TrailerButton from "@/components/TrailerButton";
+import { getMovieWithStatus, getMovieCredits, getMovieVideos, pickMainTrailer } from "@/lib/tmdb";
 
 async function getMovieDetails(id: string): Promise<TmdbMovieDetails> {
   const { movie, notFound: missing } = await getMovieWithStatus(id);
@@ -54,7 +55,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function MoviePage({ params }: Props) {
 
   const { id } = await params;
-  const [movie, credits] = await Promise.all([getMovieDetails(id), getCredits(id)]);
+  const [movie, credits, videos] = await Promise.all([
+    getMovieDetails(id),
+    getCredits(id),
+    getMovieVideos(id),
+  ]);
+  const trailer = pickMainTrailer(videos?.results);
   const session = await auth();
 
   let isFavorite = false;
@@ -176,7 +182,8 @@ if (user?.favorites) {
 
             <div className="mt-8 rounded-lg border border-white/10 bg-neutral-950/70 p-4 backdrop-blur-xl sm:p-5">
               <div className="flex flex-wrap items-center gap-3">
-                <FavoriteButton 
+                {trailer && <TrailerButton videoKey={trailer.key} title={movie.title} />}
+                <FavoriteButton
                   movie={{
                     id: movie.id.toString(),
                     title: movie.title,

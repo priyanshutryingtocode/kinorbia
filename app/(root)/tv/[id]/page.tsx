@@ -14,7 +14,8 @@ import type { FavoriteMovie, TmdbTvCredits, TmdbTvDetails } from "@/types";
 import type { Metadata } from "next";
 import SimilarShows from "@/components/SimilarShows";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
-import { getTvWithStatus, getTvCredits } from "@/lib/tmdb";
+import TrailerButton from "@/components/TrailerButton";
+import { getTvWithStatus, getTvCredits, getTvVideos, pickMainTrailer } from "@/lib/tmdb";
 
 async function getTvDetails(id: string): Promise<TmdbTvDetails> {
   const { tv, notFound: missing } = await getTvWithStatus(id);
@@ -53,7 +54,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TvPage({ params }: Props) {
   const { id } = await params;
-  const [tv, credits] = await Promise.all([getTvDetails(id), getCredits(id)]);
+  const [tv, credits, videos] = await Promise.all([
+    getTvDetails(id),
+    getCredits(id),
+    getTvVideos(id),
+  ]);
+  const trailer = pickMainTrailer(videos?.results);
   const session = await auth();
 
   let isFavorite = false;
@@ -181,6 +187,7 @@ export default async function TvPage({ params }: Props) {
 
             <div className="mt-8 rounded-lg border border-white/10 bg-neutral-950/70 p-4 backdrop-blur-xl sm:p-5">
               <div className="flex flex-wrap items-center gap-3">
+                {trailer && <TrailerButton videoKey={trailer.key} title={tv.name} />}
                 <FavoriteButton movie={show} initialIsFavorite={isFavorite} />
                 <WatchedButton movie={show} initialIsWatched={isWatched} />
                 <WatchlistButton movie={show} initialIsWatchlisted={isWatchlisted} />

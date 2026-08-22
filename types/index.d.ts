@@ -54,6 +54,15 @@ export type TmdbCredit = {
   order?: number;
 };
 
+export type TmdbVideo = {
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+  official?: boolean;
+  published_at?: string;
+};
+
 export type TmdbMovieCredits = {
   id: number;
   cast: TmdbCredit[];
