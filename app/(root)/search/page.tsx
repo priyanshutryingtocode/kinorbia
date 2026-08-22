@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Film, Search } from "lucide-react";
 import type { Metadata } from "next";
 import SearchHistory from "@/components/SearchHistory";
+import SearchTrackerForm from "@/components/SearchTrackerForm";
 import EmptyState from "@/components/EmptyState";
 import {
   searchMovies as searchTmdbMovies,
@@ -151,10 +152,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </Link>
         </div>
 
-        <SearchHistory query={query} />
+        <SearchHistory mediaType={mediaType} />
 
-        <form action="/search" className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 mb-10">
-          <input type="hidden" name="type" value={mediaType} />
+        <SearchTrackerForm mediaType={mediaType}>
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
             <input
@@ -258,7 +258,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               {mediaType === "movie" && <option value="revenue.desc">Box office</option>}
             </select>
           </div>
-        </form>
+        </SearchTrackerForm>
 
         {!query && !releaseYear && !selectedGenre && !minimumRating && !maxRuntime && !selectedLanguage ? (
           <EmptyState

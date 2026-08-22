@@ -2,29 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { readRecentSearches, type SearchMediaType } from "@/lib/searchHistory";
 
-export default function SearchHistory({ query }: { query: string }) {
+export default function SearchHistory({ mediaType }: { mediaType: SearchMediaType }) {
   const [recent, setRecent] = useState<string[]>([]);
 
   useEffect(() => {
-    let stored: string[] = [];
-
-    try {
-      const parsed = JSON.parse(localStorage.getItem("kinorbia:recent-searches") || "[]");
-      stored = Array.isArray(parsed)
-        ? parsed.filter((item): item is string => typeof item === "string")
-        : [];
-    } catch {
-      localStorage.removeItem("kinorbia:recent-searches");
-    }
-
-    const next = query
-      ? [query, ...stored.filter((item) => item.toLowerCase() !== query.toLowerCase())].slice(0, 6)
-      : stored.slice(0, 6);
-
-    localStorage.setItem("kinorbia:recent-searches", JSON.stringify(next));
-    window.requestAnimationFrame(() => setRecent(next));
-  }, [query]);
+    setRecent(readRecentSearches(mediaType));
+  }, [mediaType]);
 
   if (recent.length === 0) {
     return null;
@@ -37,7 +22,7 @@ export default function SearchHistory({ query }: { query: string }) {
         {recent.map((item) => (
           <Link
             key={item}
-            href={`/search?q=${encodeURIComponent(item)}`}
+            href={`/search?q=${encodeURIComponent(item)}&type=${mediaType}`}
             className="text-sm px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-neutral-300 hover:text-white hover:border-red-500/40 transition"
           >
             {item}
