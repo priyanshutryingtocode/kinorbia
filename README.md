@@ -49,8 +49,7 @@ Demo users (password demo1234 for all, log in via email + password):
     Create a `.env.local` file in the root directory and add the following variables:
     ```env
     MONGODB_URI=your_mongodb_connection_string
-    NEXTAUTH_SECRET=your_nextauth_secret
-    NEXTAUTH_URL=http://localhost:3000
+    AUTH_SECRET=your_auth_secret
     # Add any external Movie API keys here if applicable
     ```
     *Email verification and password reset use [Resend](https://resend.com). Add:*
