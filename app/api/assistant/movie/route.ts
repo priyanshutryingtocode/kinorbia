@@ -297,6 +297,14 @@ export const POST = withRateLimit(
       const mediaType = isTvRequest(prompt) ? "tv" : "movie";
       const session = await auth();
       const email = session?.user?.email ? session.user.email.toLowerCase() : null;
+
+      if (!email) {
+        return NextResponse.json(
+          { message: "Sign in to ask the movie assistant for recommendations." },
+          { status: 401 }
+        );
+      }
+
       const context = await getUserContext(email);
 
       const referencedTitle = getReferencedTitle(prompt);

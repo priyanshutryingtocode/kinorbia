@@ -93,10 +93,9 @@ if (user?.favorites) {
       userEmail: session.user.email,
       movieId: id.toString(),
       mediaType: { $in: ["movie", null] },
-    }).lean<{ rating?: number } | null>();
+    }).select("_id").lean<{ _id?: unknown } | null>();
 
     isWatched = Boolean(journalEntry);
-    personalRating = personalRating || journalEntry?.rating || 0;
   }
 
   const releaseYear = movie.release_date ? movie.release_date.split("-")[0] : "TBA";

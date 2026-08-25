@@ -50,4 +50,6 @@ const ReviewSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+ReviewSchema.index({ movieId: 1, mediaType: 1, visibility: 1, createdAt: -1 });
+
 export default mongoose.models?.Review || mongoose.model("Review", ReviewSchema);

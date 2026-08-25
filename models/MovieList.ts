@@ -64,4 +64,6 @@ const MovieListSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+MovieListSchema.index({ "movies.movieId": 1, "movies.mediaType": 1, visibility: 1 });
+
 export default mongoose.models?.MovieList || mongoose.model("MovieList", MovieListSchema);

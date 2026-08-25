@@ -92,10 +92,9 @@ export default async function TvPage({ params }: Props) {
       userEmail: session.user.email,
       movieId: id.toString(),
       mediaType: "tv",
-    }).lean<{ rating?: number } | null>();
+    }).select("_id").lean<{ _id?: unknown } | null>();
 
     isWatched = Boolean(journalEntry);
-    personalRating = personalRating || journalEntry?.rating || 0;
   }
 
   const releaseYear = tv.first_air_date ? tv.first_air_date.split("-")[0] : "TBA";
