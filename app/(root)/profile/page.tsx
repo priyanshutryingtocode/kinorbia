@@ -250,7 +250,7 @@ JournalEntry.find({ userEmail: session.user.email })
           
         </div>
 
-<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-12">
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
            <StatCard icon={<Film className="w-5 h-5 text-blue-400" />} label="Titles Watched" value={watchedMovieIds.length.toString()} />
            <StatCard 
              icon={<Heart className="w-5 h-5 text-red-500" />} 

@@ -109,7 +109,7 @@ export default function ProfileInsights({
   return (
     <div className="space-y-6">
       {tabs.length > 1 && (
-        <div className="flex w-fit items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+        <div className="flex w-fit items-center gap-1 rounded-full border border-white/10 bg-white/3 p-1">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -147,7 +147,7 @@ export default function ProfileInsights({
               </span>
               <div
                 className={`w-full rounded-t-md transition-all ${
-                  point.count > 0 ? "bg-gradient-to-t from-red-600 to-red-400" : "bg-white/5"
+                  point.count > 0 ? "bg-linear-to-t from-red-600 to-red-400" : "bg-white/5"
                 }`}
                 style={{ height: `${Math.max(3, (point.count / maxMonthly) * 100)}%` }}
               />
