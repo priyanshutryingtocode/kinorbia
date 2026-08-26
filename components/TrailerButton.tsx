@@ -53,7 +53,7 @@ export default function TrailerButton({ videoKey, title }: TrailerButtonProps) {
           {/* Backdrop surface + click-to-close layer */}
           <div className="absolute inset-0 bg-black/90 backdrop-blur-md" />
           {/* Ambient red glow behind the panel, echoing the login orb */}
-          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[30rem] w-[30rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600/20 blur-[120px]" />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-120 w-120 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600/20 blur-[120px]" />
 
           {/* Largest 16:9 frame that fits the viewport minus the themed
               chrome (title bar, divider, hint) and modal padding. */}

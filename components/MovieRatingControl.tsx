@@ -84,7 +84,7 @@ return (
         </span>
       </div>
 
-      <div className="relative h-9 w-full min-w-[120px] flex-1">
+      <div className="relative h-9 w-full min-w-30 flex-1">
         <div className="flex h-full items-center justify-center gap-1 sm:justify-start">
           {stars.map((star) => {
             const fillPercent = Math.max(0, Math.min(1, draftStars - (star - 1))) * 100;

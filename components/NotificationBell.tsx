@@ -117,7 +117,7 @@ export default function NotificationBell() {
         onClick={() => setOpen((value) => !value)}
         aria-label="Notifications"
         aria-expanded={open}
-        className="kin-focus relative rounded-full border border-white/10 bg-white/[0.03] p-2 text-neutral-400 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+        className="kin-focus relative rounded-full border border-white/10 bg-white/3 p-2 text-neutral-400 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
       >
         <Bell className="h-5 w-5" />
         {unread > 0 && (

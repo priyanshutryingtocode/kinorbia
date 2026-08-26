@@ -15,7 +15,7 @@ export default function FeedTabs() {
     }`;
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 w-fit">
+    <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/3 p-1 w-fit">
       <Link href="/activity" className={classes(!isFollowing)}>
         Community
       </Link>
