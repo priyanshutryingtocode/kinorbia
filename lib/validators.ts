@@ -32,12 +32,12 @@ export const registerSchema = z.object({
   password: z.string().min(8).max(72),
 });
 
-export const addToListSchema = z.object({
+const addToListSchema = z.object({
   listId: z.string().min(1),
   movie: movieRefSchema,
 });
 
-export const assistantMessageSchema = z.object({
+const assistantMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string().trim().max(2000),
 });
@@ -48,43 +48,41 @@ export const assistantPromptSchema = z.object({
   threadId: z.string().trim().max(120).optional(),
 });
 
-export async function parseBody<T extends z.ZodType>(req: Request, schema: T): Promise<z.infer<T> | null> {
+async function parseJson<T extends z.ZodType>(
+  req: Request,
+  schema: T,
+  normalize?: (json: unknown) => unknown
+): Promise<z.infer<T> | null> {
   try {
     const json = await req.json();
-    const result = schema.safeParse(json);
+    const result = schema.safeParse(normalize ? normalize(json) : json);
     return result.success ? result.data : null;
   } catch {
     return null;
   }
 }
 
-function normalizeMovieRef(raw: Record<string, unknown>): Record<string, unknown> {
+export function parseBody<T extends z.ZodType>(req: Request, schema: T): Promise<z.infer<T> | null> {
+  return parseJson(req, schema);
+}
+
+function normalizeMovieRef(raw: unknown): unknown {
   if (raw && typeof raw === "object" && !("movieTitle" in raw) && "title" in raw) {
-    return { ...raw, movieTitle: raw.title };
+    return { ...(raw as Record<string, unknown>), movieTitle: (raw as Record<string, unknown>).title };
   }
   return raw;
 }
 
-export async function parseMovieBody<T extends z.ZodType>(req: Request, schema: T): Promise<z.infer<T> | null> {
-  try {
-    const json = await req.json();
-    const normalized = Array.isArray(json) ? json : normalizeMovieRef(json);
-    const result = schema.safeParse(normalized);
-    return result.success ? result.data : null;
-  } catch {
-    return null;
-  }
+export function parseMovieBody<T extends z.ZodType>(req: Request, schema: T): Promise<z.infer<T> | null> {
+  return parseJson(req, schema, (json) => (Array.isArray(json) ? json : normalizeMovieRef(json)));
 }
 
-export async function parseAddToListBody(req: Request): Promise<z.infer<typeof addToListSchema> | null> {
-  try {
-    const json = await req.json();
-    const movie = json && typeof json === "object" && json.movie ? normalizeMovieRef(json.movie) : json?.movie;
-    const result = addToListSchema.safeParse({ ...json, movie });
-    return result.success ? result.data : null;
-  } catch {
-    return null;
-  }
+export function parseAddToListBody(req: Request): Promise<z.infer<typeof addToListSchema> | null> {
+  return parseJson(req, addToListSchema, (json) => {
+    const obj = (json && typeof json === "object" ? json : {}) as Record<string, unknown>;
+    const movie = obj.movie ? normalizeMovieRef(obj.movie) : obj.movie;
+    return { ...obj, movie };
+  });
 }
 
 export function badRequest(message = "Invalid input.") {

@@ -11,6 +11,7 @@ import User from "@/models/User";
 import EmptyState from "@/components/EmptyState";
 import FollowButton from "@/components/FollowButton";
 import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
+import { mediaKey, tmdbImage } from "@/lib/media";
 import type { FavoriteMovie, MediaType } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -25,10 +26,6 @@ type PublicUser = {
   favorites?: FavoriteMovie[];
   following?: string[];
 };
-
-function posterUrl(path?: string | null) {
-  return path ? `https://image.tmdb.org/t/p/w185${path}` : null;
-}
 
 type PublicProfilePageProps = {
   params: Promise<{ username: string }> | { username: string };
@@ -140,9 +137,9 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
           {favorites.length > 0 ? (
             <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
               {favorites.slice(0, 6).map((movie) => (
-                <Link key={`${movie.mediaType || "movie"}-${movie.movieId}`} href={movie.mediaType === "tv" ? `/tv/${movie.movieId}` : `/movie/${movie.movieId}`} className="relative aspect-2/3 overflow-hidden rounded-lg border border-white/10 bg-neutral-900">
-                  {posterUrl(movie.posterPath) ? (
-                    <Image src={posterUrl(movie.posterPath) as string} alt={movie.title} fill sizes="150px" className="object-cover" />
+                <Link key={mediaKey(movie.mediaType, movie.movieId)} href={movie.mediaType === "tv" ? `/tv/${movie.movieId}` : `/movie/${movie.movieId}`} className="relative aspect-2/3 overflow-hidden rounded-lg border border-white/10 bg-neutral-900">
+                  {tmdbImage(movie.posterPath, "w185") ? (
+                    <Image src={tmdbImage(movie.posterPath, "w185") as string} alt={movie.title} fill sizes="150px" className="object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-neutral-700">
                       <Film className="h-6 w-6" />
@@ -159,7 +156,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         <section className="mt-12 grid gap-6 md:grid-cols-2">
           <Panel title="Public Reviews">
             {reviews.length > 0 ? reviews.map((review) => {
-              const reviewRating = ratingMap.get(`${review.mediaType || "movie"}:${review.movieId}`) || 0;
+              const reviewRating = ratingMap.get(mediaKey(review.mediaType, review.movieId)) || 0;
               return (
               <Link key={review._id.toString()} href="/reviews" className="block rounded-lg border border-white/10 bg-neutral-900/50 p-4 hover:border-red-500/40">
                 <div className="flex items-center justify-between gap-3">

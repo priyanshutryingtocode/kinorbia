@@ -1,6 +1,6 @@
 import MovieCard, { MovieProp } from "@/components/MovieCard";
 import LoadMore from "@/components/LoadMore";
-import TvGenreFilter from "@/components/TvGenreFilter";
+import GenreFilter from "@/components/GenreFilter";
 import EmptyState from "@/components/EmptyState";
 import RetryButton from "@/components/RetryButton";
 import { fetchTvShows } from "../../actions";
@@ -35,7 +35,7 @@ export default async function Shows({ searchParams }: Props) {
           </p>
         </div>
 
-        <TvGenreFilter />
+        <GenreFilter mediaType="tv" />
 
         {shows.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">

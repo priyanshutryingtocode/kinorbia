@@ -7,40 +7,18 @@ import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import MovieList from "@/models/MovieList";
 import { createMovieList, deleteMovieList, updateMovieList } from "./actions";
-import type { FavoriteMovie, MovieListItem } from "@/types";
+import type { FavoriteMovie } from "@/types";
 import SubmitButton from "@/components/SubmitButton";
 import SocialActionButton from "@/components/SocialActionButton";
 import EmptyState from "@/components/EmptyState";
+import { serializeList, type RawMovieList } from "@/lib/serialize";
+import { normalizeMediaType, mediaKey, tmdbImage } from "@/lib/media";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Lists",
   description: "Create and organize custom lists for movies and shows.",
 };
-
-type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
-  _id: { toString: () => string };
-  createdAt: Date;
-};
-
-function serializeList(list: RawMovieList): MovieListItem {
-  return {
-    _id: list._id.toString(),
-    userEmail: list.userEmail,
-    userName: list.userName,
-    title: list.title,
-    description: list.description,
-    movies: list.movies,
-    visibility: list.visibility || "public",
-    likedBy: list.likedBy || [],
-    savedBy: list.savedBy || [],
-    createdAt: list.createdAt.toISOString(),
-  };
-}
-
-function posterUrl(path?: string | null) {
-  return path ? `https://image.tmdb.org/t/p/w185${path}` : null;
-}
 
 export default async function ListsPage() {
   const session = await auth();
@@ -125,13 +103,13 @@ export default async function ListsPage() {
                     <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
                       {favorites.map((movie) => (
                         <label
-                          key={`${movie.mediaType || "movie"}-${movie.movieId}`}
+                          key={`${normalizeMediaType(movie.mediaType)}-${movie.movieId}`}
                           className="flex items-center gap-3 bg-neutral-950 border border-white/10 rounded-lg px-3 py-2 cursor-pointer hover:border-red-500/50"
                         >
                           <input
                             type="checkbox"
                             name="movieIds"
-                            value={`${movie.mediaType || "movie"}:${movie.movieId}`}
+                            value={mediaKey(movie.mediaType, movie.movieId)}
                             className="accent-red-600"
                           />
                           <span className="text-sm text-neutral-200 truncate">{movie.title}</span>
@@ -236,10 +214,10 @@ export default async function ListsPage() {
 
                   <div className="grid grid-cols-5 gap-2">
                     {list.movies.slice(0, 5).map((movie) => (
-                      <div key={`${movie.mediaType || "movie"}-${movie.movieId}`} className="relative aspect-2/3 bg-neutral-950 rounded-md overflow-hidden">
-                        {posterUrl(movie.posterPath) ? (
+                      <div key={`${normalizeMediaType(movie.mediaType)}-${movie.movieId}`} className="relative aspect-2/3 bg-neutral-950 rounded-md overflow-hidden">
+                        {tmdbImage(movie.posterPath, "w185") ? (
                           <Image
-                            src={posterUrl(movie.posterPath) as string}
+                            src={tmdbImage(movie.posterPath, "w185") as string}
                             alt={movie.title}
                             fill
                             sizes="80px"
@@ -282,17 +260,17 @@ export default async function ListsPage() {
                             <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
                               {favorites.map((movie) => (
                                 <label
-                                  key={`${movie.mediaType || "movie"}-${movie.movieId}`}
+                                  key={`${normalizeMediaType(movie.mediaType)}-${movie.movieId}`}
                                   className="flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-neutral-200"
                                 >
                                   <input
                                     type="checkbox"
                                     name="movieIds"
-                                    value={`${movie.mediaType || "movie"}:${movie.movieId}`}
+                                    value={mediaKey(movie.mediaType, movie.movieId)}
                                     defaultChecked={list.movies.some(
                                       (item) =>
                                         item.movieId === movie.movieId &&
-                                        (item.mediaType || "movie") === (movie.mediaType || "movie")
+                                        (normalizeMediaType(item.mediaType)) === (normalizeMediaType(movie.mediaType))
                                     )}
                                     className="accent-red-600"
                                   />

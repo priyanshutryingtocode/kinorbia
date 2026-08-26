@@ -1,29 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import Notification from "@/models/Notification";
 import Review from "@/models/Review";
+import { requireUser, getString } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
-
-function getString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
+import { normalizeMediaType } from "@/lib/media";
 
 function modelFor(type: string) {
   return type === "list" ? MovieList : Review;
 }
 
 export async function toggleSocialAction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
-
+  const { email, name } = await requireUser();
   const type = getString(formData, "type");
   const id = getString(formData, "id");
   const action = getString(formData, "action");
@@ -36,7 +27,6 @@ export async function toggleSocialAction(formData: FormData) {
   await dbConnect();
   const Model = modelFor(type);
   const field = action === "like" ? "likedBy" : "savedBy";
-  const email = session.user.email.toLowerCase();
 
   try {
     // Atomic add-first toggle: the update that actually wins decides whether
@@ -87,12 +77,12 @@ export async function toggleSocialAction(formData: FormData) {
           userEmail: ownerEmail,
           type: action,
           actorEmail: email,
-          actorName: session.user.name || "KinOrbia user",
+          actorName: name,
           targetType: type,
           targetId: id,
           targetTitle: type === "review" ? doc?.movieTitle || "" : doc?.title || "",
           movieId: type === "review" ? doc?.movieId || "" : "",
-          mediaType: type === "review" ? doc?.mediaType || "movie" : "movie",
+          mediaType: type === "review" ? normalizeMediaType(doc?.mediaType) : "movie",
         });
       }
     }

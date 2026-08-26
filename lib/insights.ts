@@ -1,5 +1,6 @@
 import type { FavoriteMovie, MediaType } from "@/types";
 import { genreName } from "@/lib/genres";
+import { normalizeMediaType } from "@/lib/media";
 
 export type MonthlyPoint = {
   label: string;
@@ -173,7 +174,7 @@ export function buildInsights(
     monthCounts.set(key, (monthCounts.get(key) || 0) + 1);
     dayStrs.push(utcDayStr(date));
 
-    if ((entry.mediaType || "movie") === "tv") {
+    if ((normalizeMediaType(entry.mediaType)) === "tv") {
       showCount += 1;
     } else {
       movieCount += 1;
@@ -222,16 +223,16 @@ export function buildInsights(
       title: favorite.title,
       posterPath: favorite.posterPath || null,
       rating: favorite.personalRating as number,
-      mediaType: (favorite.mediaType || "movie") as MediaType,
+      mediaType: (normalizeMediaType(favorite.mediaType)) as MediaType,
       movieId: favorite.movieId,
-      href: (favorite.mediaType || "movie") === "tv" ? `/tv/${favorite.movieId}` : `/movie/${favorite.movieId}`,
+      href: (normalizeMediaType(favorite.mediaType)) === "tv" ? `/tv/${favorite.movieId}` : `/movie/${favorite.movieId}`,
     }))
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 5);
 
   const genreCounts = new Map<string, number>();
   for (const favorite of filteredFavorites) {
-    const mediaType = favorite.mediaType || "movie";
+    const mediaType = normalizeMediaType(favorite.mediaType);
     for (const genreId of favorite.genreIds || []) {
       const name = genreName(genreId, mediaType);
       if (name) {

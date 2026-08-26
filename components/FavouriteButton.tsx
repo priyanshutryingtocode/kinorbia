@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Heart, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./ToastProvider";
+import { normalizeMediaType } from "@/lib/media";
 
 interface FavButtonProps {
   movie: {
@@ -36,7 +37,7 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
           posterPath: movie.poster_path,
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
-          mediaType: movie.mediaType || "movie",
+          mediaType: normalizeMediaType(movie.mediaType),
           genreIds: movie.genre_ids || [],
         }),
       });

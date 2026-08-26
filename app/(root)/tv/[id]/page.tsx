@@ -12,10 +12,11 @@ import { Suspense } from "react";
 import { Calendar, Clapperboard, Layers, Star } from "lucide-react";
 import type { FavoriteMovie, TmdbTvCredits, TmdbTvDetails } from "@/types";
 import type { Metadata } from "next";
-import SimilarShows from "@/components/SimilarShows";
+import SimilarMedia from "@/components/SimilarMedia";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import TrailerButton from "@/components/TrailerButton";
 import { getTvWithStatus, getTvCredits, getTvVideos, pickMainTrailer } from "@/lib/tmdb";
+import { normalizeMediaType } from "@/lib/media";
 
 async function getTvDetails(id: string): Promise<TmdbTvDetails> {
   const { tv, notFound: missing } = await getTvWithStatus(id);
@@ -76,7 +77,7 @@ export default async function TvPage({ params }: Props) {
 
     if (user?.favorites) {
       const favorite = user.favorites.find(
-        (fav) => fav.movieId === id.toString() && (fav.mediaType || "movie") === "tv"
+        (fav) => fav.movieId === id.toString() && (normalizeMediaType(fav.mediaType)) === "tv"
       );
       isFavorite = Boolean(favorite);
       personalRating = favorite?.personalRating || 0;
@@ -84,7 +85,7 @@ export default async function TvPage({ params }: Props) {
 
     isWatchlisted = Boolean(
       user?.watchlist?.some(
-        (item) => item.movieId === id.toString() && (item.mediaType || "movie") === "tv"
+        (item) => item.movieId === id.toString() && (normalizeMediaType(item.mediaType)) === "tv"
       )
     );
 
@@ -238,7 +239,7 @@ export default async function TvPage({ params }: Props) {
         </Suspense>
 
         <Suspense fallback={null}>
-          <SimilarShows showId={id} />
+          <SimilarMedia id={id} mediaType="tv" />
         </Suspense>
       </div>
     </div>

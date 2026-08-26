@@ -6,33 +6,10 @@ import { Film, ListVideo } from "lucide-react";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
-import type { MovieListItem } from "@/types";
 import SocialActionButton from "@/components/SocialActionButton";
 import CommentSection from "@/components/CommentSection";
-
-type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
-  _id: { toString: () => string };
-  createdAt: Date;
-};
-
-function serializeList(list: RawMovieList): MovieListItem {
-  return {
-    _id: list._id.toString(),
-    userEmail: list.userEmail,
-    userName: list.userName,
-    title: list.title,
-    description: list.description,
-    movies: list.movies,
-    visibility: list.visibility || "public",
-    likedBy: list.likedBy || [],
-    savedBy: list.savedBy || [],
-    createdAt: list.createdAt.toISOString(),
-  };
-}
-
-function posterUrl(path?: string | null) {
-  return path ? `https://image.tmdb.org/t/p/w342${path}` : null;
-}
+import { serializeList, type RawMovieList } from "@/lib/serialize";
+import { normalizeMediaType, tmdbImage } from "@/lib/media";
 
 type ListDetailPageProps = {
   params: Promise<{ id: string }> | { id: string };
@@ -118,14 +95,14 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
             {list.movies.map((movie) => (
               <Link
-                key={`${movie.mediaType || "movie"}-${movie.movieId}`}
+                key={`${normalizeMediaType(movie.mediaType)}-${movie.movieId}`}
                 href={movie.mediaType === "tv" ? `/tv/${movie.movieId}` : `/movie/${movie.movieId}`}
                 className="group bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden hover:border-red-500/40 transition"
               >
                 <div className="relative aspect-2/3 bg-neutral-900">
-                  {posterUrl(movie.posterPath) ? (
+                  {tmdbImage(movie.posterPath, "w342") ? (
                     <Image
-                      src={posterUrl(movie.posterPath) as string}
+                      src={tmdbImage(movie.posterPath, "w342") as string}
                       alt={movie.title}
                       fill
                       sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"

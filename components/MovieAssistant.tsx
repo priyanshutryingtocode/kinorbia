@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { Bot, Film, Loader2, Send, Sparkles, X } from "lucide-react";
 import type { MovieSummary } from "@/types";
 import AssistantMovieActions from "./AssistantMovieActions";
+import { normalizeMediaType } from "@/lib/media";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -222,7 +223,7 @@ export default function MovieAssistant() {
                   <div className="mt-3 grid grid-cols-1 gap-2 text-left">
                     {message.movies.map((movie) => (
                       <div
-                        key={`${movie.mediaType || "movie"}-${movie.id}`}
+                        key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`}
                         className="rounded-lg border border-white/10 bg-black/25 p-2 transition hover:border-red-500/50 hover:bg-white/8"
                       >
                         <Link

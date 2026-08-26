@@ -8,6 +8,7 @@ import JournalEntry from "@/models/JournalEntry";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import ProfileActions from "@/components/profileActions";
+import StatCard from "@/components/StatCard";
 import Link from "next/link";
 import ProfileFavorites from "@/components/ProfileFavorites";
 import ProfileInsights from "@/components/ProfileInsights";
@@ -17,7 +18,9 @@ import { buildCommunityComparison } from "@/lib/community";
 import { BarChart3 } from "lucide-react";
 import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
 import EmptyState from "@/components/EmptyState";
-import type { FavoriteMovie, JournalItem, MovieListItem, ReviewItem, WatchlistMovie } from "@/types";
+import { serializeReview, serializeJournalEntry, serializeList, type RawReview, type RawJournalEntry, type RawMovieList } from "@/lib/serialize";
+import { normalizeMediaType, mediaKey, tmdbImage } from "@/lib/media";
+import type { FavoriteMovie, JournalItem, WatchlistMovie } from "@/types";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -42,22 +45,6 @@ type ProfileUser = {
   following?: string[];
 };
 
-type RawJournalEntry = Omit<JournalItem, "_id" | "createdAt" | "watchedAt"> & {
-  _id: { toString: () => string };
-  createdAt: Date;
-  watchedAt: Date;
-};
-
-type RawReview = Omit<ReviewItem, "_id" | "createdAt"> & {
-  _id: { toString: () => string };
-  createdAt: Date;
-};
-
-type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
-  _id: { toString: () => string };
-  createdAt: Date;
-};
-
 function serializeFavorites(favorites: RawFavoriteMovie[] = []): FavoriteMovie[] {
   return favorites.map((favorite) => ({
     movieId: favorite.movieId,
@@ -66,58 +53,10 @@ function serializeFavorites(favorites: RawFavoriteMovie[] = []): FavoriteMovie[]
     voteAverage: favorite.voteAverage || 0,
     releaseDate: favorite.releaseDate,
     personalRating: favorite.personalRating || 0,
-    mediaType: favorite.mediaType || "movie",
+    mediaType: normalizeMediaType(favorite.mediaType),
     genreIds: favorite.genreIds || [],
     addedAt: favorite.addedAt ? new Date(favorite.addedAt).toISOString() : undefined,
   }));
-}
-
-function serializeJournal(entry: RawJournalEntry): JournalItem {
-  return {
-    _id: entry._id.toString(),
-    movieTitle: entry.movieTitle,
-    posterPath: entry.posterPath,
-    watchedAt: entry.watchedAt.toISOString(),
-    note: entry.note,
-    createdAt: entry.createdAt.toISOString(),
-    movieId: entry.movieId,
-    mediaType: entry.mediaType || "movie",
-  };
-}
-
-function serializeReview(review: RawReview): ReviewItem {
-  return {
-    _id: review._id.toString(),
-    userEmail: review.userEmail,
-    userName: review.userName,
-    movieTitle: review.movieTitle,
-    posterPath: review.posterPath,
-    body: review.body,
-    visibility: review.visibility || "public",
-    spoiler: Boolean(review.spoiler),
-    movieId: review.movieId,
-    mediaType: review.mediaType || "movie",
-    likedBy: review.likedBy || [],
-    savedBy: review.savedBy || [],
-    createdAt: review.createdAt.toISOString(),
-  };
-}
-
-function serializeList(list: RawMovieList): MovieListItem {
-  return {
-    _id: list._id.toString(),
-    userEmail: list.userEmail,
-    userName: list.userName,
-    title: list.title,
-    description: list.description,
-    movies: list.movies,
-    visibility: list.visibility || "public",
-    createdAt: list.createdAt.toISOString(),
-  };
-}
-
-function posterUrl(path?: string | null) {
-  return path ? `https://image.tmdb.org/t/p/w185${path}` : null;
 }
 
 export default async function ProfilePage() {
@@ -160,7 +99,7 @@ JournalEntry.find({ userEmail: session.user.email })
           movieId?: string;
         }[]>(),
     ]);
-  const journalEntries = rawJournalEntries.map(serializeJournal);
+  const journalEntries = rawJournalEntries.map(serializeJournalEntry);
   const reviews = rawReviews.map(serializeReview);
   const lists = rawLists.map(serializeList);
   const insights = buildInsights(journalHistory, favorites);
@@ -251,28 +190,29 @@ JournalEntry.find({ userEmail: session.user.email })
         </div>
 
 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-           <StatCard icon={<Film className="w-5 h-5 text-blue-400" />} label="Titles Watched" value={watchedMovieIds.length.toString()} />
-           <StatCard 
-             icon={<Heart className="w-5 h-5 text-red-500" />} 
-             label="Favorites" 
-             value={userData.favorites.length.toString()} 
+           <StatCard hover icon={<Film className="w-5 h-5 text-blue-400" />} label="Titles Watched" value={watchedMovieIds.length.toString()} />
+           <StatCard
+             hover
+             icon={<Heart className="w-5 h-5 text-red-500" />}
+             label="Favorites"
+             value={userData.favorites.length.toString()}
            />
-           <StatCard icon={<List className="w-5 h-5 text-yellow-400" />} label="Lists Created" value={listsCreated.toString()} />
-           <StatCard icon={<Bookmark className="w-5 h-5 text-blue-400" />} label="Watchlist" value={watchlist.length.toString()} />
-           <StatCard icon={<Star className="w-5 h-5 text-yellow-400" />} label="Avg Stars" value={averageRating} />
+           <StatCard hover icon={<List className="w-5 h-5 text-yellow-400" />} label="Lists Created" value={listsCreated.toString()} />
+           <StatCard hover icon={<Bookmark className="w-5 h-5 text-blue-400" />} label="Watchlist" value={watchlist.length.toString()} />
+           <StatCard hover icon={<Star className="w-5 h-5 text-yellow-400" />} label="Avg Stars" value={averageRating} />
            {userData.username ? (
              <Link href={`/u/${userData.username}/following`}>
-               <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Following" value={String(dbUser?.following?.length || 0)} />
+               <StatCard hover icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Following" value={String(dbUser?.following?.length || 0)} />
              </Link>
            ) : (
-             <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Following" value={String(dbUser?.following?.length || 0)} />
+             <StatCard hover icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Following" value={String(dbUser?.following?.length || 0)} />
            )}
            {userData.username ? (
              <Link href={`/u/${userData.username}/followers`}>
-               <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Followers" value={followerCount.toString()} />
+               <StatCard hover icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Followers" value={followerCount.toString()} />
              </Link>
            ) : (
-             <StatCard icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Followers" value={followerCount.toString()} />
+             <StatCard hover icon={<UserIcon className="w-5 h-5 text-purple-400" />} label="Followers" value={followerCount.toString()} />
            )}
         </div>
 
@@ -337,9 +277,9 @@ JournalEntry.find({ userEmail: session.user.email })
 {watchlist.slice(0, 8).map((movie) => (
                 <Link key={movie.movieId} href={movie.mediaType === "tv" ? `/tv/${movie.movieId}` : `/movie/${movie.movieId}`} className="bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden hover:border-red-500/40 transition">
                   <div className="relative aspect-2/3 bg-neutral-900">
-                    {posterUrl(movie.posterPath) ? (
+                    {tmdbImage(movie.posterPath, "w185") ? (
                       <Image
-                        src={posterUrl(movie.posterPath) as string}
+                        src={tmdbImage(movie.posterPath, "w185") as string}
                         alt={movie.title}
                         fill
                         sizes="(min-width: 768px) 25vw, 50vw"
@@ -364,7 +304,7 @@ JournalEntry.find({ userEmail: session.user.email })
           {reviews.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {reviews.map((review) => {
-                const reviewRating = ownRatingMap.get(`${review.mediaType || "movie"}:${review.movieId}`) || 0;
+                const reviewRating = ownRatingMap.get(mediaKey(review.mediaType, review.movieId)) || 0;
                 return (
                   <ReviewCard
                     key={review._id}
@@ -425,18 +365,6 @@ JournalEntry.find({ userEmail: session.user.email })
   );
 }
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) {
-  return (
-    <div className="bg-neutral-900/50 border border-white/5 p-4 rounded-xl flex items-center gap-4 hover:bg-neutral-900 transition cursor-default">
-       <div className="p-3 bg-white/5 rounded-full">{icon}</div>
-       <div>
-         <div className="text-2xl font-bold text-white">{value}</div>
-         <div className="text-xs text-neutral-500 uppercase tracking-wider">{label}</div>
-       </div>
-    </div>
-  );
-}
-
 function ProfileMovieStrip({ items, emptyText }: { items: JournalItem[]; emptyText: string }) {
   if (items.length === 0) {
     return <EmptyState title="No watches yet" description={emptyText} />;
@@ -449,9 +377,9 @@ function ProfileMovieStrip({ items, emptyText }: { items: JournalItem[]; emptyTe
         const card = (
           <>
             <div className="relative aspect-2/3 bg-neutral-900">
-              {posterUrl(item.posterPath) ? (
+              {tmdbImage(item.posterPath, "w185") ? (
                 <Image
-                  src={posterUrl(item.posterPath) as string}
+                  src={tmdbImage(item.posterPath, "w185") as string}
                   alt={item.movieTitle}
                   fill
                   sizes="(min-width: 768px) 25vw, 50vw"

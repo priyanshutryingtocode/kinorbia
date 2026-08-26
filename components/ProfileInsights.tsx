@@ -15,30 +15,8 @@ import {
 } from "lucide-react";
 import type { InsightsData } from "@/lib/insights";
 import type { CommunityComparison } from "@/lib/community";
-
-function posterUrl(path?: string | null) {
-  return path ? `https://image.tmdb.org/t/p/w92${path}` : null;
-}
-
-function InsightCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-white/5 bg-neutral-900/50 p-4">
-      <div className="shrink-0 rounded-full bg-white/5 p-3">{icon}</div>
-      <div className="min-w-0">
-        <div className="text-2xl font-bold text-white">{value}</div>
-        <div className="text-xs uppercase tracking-wider text-neutral-500">{label}</div>
-      </div>
-    </div>
-  );
-}
+import StatCard from "@/components/StatCard";
+import { tmdbImage } from "@/lib/media";
 
 function BarRow({
   label,
@@ -128,10 +106,10 @@ export default function ProfileInsights({
       )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <InsightCard icon={<Film className="h-5 w-5 text-blue-400" />} label="Total Watches" value={totalWatches.toString()} />
-        <InsightCard icon={<Calendar className="h-5 w-5 text-red-400" />} label="Current Streak" value={`${currentStreak} days`} />
-        <InsightCard icon={<Flame className="h-5 w-5 text-orange-400" />} label="Best Streak" value={`${bestStreak} days`} />
-        <InsightCard icon={<Star className="h-5 w-5 text-yellow-400" />} label="Avg Stars" value={averageRating ? averageRating.toFixed(1) : "0.0"} />
+        <StatCard icon={<Film className="h-5 w-5 text-blue-400" />} label="Total Watches" value={totalWatches.toString()} />
+        <StatCard icon={<Calendar className="h-5 w-5 text-red-400" />} label="Current Streak" value={`${currentStreak} days`} />
+        <StatCard icon={<Flame className="h-5 w-5 text-orange-400" />} label="Best Streak" value={`${bestStreak} days`} />
+        <StatCard icon={<Star className="h-5 w-5 text-yellow-400" />} label="Avg Stars" value={averageRating ? averageRating.toFixed(1) : "0.0"} />
       </div>
 
       <div className="rounded-xl border border-white/10 bg-neutral-900/40 p-5">
@@ -236,9 +214,9 @@ export default function ProfileInsights({
                 className="group overflow-hidden rounded-lg border border-white/10 bg-neutral-950 transition hover:border-red-500/40"
               >
                 <div className="relative aspect-2/3 bg-neutral-900">
-                  {posterUrl(item.posterPath) ? (
+                  {tmdbImage(item.posterPath, "w92") ? (
                     <Image
-                      src={posterUrl(item.posterPath) as string}
+                      src={tmdbImage(item.posterPath, "w92") as string}
                       alt={item.title}
                       fill
                       sizes="(min-width: 1024px) 20vw, 40vw"
@@ -285,7 +263,7 @@ export default function ProfileInsights({
                 <div className="flex min-w-0 items-center gap-2">
                   {item.posterPath && (
                     <div className="relative h-12 w-8 shrink-0 overflow-hidden rounded bg-neutral-900">
-                      <Image src={posterUrl(item.posterPath) as string} alt={item.title} fill sizes="32px" className="object-cover" />
+                      <Image src={tmdbImage(item.posterPath, "w92") as string} alt={item.title} fill sizes="32px" className="object-cover" />
                     </div>
                   )}
                   <Link href={item.mediaType === "tv" ? `/tv/${item.movieId}` : `/movie/${item.movieId}`} className="truncate text-sm font-medium text-neutral-200 hover:text-red-400 transition">

@@ -5,6 +5,7 @@ import { Eye, Heart, ListPlus, Loader2, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./ToastProvider";
 import type { MovieSummary } from "@/types";
+import { normalizeMediaType } from "@/lib/media";
 
 type UserList = {
   id: string;
@@ -78,7 +79,7 @@ export default function AssistantMovieActions({
           posterPath: movie.poster_path,
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
-          mediaType: movie.mediaType || "movie",
+          mediaType: normalizeMediaType(movie.mediaType),
           genreIds: movie.genre_ids || [],
         }),
       });
@@ -110,7 +111,7 @@ export default function AssistantMovieActions({
           movieId: movie.id.toString(),
           movieTitle: movie.title,
           posterPath: movie.poster_path,
-          mediaType: movie.mediaType || "movie",
+          mediaType: normalizeMediaType(movie.mediaType),
         }),
       });
 
@@ -148,7 +149,7 @@ export default function AssistantMovieActions({
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
           rating,
-          mediaType: movie.mediaType || "movie",
+          mediaType: normalizeMediaType(movie.mediaType),
           genreIds: movie.genre_ids || [],
         }),
       });
@@ -188,7 +189,7 @@ export default function AssistantMovieActions({
             posterPath: movie.poster_path,
             voteAverage: movie.vote_average,
             releaseDate: movie.release_date,
-            mediaType: movie.mediaType || "movie",
+            mediaType: normalizeMediaType(movie.mediaType),
           },
         }),
       });

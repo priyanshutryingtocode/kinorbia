@@ -44,7 +44,3 @@ const TV_GENRES: Record<number, string> = {
 export function genreName(id: number, mediaType: MediaType = "movie") {
   return mediaType === "tv" ? TV_GENRES[id] : MOVIE_GENRES[id];
 }
-
-export function genreIdsForNames(mediaType: MediaType) {
-  return Object.keys(mediaType === "tv" ? TV_GENRES : MOVIE_GENRES).map(Number);
-}

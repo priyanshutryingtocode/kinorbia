@@ -12,6 +12,7 @@ import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import FeedTabs from "@/components/FeedTabs";
 import EmptyState from "@/components/EmptyState";
+import { tmdbImage } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +20,6 @@ export const metadata: Metadata = {
   title: "Activity",
   description: "The latest reviews and lists shared by the KinOrbia community.",
 };
-
-function posterUrl(path?: string | null) {
-  return path ? `https://image.tmdb.org/t/p/w185${path}` : null;
-}
 
 type ActivityPageProps = {
   searchParams: Promise<{ feed?: string }> | { feed?: string };
@@ -113,8 +110,8 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
             {items.map((item) => item.kind === "review" ? (
               <article key={`review-${item.review._id}`} className="flex gap-4 rounded-lg border border-white/10 bg-neutral-900/50 p-4">
                 <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-md bg-neutral-950">
-                  {posterUrl(item.review.posterPath) ? (
-                    <Image src={posterUrl(item.review.posterPath) as string} alt={item.review.movieTitle} fill sizes="64px" className="object-cover" />
+                  {tmdbImage(item.review.posterPath, "w185") ? (
+                    <Image src={tmdbImage(item.review.posterPath, "w185") as string} alt={item.review.movieTitle} fill sizes="64px" className="object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-neutral-700">
                       <MessageSquare className="h-5 w-5" />

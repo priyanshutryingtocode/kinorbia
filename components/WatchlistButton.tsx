@@ -4,6 +4,7 @@ import { Bookmark, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "./ToastProvider";
+import { normalizeMediaType } from "@/lib/media";
 
 type WatchlistButtonProps = {
   movie: {
@@ -36,7 +37,7 @@ export default function WatchlistButton({ movie, initialIsWatchlisted }: Watchli
           posterPath: movie.poster_path,
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
-          mediaType: movie.mediaType || "movie",
+          mediaType: normalizeMediaType(movie.mediaType),
         }),
       });
 

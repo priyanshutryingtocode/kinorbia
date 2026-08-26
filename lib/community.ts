@@ -1,6 +1,7 @@
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import type { FavoriteMovie, MediaType } from "@/types";
+import { normalizeMediaType, mediaKey } from "@/lib/media";
 
 export type CommunityComparisonItem = {
   title: string;
@@ -57,18 +58,18 @@ export async function buildCommunityComparison(
 
   const communityMap = new Map<string, { avg: number; count: number }>();
   for (const row of rows) {
-    const key = `${row._id.mediaType || "movie"}:${row._id.movieId}`;
+    const key = mediaKey(row._id.mediaType, row._id.movieId);
     communityMap.set(key, { avg: row.avg, count: row.count });
   }
 
   const items: CommunityComparisonItem[] = rated
     .map((favorite) => {
-      const key = `${favorite.mediaType || "movie"}:${favorite.movieId}`;
+      const key = mediaKey(favorite.mediaType, favorite.movieId);
       const community = communityMap.get(key);
       return {
         title: favorite.title,
         posterPath: favorite.posterPath || null,
-        mediaType: (favorite.mediaType || "movie") as MediaType,
+        mediaType: (normalizeMediaType(favorite.mediaType)) as MediaType,
         movieId: favorite.movieId,
         yours: (favorite.personalRating || 0) / 2,
         community: community ? community.avg / 2 : null,

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/dbConnect";
+import dbConnect, { isDuplicateKeyError } from "@/lib/dbConnect";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { slugifyUsername } from "@/lib/userIdentity";
@@ -14,15 +14,6 @@ const GENERIC_RESPONSE = {
   message:
     "Registration received. If this email is new, check your inbox for a verification link.",
 };
-
-function isDuplicateKeyError(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: number }).code === 11000
-  );
-}
 
 export const POST = withRateLimit(
   async (req: Request) => {

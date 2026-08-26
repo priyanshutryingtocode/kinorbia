@@ -12,10 +12,11 @@ import { Suspense } from "react";
 import { Calendar, Clock, Film, Star } from "lucide-react";
 import type { FavoriteMovie, TmdbMovieCredits, TmdbMovieDetails } from "@/types";
 import type { Metadata } from "next";
-import SimilarMovies from "@/components/SimilarMovies";
+import SimilarMedia from "@/components/SimilarMedia";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import TrailerButton from "@/components/TrailerButton";
 import { getMovieWithStatus, getMovieCredits, getMovieVideos, pickMainTrailer } from "@/lib/tmdb";
+import { normalizeMediaType } from "@/lib/media";
 
 async function getMovieDetails(id: string): Promise<TmdbMovieDetails> {
   const { movie, notFound: missing } = await getMovieWithStatus(id);
@@ -77,7 +78,7 @@ export default async function MoviePage({ params }: Props) {
 
 if (user?.favorites) {
       const favorite = user.favorites.find(
-        (fav) => fav.movieId === id.toString() && (fav.mediaType || "movie") === "movie"
+        (fav) => fav.movieId === id.toString() && (normalizeMediaType(fav.mediaType)) === "movie"
       );
       isFavorite = Boolean(favorite);
       personalRating = favorite?.personalRating || 0;
@@ -85,7 +86,7 @@ if (user?.favorites) {
 
     isWatchlisted = Boolean(
       user?.watchlist?.some(
-        (item) => item.movieId === id.toString() && (item.mediaType || "movie") === "movie"
+        (item) => item.movieId === id.toString() && (normalizeMediaType(item.mediaType)) === "movie"
       )
     );
 
@@ -294,7 +295,7 @@ if (user?.favorites) {
         </Suspense>
 
         <Suspense fallback={null}>
-          <SimilarMovies movieId={id} />
+          <SimilarMedia id={id} mediaType="movie" />
         </Suspense>
         
       </div>

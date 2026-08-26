@@ -4,6 +4,7 @@ import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { normalizeMediaType } from "@/lib/media";
 
 export interface CarouselMovie {
   id: number;
@@ -40,7 +41,7 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
       >
         {movies.map((movie) => (
 <Link 
-            key={`${movie.mediaType || "movie"}-${movie.id}`} 
+            key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`} 
             href={movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`}
             className="kin-focus group/card relative w-32 shrink-0 snap-start overflow-hidden rounded-lg border border-white/8 bg-neutral-950 transition-all duration-300 hover:-translate-y-1 hover:border-white/18 hover:shadow-[0_24px_60px_-42px_rgba(220,38,38,0.45)] sm:w-36 md:w-44"
             aria-label={movie.title}

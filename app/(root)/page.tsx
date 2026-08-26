@@ -80,7 +80,7 @@ export default async function Home({ searchParams }: Props) {
           </p>
         </div>
 
-        <GenreFilter />
+        <GenreFilter mediaType="movie" />
 
         {movies.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">

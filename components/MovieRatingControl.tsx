@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./ToastProvider";
+import { normalizeMediaType } from "@/lib/media";
 
 type MovieRatingControlProps = {
   movie: {
@@ -42,7 +43,7 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
           voteAverage: movie.vote_average,
           releaseDate: movie.release_date,
           rating: nextRating,
-          mediaType: movie.mediaType || "movie",
+          mediaType: normalizeMediaType(movie.mediaType),
           genreIds: movie.genre_ids || [],
         }),
       });

@@ -8,32 +8,11 @@ import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
 import { dedupeFavorites } from "@/lib/reviewRatings";
+import { serializeJournalEntry, type RawJournalEntry } from "@/lib/serialize";
+import { mediaKey, tmdbImage } from "@/lib/media";
 import { createJournalEntry, deleteJournalEntry, updateJournalEntry } from "./actions";
-import type { FavoriteMovie, JournalItem } from "@/types";
+import type { FavoriteMovie } from "@/types";
 import SubmitButton from "@/components/SubmitButton";
-
-type RawJournalEntry = Omit<JournalItem, "_id" | "createdAt" | "watchedAt"> & {
-  _id: { toString: () => string };
-  createdAt: Date;
-  watchedAt: Date;
-};
-
-function serializeEntry(entry: RawJournalEntry): JournalItem {
-  return {
-    _id: entry._id.toString(),
-    movieTitle: entry.movieTitle,
-    posterPath: entry.posterPath,
-    watchedAt: entry.watchedAt.toISOString(),
-    note: entry.note,
-    createdAt: entry.createdAt.toISOString(),
-    movieId: entry.movieId,
-    mediaType: entry.mediaType || "movie",
-  };
-}
-
-function posterUrl(path?: string | null) {
-  return path ? `https://image.tmdb.org/t/p/w185${path}` : null;
-}
 
 function todayInputValue() {
   return new Date().toISOString().slice(0, 10);
@@ -61,7 +40,7 @@ export default async function JournalPage() {
     .sort({ watchedAt: -1, createdAt: -1 })
     .limit(40)
     .lean<RawJournalEntry[]>();
-  const entries = rawEntries.map(serializeEntry);
+  const entries = rawEntries.map(serializeJournalEntry);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white px-6 py-12">
@@ -98,7 +77,7 @@ export default async function JournalPage() {
                   >
                     <option value="">Manual movie title</option>
                     {favorites.map((movie) => (
-                      <option key={`${movie.mediaType || "movie"}-${movie.movieId}`} value={`${movie.mediaType || "movie"}:${movie.movieId}`}>
+                      <option key={mediaKey(movie.mediaType, movie.movieId)} value={mediaKey(movie.mediaType, movie.movieId)}>
                         {movie.title}
                       </option>
                     ))}
@@ -157,9 +136,9 @@ export default async function JournalPage() {
                   className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 flex gap-4"
                 >
                   <div className="relative w-20 sm:w-24 aspect-2/3 bg-neutral-950 rounded-lg overflow-hidden shrink-0">
-                    {posterUrl(entry.posterPath) ? (
+                    {tmdbImage(entry.posterPath, "w185") ? (
                       <Image
-                        src={posterUrl(entry.posterPath) as string}
+                        src={tmdbImage(entry.posterPath, "w185") as string}
                         alt={entry.movieTitle}
                         fill
                         sizes="96px"

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Eye, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./ToastProvider";
+import { normalizeMediaType } from "@/lib/media";
 
 type WatchedButtonProps = {
   movie: {
@@ -36,7 +37,7 @@ export default function WatchedButton({ movie, initialIsWatched }: WatchedButton
           movieId: movie.id,
           movieTitle: movie.title,
           posterPath: movie.poster_path,
-          mediaType: movie.mediaType || "movie",
+          mediaType: normalizeMediaType(movie.mediaType),
         }),
       });
 

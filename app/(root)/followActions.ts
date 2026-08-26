@@ -1,24 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
-
-function getString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
+import { requireUser, getString } from "@/lib/actions";
 
 export async function toggleFollow(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
-
-  const email = session.user.email.toLowerCase();
+  const { email, name } = await requireUser();
   const targetEmail = getString(formData, "targetEmail").toLowerCase();
   const path = getString(formData, "path") || "/activity";
 
@@ -45,7 +34,7 @@ export async function toggleFollow(formData: FormData) {
         userEmail: targetEmail,
         type: "follow",
         actorEmail: email,
-        actorName: session.user.name || "KinOrbia user",
+        actorName: name,
         targetType: "user",
         targetId: targetEmail,
         targetTitle: target.username || targetEmail,

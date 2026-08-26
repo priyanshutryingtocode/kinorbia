@@ -9,32 +9,11 @@ import { buildReviewerRatingMaps, dedupeFavorites, lookupRating } from "@/lib/re
 import Review from "@/models/Review";
 import User from "@/models/User";
 import { createReview } from "./actions";
-import type { FavoriteMovie, ReviewItem } from "@/types";
+import { serializeReview, type RawReview } from "@/lib/serialize";
+import { normalizeMediaType, mediaKey } from "@/lib/media";
+import type { FavoriteMovie } from "@/types";
 import SubmitButton from "@/components/SubmitButton";
 import ReviewCard from "@/components/ReviewCard";
-
-type RawReview = Omit<ReviewItem, "_id" | "createdAt"> & {
-  _id: { toString: () => string };
-  createdAt: Date;
-};
-
-function serializeReview(review: RawReview): ReviewItem {
-  return {
-    _id: review._id.toString(),
-    userEmail: review.userEmail,
-    userName: review.userName,
-    movieTitle: review.movieTitle,
-    posterPath: review.posterPath,
-    body: review.body,
-    visibility: review.visibility || "public",
-    spoiler: Boolean(review.spoiler),
-    movieId: review.movieId,
-    mediaType: review.mediaType,
-    likedBy: review.likedBy || [],
-    savedBy: review.savedBy || [],
-    createdAt: review.createdAt.toISOString(),
-  };
-}
 
 export const metadata: Metadata = {
   title: "Reviews",
@@ -109,7 +88,7 @@ export default async function ReviewsPage() {
                         Choose a rated movie
                       </option>
                       {ratedFavorites.map((movie) => (
-                        <option key={`${movie.mediaType || "movie"}-${movie.movieId}`} value={`${movie.mediaType || "movie"}:${movie.movieId}`}>
+                        <option key={`${normalizeMediaType(movie.mediaType)}-${movie.movieId}`} value={mediaKey(movie.mediaType, movie.movieId)}>
                           {movie.title}
                         </option>
                       ))}

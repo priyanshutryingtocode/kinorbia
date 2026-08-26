@@ -5,6 +5,7 @@ import SocialActionButton from "./SocialActionButton";
 import SpoilerText from "./SpoilerText";
 import ManageReviewForm from "./ManageReviewForm";
 import { renderRichText } from "@/lib/renderRichText";
+import { tmdbImage } from "@/lib/media";
 
 type ReviewCardProps = {
   review: ReviewItem;
@@ -12,10 +13,6 @@ type ReviewCardProps = {
   currentUserEmail: string;
   path: string;
 };
-
-function posterUrl(path?: string | null) {
-  return path ? `https://image.tmdb.org/t/p/w342${path}` : null;
-}
 
 export default function ReviewCard({
   review,
@@ -35,9 +32,9 @@ export default function ReviewCard({
   return (
     <article className="flex overflow-hidden rounded-xl border border-white/10 bg-neutral-900/50">
       <div className="relative w-24 shrink-0 bg-neutral-900 sm:w-32">
-        {posterUrl(review.posterPath) ? (
+        {tmdbImage(review.posterPath, "w342") ? (
           <Image
-            src={posterUrl(review.posterPath) as string}
+            src={tmdbImage(review.posterPath, "w342") as string}
             alt={review.movieTitle}
             fill
             sizes="128px"

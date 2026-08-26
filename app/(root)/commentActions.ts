@@ -1,28 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import Comment from "@/models/Comment";
 import MovieList from "@/models/MovieList";
 import Notification from "@/models/Notification";
 import Review from "@/models/Review";
+import { requireUser, getString } from "@/lib/actions";
 import { rateLimit } from "@/lib/rateLimit";
 import { isObjectId } from "@/lib/objectId";
-
-function getString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
+import { normalizeMediaType } from "@/lib/media";
 
 export async function createComment(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
-
-  const email = session.user.email.toLowerCase();
+  const { email, name } = await requireUser();
 
   if (!rateLimit(`comments:${email}`, { limit: 10, windowMs: 60 * 1000 })) {
     return;
@@ -58,7 +48,7 @@ export async function createComment(formData: FormData) {
       parentType,
       parentId,
       userEmail: email,
-      userName: session.user.name || "KinOrbia user",
+      userName: name,
       body,
     });
 
@@ -67,13 +57,13 @@ export async function createComment(formData: FormData) {
         userEmail: parent.userEmail,
         type: "comment",
         actorEmail: email,
-        actorName: session.user.name || "KinOrbia user",
+        actorName: name,
         targetType: parentType as "review" | "list",
         targetId: parentId,
         targetTitle: parentType === "review" ? parent.movieTitle || "" : parent.title || "",
         commentId: comment._id.toString(),
         movieId: parentType === "review" ? parent.movieId || "" : "",
-        mediaType: parentType === "review" ? parent.mediaType || "movie" : "movie",
+        mediaType: parentType === "review" ? normalizeMediaType(parent.mediaType) : "movie",
       });
     }
   } catch (error) {
@@ -87,11 +77,7 @@ export async function createComment(formData: FormData) {
 }
 
 export async function deleteComment(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
-
+  const { email } = await requireUser();
   const commentId = getString(formData, "commentId");
   const path = getString(formData, "path");
 
@@ -100,7 +86,6 @@ export async function deleteComment(formData: FormData) {
   }
 
   await dbConnect();
-  const email = session.user.email.toLowerCase();
   try {
     const comment = await Comment.findOne({ _id: commentId, userEmail: email }).select(
       "parentType parentId userEmail"

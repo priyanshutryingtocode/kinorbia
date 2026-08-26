@@ -1,12 +1,15 @@
 import MovieCarousel, { CarouselMovie } from "./MovieCarousel";
-import { getRecommendationMovies } from "@/lib/tmdb";
+import { getRecommendationMovies, getTvRecommendations } from "@/lib/tmdb";
+import type { MediaType } from "@/types";
 
-interface SimilarMoviesProps {
-  movieId: string;
+interface SimilarMediaProps {
+  id: string;
+  mediaType: MediaType;
 }
 
-export default async function SimilarMovies({ movieId }: SimilarMoviesProps) {
-  const data = await getRecommendationMovies(movieId);
+export default async function SimilarMedia({ id, mediaType }: SimilarMediaProps) {
+  const data =
+    mediaType === "tv" ? await getTvRecommendations(id) : await getRecommendationMovies(id);
 
   if (!data?.results?.length) {
     return null;

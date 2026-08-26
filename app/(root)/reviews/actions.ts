@@ -1,37 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import Review from "@/models/Review";
 import Comment from "@/models/Comment";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
+import { requireUser, getString } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
+import { normalizeMediaType } from "@/lib/media";
 import type { FavoriteMovie } from "@/types";
-
-function getRequiredString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
 
 function isTruthyCheckbox(value: string) {
   return value === "on" || value === "true" || value === "1";
 }
 
 export async function createReview(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const { email, name } = await requireUser();
 
-  const email = session.user.email.toLowerCase();
-
-  const favoriteMovieId = getRequiredString(formData, "favoriteMovieId");
-  const body = getRequiredString(formData, "body");
-  const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
-  const spoiler = isTruthyCheckbox(getRequiredString(formData, "spoiler"));
+  const favoriteMovieId = getString(formData, "favoriteMovieId");
+  const body = getString(formData, "body");
+  const visibility = getString(formData, "visibility") === "private" ? "private" : "public";
+  const spoiler = isTruthyCheckbox(getString(formData, "spoiler"));
 
   if (!favoriteMovieId || !body) {
     return;
@@ -48,7 +38,7 @@ export async function createReview(formData: FormData) {
   const favorite = favorites.find(
     (movie) =>
       movie.movieId === favId &&
-      (favMediaType === "tv" ? "tv" : "movie") === (movie.mediaType || "movie")
+      normalizeMediaType(favMediaType) === normalizeMediaType(movie.mediaType)
   );
 
   // Reviews are derived from rated favorites; without one there is nothing
@@ -60,9 +50,9 @@ export async function createReview(formData: FormData) {
   try {
     await Review.create({
       userEmail: email,
-      userName: session.user.name || "KinOrbia user",
+      userName: name,
       movieId: favorite.movieId,
-      mediaType: favorite.mediaType === "tv" ? "tv" : "movie",
+      mediaType: normalizeMediaType(favorite.mediaType),
       movieTitle: favorite.title,
       posterPath: favorite.posterPath || undefined,
       body,
@@ -78,17 +68,12 @@ export async function createReview(formData: FormData) {
 }
 
 export async function updateReview(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const { email } = await requireUser();
 
-  const email = session.user.email.toLowerCase();
-
-  const reviewId = getRequiredString(formData, "reviewId");
-  const body = getRequiredString(formData, "body");
-  const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
-  const spoiler = isTruthyCheckbox(getRequiredString(formData, "spoiler"));
+  const reviewId = getString(formData, "reviewId");
+  const body = getString(formData, "body");
+  const visibility = getString(formData, "visibility") === "private" ? "private" : "public";
+  const spoiler = isTruthyCheckbox(getString(formData, "spoiler"));
 
   if (!reviewId || !isObjectId(reviewId) || !body) {
     return;
@@ -116,14 +101,9 @@ export async function updateReview(formData: FormData) {
 }
 
 export async function deleteReview(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const { email } = await requireUser();
 
-  const email = session.user.email.toLowerCase();
-
-  const reviewId = getRequiredString(formData, "reviewId");
+  const reviewId = getString(formData, "reviewId");
   if (!reviewId || !isObjectId(reviewId)) {
     return;
   }

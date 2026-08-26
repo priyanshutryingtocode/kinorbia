@@ -1,26 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import MovieList from "@/models/MovieList";
 import Comment from "@/models/Comment";
 import Notification from "@/models/Notification";
+import { requireUser, getString } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
+import { normalizeMediaType, mediaKey } from "@/lib/media";
 import type { FavoriteMovie, ListMovie } from "@/types";
-
-function getRequiredString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
 
 function toListMovie(movie: FavoriteMovie): ListMovie {
   return {
     movieId: movie.movieId,
-    mediaType: movie.mediaType || "movie",
+    mediaType: normalizeMediaType(movie.mediaType),
     title: movie.title,
     posterPath: movie.posterPath,
     voteAverage: movie.voteAverage,
@@ -31,22 +26,17 @@ function toListMovie(movie: FavoriteMovie): ListMovie {
 function parseMovieRef(value: string) {
   const [mediaType, ...rest] = value.split(":");
   return {
-    mediaType: mediaType === "tv" ? "tv" : "movie",
+    mediaType: normalizeMediaType(mediaType),
     movieId: rest.join(":"),
   };
 }
 
 export async function createMovieList(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const { email, name } = await requireUser();
 
-  const email = session.user.email.toLowerCase();
-
-  const title = getRequiredString(formData, "title");
-  const description = getRequiredString(formData, "description");
-  const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
+  const title = getString(formData, "title");
+  const description = getString(formData, "description");
+  const visibility = getString(formData, "visibility") === "private" ? "private" : "public";
   const movieIds = formData.getAll("movieIds").filter((value): value is string => {
     return typeof value === "string" && value.length > 0;
   });
@@ -66,7 +56,7 @@ export async function createMovieList(formData: FormData) {
     const selectedMovies = favorites
       .filter((movie) =>
         refs.some(
-          (ref) => ref.movieId === movie.movieId && ref.mediaType === (movie.mediaType || "movie")
+          (ref) => ref.movieId === movie.movieId && ref.mediaType === normalizeMediaType(movie.mediaType)
         )
       )
       .map(toListMovie);
@@ -77,7 +67,7 @@ export async function createMovieList(formData: FormData) {
 
     await MovieList.create({
       userEmail: email,
-      userName: session.user.name || "KinOrbia user",
+      userName: name,
       title,
       description,
       movies: selectedMovies,
@@ -92,17 +82,12 @@ export async function createMovieList(formData: FormData) {
 }
 
 export async function updateMovieList(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const { email } = await requireUser();
 
-  const email = session.user.email.toLowerCase();
-
-  const listId = getRequiredString(formData, "listId");
-  const title = getRequiredString(formData, "title");
-  const description = getRequiredString(formData, "description");
-  const visibility = getRequiredString(formData, "visibility") === "private" ? "private" : "public";
+  const listId = getString(formData, "listId");
+  const title = getString(formData, "title");
+  const description = getString(formData, "description");
+  const visibility = getString(formData, "visibility") === "private" ? "private" : "public";
   const movieIds = formData.getAll("movieIds").filter((value): value is string => {
     return typeof value === "string" && value.length > 0;
   });
@@ -127,20 +112,20 @@ export async function updateMovieList(formData: FormData) {
 
     const favorites = (user?.favorites || []) as FavoriteMovie[];
     const favoriteKeys = new Set(
-      favorites.map((movie) => `${movie.mediaType || "movie"}:${movie.movieId}`)
+      favorites.map((movie) => mediaKey(movie.mediaType, movie.movieId))
     );
     const selectedKeys = new Set(refs.map((ref) => `${ref.mediaType}:${ref.movieId}`));
 
     const selectedMovies = favorites
       .filter((movie) =>
-        selectedKeys.has(`${movie.mediaType || "movie"}:${movie.movieId}`)
+        selectedKeys.has(mediaKey(movie.mediaType, movie.movieId))
       )
       .map(toListMovie);
 
     // Keep list entries that are no longer favorites (they aren't shown in
     // the form, so their absence is not an explicit removal).
     const preserved = (existing?.movies || []).filter(
-      (movie) => !favoriteKeys.has(`${movie.mediaType || "movie"}:${movie.movieId}`)
+      (movie) => !favoriteKeys.has(mediaKey(movie.mediaType, movie.movieId))
     );
 
     const mergedMovies = [...preserved, ...selectedMovies];
@@ -163,14 +148,9 @@ export async function updateMovieList(formData: FormData) {
 }
 
 export async function deleteMovieList(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const { email } = await requireUser();
 
-  const email = session.user.email.toLowerCase();
-
-  const listId = getRequiredString(formData, "listId");
+  const listId = getString(formData, "listId");
   if (!listId || !isObjectId(listId)) {
     return;
   }

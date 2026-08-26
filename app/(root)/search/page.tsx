@@ -12,6 +12,7 @@ import {
   discoverTv,
 } from "@/lib/tmdb";
 import type { MovieSummary } from "@/types";
+import { normalizeMediaType } from "@/lib/media";
 
 type SearchResponse = {
   results?: MovieSummary[];
@@ -282,7 +283,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
               {movies.map((movie) => (
                 <Link
-                  key={`${movie.mediaType || "movie"}-${movie.id}`}
+                  key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`}
                   href={movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`}
                   className="group relative block bg-neutral-900/60 border border-white/5 rounded-xl overflow-hidden hover:border-red-500/40 transition"
                 >

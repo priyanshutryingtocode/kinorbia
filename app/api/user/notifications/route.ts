@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/dbConnect";
 import Notification from "@/models/Notification";
-import { getSessionEmail } from "@/lib/session";
-import { withRateLimit } from "@/lib/rateLimit";
+import { withAuthedUser } from "@/lib/session";
 import type { NotificationItem } from "@/types";
 
 type RawNotification = {
@@ -37,39 +35,28 @@ function serialize(notification: RawNotification): NotificationItem {
   };
 }
 
-export const GET = withRateLimit(
-  async (req: Request) => {
-    try {
-      const email = await getSessionEmail();
-      if (!email) {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-      }
+export const GET = withAuthedUser(
+  async (req, { email }) => {
+    const { searchParams } = new URL(req.url);
+    const unreadOnly = searchParams.get("unread") === "1";
 
-      const { searchParams } = new URL(req.url);
-      const unreadOnly = searchParams.get("unread") === "1";
-
-      await dbConnect();
-
-      const filter: { userEmail: string; read?: boolean } = { userEmail: email };
-      if (unreadOnly) {
-        filter.read = false;
-      }
-
-      const [notifications, unreadCount] = await Promise.all([
-        Notification.find(filter)
-          .sort({ createdAt: -1 })
-          .limit(20)
-          .lean<RawNotification[]>(),
-        Notification.countDocuments({ userEmail: email, read: false }),
-      ]);
-
-      return NextResponse.json({
-        notifications: notifications.map(serialize),
-        unreadCount,
-      });
-    } catch {
-      return NextResponse.json({ message: "Error loading notifications" }, { status: 500 });
+    const filter: { userEmail: string; read?: boolean } = { userEmail: email };
+    if (unreadOnly) {
+      filter.read = false;
     }
+
+    const [notifications, unreadCount] = await Promise.all([
+      Notification.find(filter)
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean<RawNotification[]>(),
+      Notification.countDocuments({ userEmail: email, read: false }),
+    ]);
+
+    return NextResponse.json({
+      notifications: notifications.map(serialize),
+      unreadCount,
+    });
   },
-  { windowMs: 60 * 1000, limit: 60 }
+  { windowMs: 60 * 1000, limit: 60, errorLabel: "loading notifications" }
 );

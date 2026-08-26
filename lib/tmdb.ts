@@ -60,6 +60,8 @@ async function tmdbFetch<T>(
 
 type ResultList<T> = { results?: T[] };
 
+type MediaPath = "movie" | "tv";
+
 // Coerce untrusted page/genre values into safe URL fragments.
 function safePage(page: unknown) {
   const n = Number(page);
@@ -81,16 +83,81 @@ function safeId(id: string | number) {
   return digits || "0";
 }
 
-export const getPopularMovies = (page = 1) =>
-  tmdbFetch<ResultList<MovieSummary>>(`/movie/popular?language=en-US&page=${safePage(page)}`, 300);
-
-export const getDiscoverMovies = (page = 1, genre?: string) => {
-  const genreParam = safeGenre(genre);
-  return tmdbFetch<ResultList<MovieSummary>>(
-    `/discover/movie?${genreParam ? `with_genres=${genreParam}&` : ""}language=en-US&page=${safePage(page)}`,
-    300
-  );
+type RawTvResult = {
+  id: number;
+  name?: string;
+  poster_path?: string | null;
+  first_air_date?: string;
+  vote_average?: number;
+  genre_ids?: number[];
+  original_language?: string;
 };
+
+function normalizeTvResult(result: RawTvResult): MovieSummary {
+  return {
+    id: result.id,
+    title: result.name || "Unknown",
+    poster_path: result.poster_path ?? null,
+    release_date: result.first_air_date,
+    vote_average: result.vote_average || 0,
+    genre_ids: result.genre_ids,
+    original_language: result.original_language,
+    mediaType: "tv",
+  };
+}
+
+// Shared list/detail/sub-resource fetchers. TV responses are normalized into
+// MovieSummary shape (name -> title, first_air_date -> release_date); movie
+// responses already match and are returned untouched.
+function fetchList(mediaType: MediaPath, endpoint: string, revalidate: number) {
+  if (mediaType === "tv") {
+    return tmdbFetch<ResultList<RawTvResult>>(`/tv/${endpoint}`, revalidate).then((data) => ({
+      results: data?.results?.map(normalizeTvResult) || [],
+    }));
+  }
+
+  return tmdbFetch<ResultList<MovieSummary>>(`/movie/${endpoint}`, revalidate);
+}
+
+function fetchSubResource<T>(mediaType: MediaPath, id: string, resource: string, revalidate = 3600) {
+  return tmdbFetch<T>(`/${mediaType}/${safeId(id)}/${resource}?language=en-US`, revalidate);
+}
+
+async function fetchDetailsWithStatus<T>(
+  mediaType: MediaPath,
+  id: string
+): Promise<{ details: T | null; notFound: boolean }> {
+  const url = `${BASE}/${mediaType}/${safeId(id)}?api_key=${process.env.TMDB_API_KEY}`;
+
+  try {
+    const res = await fetch(url, { next: { revalidate: 3600 } });
+
+    if (res.status === 404) {
+      return { details: null, notFound: true };
+    }
+
+    if (!res.ok) {
+      return { details: null, notFound: false };
+    }
+
+    return { details: (await res.json()) as T, notFound: false };
+  } catch {
+    return { details: null, notFound: false };
+  }
+}
+
+function discoverQuery(genre: string | undefined, page: number) {
+  const genreParam = safeGenre(genre);
+  return `${genreParam ? `with_genres=${genreParam}&` : ""}language=en-US&page=${safePage(page)}`;
+}
+
+// --- Movies ---
+
+export const getPopularMovies = (page = 1) =>
+  fetchList("movie", `popular?language=en-US&page=${safePage(page)}`, 300);
+
+export const getDiscoverMovies = (page = 1, genre?: string) =>
+  fetchList("movie", `discover/movie?${discoverQuery(genre, page)}`, 300);
 
 export const discoverMovies = (extraParams = "", page = 1) => {
   const params = extraParams.replace(/^&/, "");
@@ -106,36 +173,69 @@ export const searchMovies = (query: string, extraParams = "") =>
     3600
   );
 
-export const getMovie = (id: string) => tmdbFetch<TmdbMovieDetails>(`/movie/${safeId(id)}`, 3600);
-
 export async function getMovieWithStatus(id: string): Promise<{
   movie: TmdbMovieDetails | null;
   notFound: boolean;
 }> {
-  const url = `${BASE}/movie/${safeId(id)}?api_key=${process.env.TMDB_API_KEY}`;
-
-  try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-
-    if (res.status === 404) {
-      return { movie: null, notFound: true };
-    }
-
-    if (!res.ok) {
-      return { movie: null, notFound: false };
-    }
-
-    return { movie: (await res.json()) as TmdbMovieDetails, notFound: false };
-  } catch {
-    return { movie: null, notFound: false };
-  }
+  const { details, notFound } = await fetchDetailsWithStatus<TmdbMovieDetails>("movie", id);
+  return { movie: details, notFound };
 }
 
 export const getMovieCredits = (id: string) =>
-  tmdbFetch<TmdbMovieCredits | null>(`/movie/${safeId(id)}/credits?language=en-US`, 3600);
+  fetchSubResource<TmdbMovieCredits | null>("movie", id, "credits");
 
 export const getMovieVideos = (id: string) =>
-  tmdbFetch<{ results?: TmdbVideo[] } | null>(`/movie/${safeId(id)}/videos?language=en-US`, 3600);
+  fetchSubResource<{ results?: TmdbVideo[] } | null>("movie", id, "videos");
+
+export const getRecommendationMovies = (id: string) =>
+  tmdbFetch<ResultList<MovieSummary>>(`/movie/${safeId(id)}/recommendations?language=en-US&page=1`, 3600);
+
+// --- TV ---
+
+export const getPopularTv = (page = 1) =>
+  fetchList("tv", `popular?language=en-US&page=${safePage(page)}`, 300);
+
+export const getDiscoverTv = (page = 1, genre?: string) =>
+  fetchList("tv", `discover/tv?${discoverQuery(genre, page)}`, 300);
+
+export const discoverTv = (extraParams = "", page = 1) => {
+  const params = extraParams.replace(/^&/, "");
+  return tmdbFetch<ResultList<RawTvResult>>(
+    `/discover/tv?${params ? `${params}&` : ""}language=en-US&page=${page}`,
+    300
+  ).then((data) => ({
+    results: data?.results?.map(normalizeTvResult) || [],
+  }));
+};
+
+export const searchTv = (query: string, extraParams = "") =>
+  tmdbFetch<ResultList<RawTvResult>>(
+    `/search/tv?query=${encodeURIComponent(query)}${extraParams}`,
+    3600
+  ).then((data) => ({
+    results: data?.results?.map(normalizeTvResult) || [],
+  }));
+
+export async function getTvWithStatus(id: string): Promise<{
+  tv: TmdbTvDetails | null;
+  notFound: boolean;
+}> {
+  const { details, notFound } = await fetchDetailsWithStatus<TmdbTvDetails>("tv", id);
+  return { tv: details, notFound };
+}
+
+export const getTvCredits = (id: string) =>
+  fetchSubResource<TmdbTvCredits | null>("tv", id, "credits");
+
+export const getTvVideos = (id: string) =>
+  fetchSubResource<{ results?: TmdbVideo[] } | null>("tv", id, "videos");
+
+export const getTvRecommendations = (id: string) =>
+  tmdbFetch<ResultList<RawTvResult>>(`/tv/${safeId(id)}/recommendations?language=en-US&page=1`, 3600).then(
+    (data) => ({
+      results: data?.results?.map(normalizeTvResult) || [],
+    })
+  );
 
 // Prefer the newest official YouTube trailer, falling back through any
 // trailer, teaser, clip, and finally whatever exists.
@@ -164,100 +264,3 @@ export function pickMainTrailer(videos: TmdbVideo[] | undefined | null): TmdbVid
     [...youtube].sort(byNewest)[0]
   );
 }
-
-export const getRecommendationMovies = (id: string) =>
-  tmdbFetch<ResultList<MovieSummary>>(`/movie/${safeId(id)}/recommendations?language=en-US&page=1`, 3600);
-
-type RawTvResult = {
-  id: number;
-  name?: string;
-  poster_path?: string | null;
-  first_air_date?: string;
-  vote_average?: number;
-  genre_ids?: number[];
-  original_language?: string;
-};
-
-export function normalizeTvResult(result: RawTvResult): MovieSummary {
-  return {
-    id: result.id,
-    title: result.name || "Unknown",
-    poster_path: result.poster_path ?? null,
-    release_date: result.first_air_date,
-    vote_average: result.vote_average || 0,
-    genre_ids: result.genre_ids,
-    original_language: result.original_language,
-    mediaType: "tv",
-  };
-}
-
-export const getPopularTv = (page = 1) =>
-  tmdbFetch<ResultList<RawTvResult>>(`/tv/popular?language=en-US&page=${safePage(page)}`, 300).then((data) => ({
-    results: data?.results?.map(normalizeTvResult) || [],
-  }));
-
-export const getDiscoverTv = (page = 1, genre?: string) => {
-  const genreParam = safeGenre(genre);
-  return tmdbFetch<ResultList<RawTvResult>>(
-    `/discover/tv?${genreParam ? `with_genres=${genreParam}&` : ""}language=en-US&page=${safePage(page)}`,
-    300
-  ).then((data) => ({
-    results: data?.results?.map(normalizeTvResult) || [],
-  }));
-};
-
-export const discoverTv = (extraParams = "", page = 1) => {
-  const params = extraParams.replace(/^&/, "");
-  return tmdbFetch<ResultList<RawTvResult>>(
-    `/discover/tv?${params ? `${params}&` : ""}language=en-US&page=${page}`,
-    300
-  ).then((data) => ({
-    results: data?.results?.map(normalizeTvResult) || [],
-  }));
-};
-
-export const searchTv = (query: string, extraParams = "") =>
-  tmdbFetch<ResultList<RawTvResult>>(
-    `/search/tv?query=${encodeURIComponent(query)}${extraParams}`,
-    3600
-  ).then((data) => ({
-    results: data?.results?.map(normalizeTvResult) || [],
-  }));
-
-export const getTv = (id: string) => tmdbFetch<TmdbTvDetails>(`/tv/${safeId(id)}`, 3600);
-
-export async function getTvWithStatus(id: string): Promise<{
-  tv: TmdbTvDetails | null;
-  notFound: boolean;
-}> {
-  const url = `${BASE}/tv/${safeId(id)}?api_key=${process.env.TMDB_API_KEY}`;
-
-  try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-
-    if (res.status === 404) {
-      return { tv: null, notFound: true };
-    }
-
-    if (!res.ok) {
-      return { tv: null, notFound: false };
-    }
-
-    return { tv: (await res.json()) as TmdbTvDetails, notFound: false };
-  } catch {
-    return { tv: null, notFound: false };
-  }
-}
-
-export const getTvCredits = (id: string) =>
-  tmdbFetch<TmdbTvCredits | null>(`/tv/${safeId(id)}/credits?language=en-US`, 3600);
-
-export const getTvVideos = (id: string) =>
-  tmdbFetch<{ results?: TmdbVideo[] } | null>(`/tv/${safeId(id)}/videos?language=en-US`, 3600);
-
-export const getTvRecommendations = (id: string) =>
-  tmdbFetch<ResultList<RawTvResult>>(`/tv/${safeId(id)}/recommendations?language=en-US&page=1`, 3600).then(
-    (data) => ({
-      results: data?.results?.map(normalizeTvResult) || [],
-    })
-  );

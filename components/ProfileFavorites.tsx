@@ -6,6 +6,7 @@ import { Film, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { FavoriteMovie } from "@/types";
+import { normalizeMediaType } from "@/lib/media";
 
 export default function ProfileFavorites({ initialFavorites }: { initialFavorites: FavoriteMovie[] }) {
   const [selectedMovie, setSelectedMovie] = useState<MovieProp | null>(null);
@@ -20,7 +21,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
       const res = await fetch("/api/user/favorites/rate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ movieId: selectedMovie.id, rating, mediaType: selectedMovie.mediaType || "movie" }),
+        body: JSON.stringify({ movieId: selectedMovie.id, rating, mediaType: normalizeMediaType(selectedMovie.mediaType) }),
       });
 
       if (res.ok) {
@@ -59,7 +60,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
               vote_average: fav.voteAverage,
               release_date: fav.releaseDate,
               personalRating: fav.personalRating || 0,
-              mediaType: fav.mediaType || "movie",
+              mediaType: normalizeMediaType(fav.mediaType),
             }} 
             onRateClick={setSelectedMovie}
           />

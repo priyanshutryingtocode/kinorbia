@@ -1,38 +1,28 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import JournalEntry from "@/models/JournalEntry";
 import User from "@/models/User";
+import { requireUser, getString } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
+import { normalizeMediaType } from "@/lib/media";
 import type { FavoriteMovie } from "@/types";
-
-function getRequiredString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
 
 function parseWatchedDate(value: string) {
   return new Date(`${value}T00:00:00Z`);
 }
 
 export async function createJournalEntry(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const { email, name } = await requireUser();
 
-  const email = session.user.email.toLowerCase();
-
-  const favoriteMovieId = getRequiredString(formData, "favoriteMovieId");
-  let movieTitle = getRequiredString(formData, "movieTitle");
-  let movieId = getRequiredString(formData, "movieId");
-  let posterPath = getRequiredString(formData, "posterPath");
-  let mediaType = getRequiredString(formData, "mediaType") || "movie";
-  const note = getRequiredString(formData, "note");
-  const watchedAtValue = getRequiredString(formData, "watchedAt");
+  const favoriteMovieId = getString(formData, "favoriteMovieId");
+  let movieTitle = getString(formData, "movieTitle");
+  let movieId = getString(formData, "movieId");
+  let posterPath = getString(formData, "posterPath");
+  let mediaType = getString(formData, "mediaType") || "movie";
+  const note = getString(formData, "note");
+  const watchedAtValue = getString(formData, "watchedAt");
 
   if (!watchedAtValue || (!movieTitle && !favoriteMovieId)) {
     return;
@@ -47,14 +37,14 @@ export async function createJournalEntry(formData: FormData) {
     const favorite = favorites.find(
       (movie) =>
         movie.movieId === favId &&
-        (favMediaType === "tv" ? "tv" : "movie") === (movie.mediaType || "movie")
+        normalizeMediaType(favMediaType) === normalizeMediaType(movie.mediaType)
     );
 
     if (favorite) {
       movieId = favorite.movieId;
       movieTitle = favorite.title;
       posterPath = favorite.posterPath || "";
-      mediaType = favorite.mediaType || "movie";
+      mediaType = normalizeMediaType(favorite.mediaType);
     }
   }
 
@@ -65,9 +55,9 @@ export async function createJournalEntry(formData: FormData) {
   try {
     await JournalEntry.create({
       userEmail: email,
-      userName: session.user.name || "KinOrbia user",
+      userName: name,
       movieId: movieId || undefined,
-      mediaType: mediaType === "tv" ? "tv" : "movie",
+      mediaType,
       movieTitle,
       posterPath: posterPath || undefined,
       watchedAt: parseWatchedDate(watchedAtValue),
@@ -82,16 +72,11 @@ export async function createJournalEntry(formData: FormData) {
 }
 
 export async function updateJournalEntry(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const { email } = await requireUser();
 
-  const email = session.user.email.toLowerCase();
-
-  const entryId = getRequiredString(formData, "entryId");
-  const note = getRequiredString(formData, "note");
-  const watchedAtValue = getRequiredString(formData, "watchedAt");
+  const entryId = getString(formData, "entryId");
+  const note = getString(formData, "note");
+  const watchedAtValue = getString(formData, "watchedAt");
 
   if (!entryId || !isObjectId(entryId) || !watchedAtValue) {
     return;
@@ -118,14 +103,9 @@ export async function updateJournalEntry(formData: FormData) {
 }
 
 export async function deleteJournalEntry(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const { email } = await requireUser();
 
-  const email = session.user.email.toLowerCase();
-
-  const entryId = getRequiredString(formData, "entryId");
+  const entryId = getString(formData, "entryId");
   if (!entryId || !isObjectId(entryId)) {
     return;
   }
