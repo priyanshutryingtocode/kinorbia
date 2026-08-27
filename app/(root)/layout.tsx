@@ -11,7 +11,7 @@ export default function MainLayout({
   return (
     <>
       <Navbar />
-      <main className="relative z-0 mt-20 flex-1">
+      <main id="main" className="relative z-0 mt-20 flex-1">
         {children}
       </main>
       <Footer />

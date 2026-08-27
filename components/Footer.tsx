@@ -10,7 +10,7 @@ export default function Footer() {
             <span className="grid h-9 w-9 place-items-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400">
               <Film className="w-5 h-5" />
             </span>
-            <span className="text-xl font-bold text-white">
+            <span className="font-display text-xl font-bold text-white">
               Kin<span className="text-red-500">Orbia</span>
             </span>
           </Link>
@@ -20,7 +20,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="text-white font-semibold mb-4">Explore</h3>
+          <h3 className="font-display text-white font-semibold mb-4">Explore</h3>
           <ul className="space-y-2 text-sm">
             <li><Link href="/search" className="hover:text-red-300 transition">Search Movies</Link></li>
             <li><Link href="/reviews" className="hover:text-red-300 transition">Reviews</Link></li>
@@ -30,14 +30,14 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="text-white font-semibold mb-4">Community</h3>
+          <h3 className="font-display text-white font-semibold mb-4">Community</h3>
           <ul className="space-y-2 text-sm">
             <li><Link href="/about" className="hover:text-red-300 transition">About</Link></li>
           </ul>
         </div>
 
         <div>
-          <h3 className="text-white font-semibold mb-4">Credits</h3>
+          <h3 className="font-display text-white font-semibold mb-4">Credits</h3>
           <p className="mt-6 text-xs text-neutral-600">
             &copy; {new Date().getFullYear()} KinOrbia. <br/> Data provided by TMDB. <br/> Made by Priyanshu Srivastava
           </p>

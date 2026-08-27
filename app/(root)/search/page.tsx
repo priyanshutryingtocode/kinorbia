@@ -123,10 +123,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     <div className="min-h-screen bg-neutral-950 text-white px-6 py-12">
       <div className="max-w-7xl mx-auto">
         <header className="mb-10">
-          <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
+          <p className="text-gold text-xs font-bold uppercase tracking-[0.18em] mb-3">
             Search
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold">Find a {mediaType === "tv" ? "Show" : "Movie"}</h1>
+          <h1 className="font-display text-4xl md:text-5xl font-bold leading-[0.95]">Find a {mediaType === "tv" ? "Show" : "Movie"}</h1>
           <p className="text-neutral-400 mt-3 max-w-2xl">
             {mediaType === "tv"
               ? "Search by title or use filters to discover TV shows by genre, rating, language, and first air year."
@@ -285,7 +285,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <Link
                   key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`}
                   href={movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`}
-                  className="group relative block bg-neutral-900/60 border border-white/5 rounded-xl overflow-hidden hover:border-red-500/40 transition"
+                  className="group relative block bg-neutral-900/60 border border-white/10 rounded-xl overflow-hidden hover:border-red-500/40 transition"
                 >
                   <div className="relative aspect-2/3 bg-neutral-800">
                     {movie.poster_path ? (

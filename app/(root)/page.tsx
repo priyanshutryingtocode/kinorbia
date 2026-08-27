@@ -51,13 +51,13 @@ export default async function Home({ searchParams }: Props) {
       <div className="max-w-7xl mx-auto">
         
         {!genre && recommendations.length > 0 && (
-          <section className="mb-14">
+          <section className="mb-14 border-b border-white/5 pb-10">
             <div className="mb-6 flex flex-col gap-2">
-              <p className="text-sm font-bold uppercase tracking-widest text-red-400">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
                 Recommended
               </p>
-              <h2 className="text-3xl font-bold text-white md:text-4xl">
-                Because you liked {recommendationSource}
+              <h2 className="font-display text-3xl font-bold leading-tight text-white md:text-4xl">
+                Because you liked <span className="italic font-normal text-neutral-200">{recommendationSource}</span>
               </h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
@@ -69,15 +69,16 @@ export default async function Home({ searchParams }: Props) {
         )}
         
         <div className="mb-8 max-w-3xl">
-          <p className="mb-3 text-sm font-bold uppercase tracking-widest text-red-400">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-gold">
             KinOrbia Picks
           </p>
-          <h1 className="mb-3 text-4xl font-bold text-white md:text-5xl">
-            {genre ? "Discover" : "Popular"} <span className="text-red-500">Now</span>
+          <h1 className="font-display mb-3 text-4xl font-bold leading-[0.95] text-white md:text-5xl">
+            {genre ? "Discover" : "Popular"} <span className="italic font-normal text-red-500">Now</span>
           </h1>
-          <p className="text-base leading-7 text-neutral-400">
-            {genre ? "Explore movies in your selected genre." : "Trending movies from around the globe."}
+          <p className="max-w-xl text-base leading-7 text-neutral-400">
+            {genre ? "Explore movies in your selected genre." : "Trending films from around the globe."}
           </p>
+          <div className="mt-4 h-px w-12 bg-gold/40" />
         </div>
 
         <GenreFilter mediaType="movie" />

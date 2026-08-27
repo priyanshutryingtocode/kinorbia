@@ -43,7 +43,7 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
 <Link 
             key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`} 
             href={movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`}
-            className="kin-focus group/card relative w-32 shrink-0 snap-start overflow-hidden rounded-lg border border-white/8 bg-neutral-950 transition-all duration-300 hover:-translate-y-1 hover:border-white/18 hover:shadow-[0_24px_60px_-42px_rgba(220,38,38,0.45)] sm:w-36 md:w-44"
+            className="kin-focus group/card relative w-32 shrink-0 snap-start overflow-hidden rounded-lg border border-white/10 bg-neutral-950 transition-all duration-300 hover:-translate-y-1 hover:border-white/18 hover:shadow-[0_24px_60px_-42px_rgba(220,38,38,0.45)] sm:w-36 md:w-44"
             aria-label={movie.title}
           >
             <div className="aspect-2/3 relative bg-neutral-900 flex items-center justify-center overflow-hidden">

@@ -128,6 +128,7 @@ export default async function TvPage({ params }: Props) {
           />
         )}
         <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/20" />
+        <div className="film-grain absolute inset-0" aria-hidden />
       </div>
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 pt-28 sm:px-6 sm:pt-32">
@@ -150,15 +151,15 @@ export default async function TvPage({ params }: Props) {
           </div>
 
           <div className="min-w-0">
-            <p className="mb-3 text-sm font-bold uppercase tracking-widest text-red-400">
-              {releaseYear}
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-gold">
+              {releaseYear} <span className="mx-2 text-white/20">—</span> Series
             </p>
-            <h1 className="max-w-3xl text-4xl font-bold leading-tight text-white sm:text-5xl">
+            <h1 className="font-display max-w-3xl text-4xl font-bold leading-[0.95] text-white sm:text-5xl">
               {tv.name}
             </h1>
             {tv.tagline && (
-              <p className="mt-3 max-w-2xl text-base leading-7 text-neutral-400 sm:text-lg">
-                {tv.tagline}
+              <p className="font-display mt-3 max-w-2xl text-base italic leading-7 text-neutral-300 sm:text-lg">
+                “{tv.tagline}”
               </p>
             )}
 
@@ -197,7 +198,8 @@ export default async function TvPage({ params }: Props) {
               </div>
             </div>
 
-            <p className="mt-8 max-w-3xl text-base leading-8 text-neutral-300 sm:text-lg">
+            <div className="mt-8 h-px w-12 bg-gold/40" />
+            <p className="mt-6 max-w-3xl text-base leading-relaxed text-neutral-300 sm:text-lg">
               {tv.overview || "No overview is available for this show yet."}
             </p>
           </div>
@@ -205,7 +207,7 @@ export default async function TvPage({ params }: Props) {
 
         {topCast.length > 0 && (
           <section className="mt-14 border-t border-white/10 pt-8">
-            <h2 className="mb-5 text-2xl font-bold">Top Cast</h2>
+            <h2 className="font-display mb-5 text-2xl font-bold">Top Cast</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {topCast.map((member) => (
                 <div key={member.id} className="rounded-lg border border-white/10 bg-neutral-900/50 p-3 text-center">

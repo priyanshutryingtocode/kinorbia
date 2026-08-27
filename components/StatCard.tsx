@@ -13,7 +13,7 @@ export default function StatCard({
 }) {
   return (
     <div
-      className={`flex items-center gap-4 rounded-xl border border-white/5 bg-neutral-900/50 p-4 ${
+      className={`flex items-center gap-4 rounded-xl border border-white/10 bg-neutral-900/50 p-4 ${
         hover ? "cursor-default transition hover:bg-neutral-900" : ""
       }`}
     >

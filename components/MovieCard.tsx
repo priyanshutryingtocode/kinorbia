@@ -16,7 +16,7 @@ export default function MovieCard({
   const href = movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`;
 
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-white/8 bg-neutral-950 shadow-[0_18px_45px_-34px_rgba(0,0,0,0.95)] transition-all hover:-translate-y-1 hover:border-white/18 hover:shadow-[0_24px_60px_-42px_rgba(220,38,38,0.45)]">
+    <div className="group relative overflow-hidden rounded-lg border border-white/10 bg-neutral-950 shadow-[0_18px_45px_-34px_rgba(0,0,0,0.95)] transition-all hover:-translate-y-1 hover:border-white/18 hover:shadow-[0_24px_60px_-42px_rgba(220,38,38,0.45)]">
       <Link
         href={href}
         className="kin-focus relative block aspect-2/3 overflow-hidden bg-neutral-900"

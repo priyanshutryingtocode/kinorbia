@@ -24,15 +24,16 @@ export default async function Shows({ searchParams }: Props) {
     <main className="min-h-screen px-6 pt-24 pb-20">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8 max-w-3xl">
-          <p className="mb-3 text-sm font-bold uppercase tracking-widest text-red-400">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-gold">
             KinOrbia Picks
           </p>
-          <h1 className="mb-3 text-4xl font-bold text-white md:text-5xl">
-            Popular <span className="text-red-500">Shows</span>
+          <h1 className="font-display mb-3 text-4xl font-bold leading-[0.95] text-white md:text-5xl">
+            Popular <span className="italic font-normal text-red-500">Shows</span>
           </h1>
-          <p className="text-base leading-7 text-neutral-400">
-            {genre ? "Explore TV shows in your selected genre." : "Trending TV shows from around the globe."}
+          <p className="max-w-xl text-base leading-7 text-neutral-400">
+            {genre ? "Explore TV shows in your selected genre." : "Trending shows from around the globe — dense, tactile, yours to collect."}
           </p>
+          <div className="mt-4 h-px w-12 bg-gold/40" />
         </div>
 
         <GenreFilter mediaType="tv" />

@@ -30,7 +30,7 @@ export default function Navbar() {
         
         <Link href="/" className="flex items-center gap-2 group">
           <Film className="w-7 h-7 sm:w-8 sm:h-8 text-red-600 transition-transform group-hover:rotate-12" />
-          <span className="text-xl font-bold text-white sm:text-2xl">
+          <span className="font-display text-xl font-bold text-white sm:text-2xl">
             Kin<span className="text-red-600">Orbia</span>
           </span>
         </Link>
