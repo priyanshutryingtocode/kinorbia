@@ -157,7 +157,7 @@ export const getPopularMovies = (page = 1) =>
   fetchList("movie", `popular?language=en-US&page=${safePage(page)}`, 300);
 
 export const getDiscoverMovies = (page = 1, genre?: string) =>
-  fetchList("movie", `discover/movie?${discoverQuery(genre, page)}`, 300);
+  tmdbFetch<ResultList<MovieSummary>>(`/discover/movie?${discoverQuery(genre, page)}`, 300);
 
 export const discoverMovies = (extraParams = "", page = 1) => {
   const params = extraParams.replace(/^&/, "");
@@ -196,7 +196,9 @@ export const getPopularTv = (page = 1) =>
   fetchList("tv", `popular?language=en-US&page=${safePage(page)}`, 300);
 
 export const getDiscoverTv = (page = 1, genre?: string) =>
-  fetchList("tv", `discover/tv?${discoverQuery(genre, page)}`, 300);
+  tmdbFetch<ResultList<RawTvResult>>(`/discover/tv?${discoverQuery(genre, page)}`, 300).then((data) => ({
+    results: data?.results?.map(normalizeTvResult) || [],
+  }));
 
 export const discoverTv = (extraParams = "", page = 1) => {
   const params = extraParams.replace(/^&/, "");

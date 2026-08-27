@@ -67,7 +67,7 @@ export default function GenreFilter({ mediaType }: { mediaType: MediaType }) {
                   key={genre.name}
                   onClick={() => {
                     const queryString = createQueryString("genre", genre.id);
-                    router.push(queryString ? `?${queryString}` : BASE_PATHS[mediaType], { scroll: false });
+                    router.push(queryString ? `${BASE_PATHS[mediaType]}?${queryString}` : BASE_PATHS[mediaType], { scroll: false });
                   }}
                   className={`kin-focus relative w-full snap-start whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-all duration-300 lg:px-2 ${
                     isActive
