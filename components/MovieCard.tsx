@@ -7,18 +7,21 @@ export type MovieProp = MovieSummary;
 
 export default function MovieCard({
   movie,
+  index,
   onRateClick,
 }: {
   movie: MovieProp;
+  index?: number;
   onRateClick?: (movie: MovieProp) => void;
 }) {
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
   const href = movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`;
 
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-white/10 bg-neutral-950 shadow-[0_18px_45px_-34px_rgba(0,0,0,0.95)] transition-all hover:-translate-y-1 hover:border-white/18 hover:shadow-[0_24px_60px_-42px_rgba(220,38,38,0.45)]">
+    <div className="group relative overflow-hidden rounded-lg border border-white/10 bg-neutral-950 shadow-card transition-all hover:-translate-y-1 hover:border-white/18 hover:shadow-card-hover">
       <Link
         href={href}
+        prefetch={index === undefined ? undefined : index < 3}
         className="kin-focus relative block aspect-2/3 overflow-hidden bg-neutral-900"
         aria-label={`${movie.title} (${releaseYear})`}
       >
@@ -27,6 +30,7 @@ export default function MovieCard({
             src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
             alt={movie.title}
             fill
+            priority={index !== undefined && index < 3}
             sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
             className="object-cover transition duration-500 group-hover:scale-[1.025] group-hover:saturate-110"
           />

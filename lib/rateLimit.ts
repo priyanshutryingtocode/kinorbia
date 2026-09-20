@@ -37,11 +37,16 @@ export function getClientIp(req: Request): string {
 
 export async function rateLimit(
   identifier: string,
-  { limit, windowMs }: LimitOptions
+  options: LimitOptions
 ): Promise<boolean> {
-  const rl = getRatelimit({ limit, windowMs });
-  const { success } = await rl.limit(identifier);
-  return success;
+  try {
+    const rl = getRatelimit(options);
+    const { success } = await rl.limit(identifier);
+    return success;
+  } catch (error) {
+    console.error("Rate limit check failed, allowing request:", error);
+    return true;
+  }
 }
 
 export function withRateLimit(

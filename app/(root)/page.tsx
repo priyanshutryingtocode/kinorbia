@@ -26,9 +26,10 @@ type Props = {
 export default async function Home({ searchParams }: Props) {
   const { genre } = await searchParams;
 
-  const session = await auth();
-  
-  const movies: MovieProp[] = await fetchMovies(1, genre);
+  const [session, movies] = await Promise.all([
+    auth(),
+    fetchMovies(1, genre),
+  ]);
   
   let recommendations: MovieProp[] = [];
   let recommendationSource = "";
@@ -85,8 +86,8 @@ export default async function Home({ searchParams }: Props) {
 
         {movies.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {movies.map((movie) => (
-              <MovieCard key={movie.id} movie={movie} />
+            {movies.map((movie, index) => (
+              <MovieCard key={movie.id} movie={movie} index={index} />
             ))}
           </div>
         ) : (
