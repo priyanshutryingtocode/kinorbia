@@ -1,17 +1,29 @@
+import { Ratelimit } from "@upstash/ratelimit";
 import { NextResponse } from "next/server";
+import { getRedis } from "@/lib/redis";
 
-type Bucket = {
-  count: number;
-  resetAt: number;
+type LimitOptions = {
+  limit: number;
+  windowMs: number;
 };
 
-const buckets = new Map<string, Bucket>();
-const SWEEP_THRESHOLD = 5000;
+const limiters = new Map<string, Ratelimit>();
+
+function getRatelimit({ limit, windowMs }: LimitOptions): Ratelimit {
+  const key = `${limit}:${windowMs}`;
+  let rl = limiters.get(key);
+  if (!rl) {
+    rl = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(limit, `${windowMs / 1000} s`),
+      prefix: "kinorbia:ratelimit",
+    });
+    limiters.set(key, rl);
+  }
+  return rl;
+}
 
 export function getClientIp(req: Request): string {
-  // The rightmost entry in x-forwarded-for is the value appended by our own
-  // trusted proxy (e.g. nginx) and cannot be spoofed by the client. The
-  // leftmost entry is client-supplied and must never be used for limiting.
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
     const hops = forwarded.split(",").map((hop) => hop.trim()).filter(Boolean);
@@ -23,39 +35,14 @@ export function getClientIp(req: Request): string {
   return req.headers.get("x-real-ip") || req.headers.get("cf-connecting-ip") || "unknown";
 }
 
-export function rateLimit(
+export async function rateLimit(
   identifier: string,
-  { limit, windowMs }: { limit: number; windowMs: number }
-): boolean {
-  const now = Date.now();
-  const current = buckets.get(identifier);
-
-  if (!current || current.resetAt <= now) {
-    if (buckets.size >= SWEEP_THRESHOLD) {
-      for (const [key, bucket] of buckets) {
-        if (bucket.resetAt <= now) {
-          buckets.delete(key);
-        }
-      }
-    }
-    buckets.set(identifier, { count: 1, resetAt: now + windowMs });
-    return true;
-  } else if (buckets.size >= SWEEP_THRESHOLD) {
-    for (const [key, bucket] of buckets) {
-      if (bucket.resetAt <= now) {
-        buckets.delete(key);
-      }
-    }
-  }
-
-  current.count += 1;
-  return current.count <= limit;
+  { limit, windowMs }: LimitOptions
+): Promise<boolean> {
+  const rl = getRatelimit({ limit, windowMs });
+  const { success } = await rl.limit(identifier);
+  return success;
 }
-
-type LimitOptions = {
-  limit: number;
-  windowMs: number;
-};
 
 export function withRateLimit(
   handler: (req: Request, args: { ip: string }) => Promise<Response>,
@@ -64,7 +51,7 @@ export function withRateLimit(
   return async function rateLimited(req: Request) {
     const ip = getClientIp(req);
 
-    if (!rateLimit(`${req.method}:${new URL(req.url).pathname}:${ip}`, options)) {
+    if (!(await rateLimit(`${req.method}:${new URL(req.url).pathname}:${ip}`, options))) {
       return tooManyRequests(options.windowMs);
     }
 

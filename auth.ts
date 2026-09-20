@@ -6,11 +6,10 @@ import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import { ensureUserIdentity, slugifyUsername } from "@/lib/userIdentity";
 
-// A valid hash of an unrelated password. Compared against when the account
-// doesn't exist so login timing doesn't reveal whether an email is registered.
 const DUMMY_BCRYPT_HASH = "$2b$12$vPZWNgvZy3FQD3F6MCWEmO1q.F9dWYWrRNZTaG5.AF93nQm2yDJU6";
 
-class EmailNotVerifiedError extends CredentialsSignin {
+class EmailNotVerifiedError extends CredentialsSignin 
+{
   code = "EMAIL_NOT_VERIFIED";
 }
 
@@ -54,7 +53,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         await dbConnect();
         const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
 
-        // Always run bcrypt so timing doesn't leak account existence.
         const passwordMatches = await bcrypt.compare(
           password,
           user?.password || DUMMY_BCRYPT_HASH
@@ -64,8 +62,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // Email verification is enforced; legacy accounts are migrated by
-        // scripts/backfillEmailVerified.mjs (npm run backfill:verified).
         if (!user.emailVerified) {
           throw new EmailNotVerifiedError();
         }
@@ -97,8 +93,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             let username = baseUsername;
             let suffix = 1;
 
-            // Check-then-insert races fall back to suffixed retries until the
-            // insert succeeds.
             for (;;) {
               try {
                 await User.create({
@@ -148,7 +142,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const t = token as typeof token & AppToken;
 
       if (user?.email) {
-        // Sign-in hydration: cache the freshest profile values on the token.
+
         t.email = user.email.toLowerCase();
         t.name = user.name ?? null;
         t.picture = user.image ?? null;
@@ -197,7 +191,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           if (!dbUser.username) {
-            // Legacy-account backfill, kept rare by design.
+            // Legacy-account backfill
             await ensureUserIdentity(t.email.toLowerCase(), dbUser.name || "KinOrbia user");
           }
 
@@ -217,7 +211,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const t = token as typeof token & AppToken;
 
       if (t.sessionExpired) {
-        // Strip identity so all authenticated paths treat this as signed out.
         session.user = {} as typeof session.user;
         return session;
       }

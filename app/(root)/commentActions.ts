@@ -14,7 +14,7 @@ import { normalizeMediaType } from "@/lib/media";
 export async function createComment(formData: FormData) {
   const { email, name } = await requireUser();
 
-  if (!rateLimit(`comments:${email}`, { limit: 10, windowMs: 60 * 1000 })) {
+  if (!(await rateLimit(`comments:${email}`, { limit: 10, windowMs: 60 * 1000 }))) {
     return;
   }
 

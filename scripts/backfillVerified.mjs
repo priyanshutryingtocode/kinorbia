@@ -11,17 +11,12 @@ await client.connect();
 try {
   const db = client.db();
 
-  // One-time migration: email verification is now enforced at login, so
-  // mark every pre-existing account as verified. Run once before deploying
-  // the enforcement change (npm run backfill:verified).
   const result = await db.collection("users").updateMany(
     { $or: [{ emailVerified: null }, { emailVerified: { $exists: false } }] },
     { $set: { emailVerified: new Date() } }
   );
   console.log(`users: marked ${result.modifiedCount} existing accounts as verified`);
 
-  // Remove duplicate journal entries that raced past the old non-unique upsert,
-  // keeping the earliest created doc per (userEmail, movieId, mediaType).
   const journal = db.collection("journalentries");
   const dupes = await journal
     .aggregate([
