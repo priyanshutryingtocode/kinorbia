@@ -1,23 +1,12 @@
-import MovieCard, { MovieProp } from "@/components/MovieCard";
+import { Suspense } from "react";
+import MovieCard from "@/components/MovieCard";
 import LoadMore from "@/components/LoadMore";
 import GenreFilter from "@/components/GenreFilter";
+import RecommendationsSkeleton from "@/components/RecommendationsSkeleton";
+import Recommendations from "./Recommendations";
 import { fetchMovies } from "../actions";
-import { auth } from "@/auth";
-import dbConnect from "@/lib/dbConnect";
-import User from "@/models/User";
 import EmptyState from "@/components/EmptyState";
 import RetryButton from "@/components/RetryButton";
-import { getRecommendationMovies, getTvRecommendations } from "@/lib/tmdb";
-import type { FavoriteMovie } from "@/types";
-
-async function fetchRecommendations(movie: FavoriteMovie): Promise<MovieProp[]> {
-  if (movie.mediaType === "tv") {
-    const data = await getTvRecommendations(movie.movieId);
-    return data?.results || [];
-  }
-  const data = await getRecommendationMovies(movie.movieId);
-  return data?.results || [];
-}
 
 type Props = {
   searchParams: Promise<{ genre?: string }>;
@@ -26,49 +15,18 @@ type Props = {
 export default async function Home({ searchParams }: Props) {
   const { genre } = await searchParams;
 
-  const [session, movies] = await Promise.all([
-    auth(),
-    fetchMovies(1, genre),
-  ]);
-  
-  let recommendations: MovieProp[] = [];
-  let recommendationSource = "";
-
-  if (session?.user?.email) {
-    await dbConnect();
-    const user = await User.findOne({ email: session.user.email }).lean<{
-      favorites?: FavoriteMovie[];
-    } | null>();
-    const favorite = user?.favorites?.at(-1);
-
-    if (favorite) {
-      recommendationSource = favorite.title;
-      recommendations = (await fetchRecommendations(favorite)).slice(0, 5);
-    }
-  }
+  const movies = await fetchMovies(1, genre);
 
   return (
     <main className="min-h-screen px-6 pt-24 pb-20">
       <div className="max-w-7xl mx-auto">
-        
-        {!genre && recommendations.length > 0 && (
-          <section className="mb-14 border-b border-white/5 pb-10">
-            <div className="mb-6 flex flex-col gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
-                Recommended
-              </p>
-              <h2 className="font-display text-3xl font-bold leading-tight text-white md:text-4xl">
-                Because you liked <span className="italic font-normal text-neutral-200">{recommendationSource}</span>
-              </h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-              {recommendations.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
-              ))}
-            </div>
-          </section>
+
+        {!genre && (
+          <Suspense fallback={<RecommendationsSkeleton />}>
+            <Recommendations />
+          </Suspense>
         )}
-        
+
         <div className="mb-8 max-w-3xl">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-gold">
             KinOrbia Picks
