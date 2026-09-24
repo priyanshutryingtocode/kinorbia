@@ -45,9 +45,9 @@ export default function PeopleList({
   const hasPrevious = page > 1;
   const hasNext = page < totalPages;
   const paginationClasses =
-    "kin-focus inline-flex min-h-11 items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white";
+    "kin-focus inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-neutral-400 transition-colors hover:text-white";
   const disabledPaginationClasses =
-    "inline-flex min-h-11 cursor-not-allowed items-center justify-center rounded-full border border-white/5 bg-white/[0.02] px-5 py-2 text-sm font-medium text-neutral-700";
+    "inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-neutral-700";
 
   return (
     <div>
@@ -56,39 +56,41 @@ export default function PeopleList({
         method="get"
         role="search"
         aria-label="Search followers or following"
-        className="premium-card rounded-card p-4"
+        className="border-y border-white/10 py-3"
       >
         <input type="hidden" name="page" value="1" />
         <label htmlFor="people-search" className="sr-only">
           Search people by name or username
         </label>
-        <div className="relative">
-          <Search
-            className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-500"
-            aria-hidden="true"
-          />
-          <input
-            id="people-search"
-            name="q"
-            type="search"
-            defaultValue={query}
-            maxLength={100}
-            placeholder="Search by name or username"
-            className="kin-focus w-full rounded-lg border border-white/10 bg-neutral-950 py-3 pl-12 pr-28 text-white placeholder:text-neutral-600 focus:border-red-500/50"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
+              aria-hidden="true"
+            />
+            <input
+              id="people-search"
+              name="q"
+              type="search"
+              defaultValue={query}
+              maxLength={100}
+              placeholder="Search by name or username"
+              className="kin-focus h-10 w-full rounded-sm border border-white/10 bg-neutral-950 pl-10 pr-3 text-sm text-white transition-colors placeholder:text-neutral-400 focus:border-red-500/50"
+            />
+          </div>
           <button
             type="submit"
-            className="kin-focus absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-red-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-red-500"
+            className="kin-focus h-10 shrink-0 rounded-sm bg-red-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-red-500"
           >
             Search
           </button>
         </div>
-        <div className="mt-3 flex min-h-6 flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
-          <p>Matches both names and usernames.</p>
+        <div className="mt-2 flex min-h-5 flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-400">
+          <p>Search names and usernames.</p>
           {query && (
             <Link
               href={path}
-              className="kin-focus rounded-sm font-medium text-neutral-300 transition hover:text-white"
+              className="kin-focus rounded-sm font-medium text-neutral-300 transition-colors hover:text-white"
             >
               Clear search
             </Link>
@@ -99,26 +101,31 @@ export default function PeopleList({
       {people.length ? (
         <>
           <p
-            className="mt-6 text-sm text-neutral-500"
+            className="mt-5 text-xs tracking-wide text-neutral-400"
             aria-live="polite"
             aria-atomic="true"
           >
             Showing {firstResult}–{lastResult} of {totalCount}
           </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="mt-2 border-y border-white/10">
             {people.map((person) => (
-              <PersonCard
+              <li
                 key={person.id}
-                person={person}
-                isAuthenticated={isAuthenticated}
-                path={path}
-              />
+                className="border-b border-white/10 last:border-b-0"
+              >
+                <PersonCard
+                  person={person}
+                  isAuthenticated={isAuthenticated}
+                  path={path}
+                />
+              </li>
             ))}
-          </div>
+          </ul>
         </>
       ) : (
         <div className="mt-6">
           <EmptyState
+            compact
             title={query ? `No people found for “${query}”` : emptyTitle}
             description={query ? "Try a different name or username." : emptyDescription}
           />
@@ -127,7 +134,7 @@ export default function PeopleList({
 
       {totalPages > 1 && (
         <nav
-          className="mt-8 flex flex-wrap items-center justify-center gap-3"
+          className="mt-6 flex items-center justify-between border-t border-white/10 pt-3"
           aria-label="People pagination"
         >
           {hasPrevious ? (
@@ -136,14 +143,20 @@ export default function PeopleList({
               className={paginationClasses}
               aria-label="Previous page"
             >
-              Previous
+              <span aria-hidden="true">←</span>
+              <span className="hidden sm:inline">Previous</span>
             </Link>
           ) : (
             <span className={disabledPaginationClasses} aria-disabled="true">
-              Previous
+              <span aria-hidden="true">←</span>
+              <span className="sr-only sm:not-sr-only">Previous</span>
             </span>
           )}
-          <span className="min-w-24 text-center text-sm text-neutral-500" aria-live="polite">
+          <span
+            className="text-xs text-neutral-400"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             Page {page} of {totalPages}
           </span>
           {hasNext ? (
@@ -152,11 +165,13 @@ export default function PeopleList({
               className={paginationClasses}
               aria-label="Next page"
             >
-              Next
+              <span className="hidden sm:inline">Next</span>
+              <span aria-hidden="true">→</span>
             </Link>
           ) : (
             <span className={disabledPaginationClasses} aria-disabled="true">
-              Next
+              <span className="sr-only sm:not-sr-only">Next</span>
+              <span aria-hidden="true">→</span>
             </span>
           )}
         </nav>

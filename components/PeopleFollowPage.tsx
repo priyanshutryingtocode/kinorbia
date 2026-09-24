@@ -138,27 +138,27 @@ export default async function PeopleFollowPage({
     };
   });
   const path = `/u/${encodeURIComponent(username)}/${mode}`;
-  const resultSummary = query
-    ? `${totalCount} ${totalCount === 1 ? "match" : "matches"} for “${query}”`
-    : `${totalCount} ${totalCount === 1 ? "person" : "people"}`;
 
   return (
-    <div className="min-h-screen px-4 pb-20 pt-24 text-white sm:px-6">
-      <div className="mx-auto max-w-6xl">
+    <div className="min-h-screen px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
+      <div className="mx-auto max-w-5xl">
         <Link
           href={`/u/${encodeURIComponent(username)}`}
-          className="kin-focus inline-flex rounded-full text-sm font-medium text-neutral-400 transition hover:text-red-400"
+          className="kin-focus group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-400 transition-colors hover:text-gold"
         >
+          <span
+            className="text-red-400 transition-transform group-hover:-translate-x-0.5"
+            aria-hidden="true"
+          >
+            ←
+          </span>
           Back to profile
         </Link>
-        <header className="mb-8 mt-6">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-gold">
-            @{username}
-          </p>
-          <h1 className="font-display text-4xl font-bold leading-none md:text-5xl">
+        <header className="mb-6 mt-5 border-b border-white/10 pb-5">
+          <p className="profile-overline text-gold/80">@{username}</p>
+          <h1 className="mt-2 font-display text-3xl font-medium leading-none text-white sm:text-4xl">
             {copy.heading}
           </h1>
-          <p className="mt-3 text-neutral-400">{resultSummary}</p>
         </header>
         <PeopleList
           people={people}

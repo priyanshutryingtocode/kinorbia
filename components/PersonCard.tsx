@@ -25,12 +25,15 @@ export default function PersonCard({ person, isAuthenticated, path }: PersonCard
       ? `/u/${encodeURIComponent(person.username)}`
       : null;
   const avatar = (
-    <span className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-full border border-white/10 bg-neutral-900 shadow-card">
+    <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-neutral-900">
       {person.image ? (
-        <Image src={person.image} alt="" fill sizes="56px" className="object-cover" />
+        <Image src={person.image} alt="" fill sizes="40px" className="object-cover" />
       ) : (
-        <span className="flex h-full w-full items-center justify-center text-neutral-500" aria-hidden="true">
-          <UserIcon className="h-7 w-7" />
+        <span
+          className="flex h-full w-full items-center justify-center text-neutral-400"
+          aria-hidden="true"
+        >
+          <UserIcon className="h-5 w-5" />
         </span>
       )}
     </span>
@@ -38,28 +41,36 @@ export default function PersonCard({ person, isAuthenticated, path }: PersonCard
   const identity = (
     <>
       {avatar}
-      <div className="min-w-0 flex-1">
-        <span className="kin-focus block truncate rounded-sm font-display text-lg font-semibold text-white transition group-hover:text-gold">
+      <span className="min-w-0 flex-1">
+        <span className="block truncate rounded-sm font-display text-base font-medium leading-tight text-white transition-colors group-hover:text-gold">
           {person.name}
         </span>
-        <span className="mt-1 block truncate text-sm text-neutral-500">
-          {person.isSelf ? "You" : person.username ? `@${person.username}` : "Member"}
+        <span className="mt-0.5 block truncate text-xs text-neutral-400">
+          {person.isSelf
+            ? "You"
+            : person.username
+              ? `@${person.username}`
+              : "Member"}
         </span>
-      </div>
+      </span>
     </>
   );
 
   return (
-    <article className="premium-card group flex h-full flex-col rounded-card p-5 hover:-translate-y-0.5 hover:border-gold/30">
+    <article className="group flex min-w-0 items-center gap-3 py-3">
       {href ? (
-        <Link href={href} className="flex min-w-0 items-center gap-4 rounded-lg" aria-label={`View ${person.name}'s profile`}>
+        <Link
+          href={href}
+          className="kin-focus flex min-w-0 flex-1 items-center gap-3 rounded-sm text-left"
+          aria-label={person.isSelf ? "View your profile" : `View ${person.name}'s profile`}
+        >
           {identity}
         </Link>
       ) : (
-        <div className="flex min-w-0 items-center gap-4">{identity}</div>
+        <div className="flex min-w-0 flex-1 items-center gap-3">{identity}</div>
       )}
       {isAuthenticated && !person.isSelf && (
-        <div className="mt-5 flex justify-end">
+        <div className="ml-auto flex shrink-0 items-center justify-end">
           <FollowButton
             targetUserId={person.id}
             targetName={person.name}

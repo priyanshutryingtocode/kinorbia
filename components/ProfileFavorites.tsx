@@ -63,7 +63,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
 
   if (initialFavorites.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 rounded-panel border border-dashed border-white/10 bg-white/[0.03] px-6 py-16 text-center text-neutral-500">
+      <div className="flex flex-col items-center justify-center gap-4 rounded-sm border-y border-dashed border-white/10 bg-white/[0.02] px-6 py-10 text-center text-neutral-500">
         <Film className="h-12 w-12 opacity-30" aria-hidden="true" />
         <p>You have not added any favorites yet.</p>
         <Link href="/" className="kin-focus rounded-sm text-sm font-semibold text-red-300 transition hover:text-red-200">
@@ -75,7 +75,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {initialFavorites.map((favorite, index) => (
           <MovieCard
             key={mediaKey(favorite.mediaType, favorite.movieId)}

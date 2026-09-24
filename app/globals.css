@@ -121,6 +121,28 @@ body {
     @apply border border-white/10 bg-neutral-900/65 shadow-[0_18px_48px_-34px_rgba(0,0,0,0.9)] transition-all;
   }
 
+  .profile-masthead {
+    @apply relative overflow-hidden rounded-sm border border-white/10 bg-neutral-950;
+  }
+
+  .profile-wash {
+    background: linear-gradient(105deg, rgba(220, 38, 38, 0.075), rgba(212, 165, 116, 0.025) 36%, transparent 68%);
+  }
+
+  .profile-overline {
+    @apply text-[10px] font-medium uppercase tracking-[0.2em];
+  }
+
+  .profile-header-actions > :is(a, button),
+  .profile-header-actions > form > button,
+  .profile-header-actions > div > :is(a, button) {
+    @apply rounded-sm px-3 py-1.5 text-xs;
+  }
+
+  .profile-header-actions > div {
+    @apply gap-2;
+  }
+
   .kin-focus {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950;
   }

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Heart, List, MessageSquare, User as UserIcon } from "lucide-react";
+import { User as UserIcon } from "lucide-react";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
@@ -10,9 +10,9 @@ import User from "@/models/User";
 import EmptyState from "@/components/EmptyState";
 import FollowButton from "@/components/FollowButton";
 import ProfileHeader from "@/components/ProfileHeader";
+import ProfileMetricRail from "@/components/ProfileMetricRail";
 import ProfilePanel from "@/components/ProfilePanel";
 import SpoilerText from "@/components/SpoilerText";
-import StatCard from "@/components/StatCard";
 import { mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
 import { dedupeFavorites } from "@/lib/reviewRatings";
 import type { FavoriteMovie, MediaType } from "@/types";
@@ -111,7 +111,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   const isFollowing = Boolean(currentUser?.following?.some((email) => email.toLowerCase() === targetEmail));
 
   return (
-    <div className="min-h-screen px-4 pb-20 pt-24 sm:px-6">
+    <div className="min-h-screen px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
       <div className="mx-auto max-w-6xl">
         <ProfileHeader
           name={user.name || "KinOrbia user"}
@@ -131,79 +131,156 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
             />
           )}
           {!currentEmail && (
-            <Link href="/login" className="kin-focus inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-500">
+            <Link
+              href="/login"
+              className="kin-focus inline-flex items-center rounded-sm bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-500"
+            >
               Sign in to follow
             </Link>
           )}
-          {isSelf && <Link href="/profile" className="kin-focus inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-semibold text-neutral-200 transition hover:border-gold/30 hover:text-white">Edit your profile</Link>}
+          {isSelf && (
+            <Link
+              href="/profile"
+              className="kin-focus inline-flex items-center rounded-sm border border-white/10 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition-colors hover:border-gold/40 hover:text-white"
+            >
+              Edit your profile
+            </Link>
+          )}
         </ProfileHeader>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <StatCard icon={<Heart className="h-5 w-5 text-red-300" />} label="Favorites" value={allFavorites.length.toString()} emphasis="red" />
-          <StatCard icon={<MessageSquare className="h-5 w-5 text-emerald-300" />} label="Public reviews" value={publicReviewCount.toString()} />
-          <StatCard icon={<List className="h-5 w-5 text-yellow-300" />} label="Public lists" value={publicListCount.toString()} emphasis="gold" />
-          <StatCard icon={<UserIcon className="h-5 w-5 text-blue-300" />} label="Followers" value={followerCount.toString()} href={`/u/${username}/followers`} />
-          <StatCard icon={<UserIcon className="h-5 w-5 text-purple-300" />} label="Following" value={followingCount.toString()} href={`/u/${username}/following`} />
-        </div>
+        <ProfileMetricRail
+          ariaLabel="Public profile metrics"
+          className="mt-6"
+          metrics={[
+            { label: "Favorites", value: allFavorites.length, emphasis: "red" },
+            { label: "Public reviews", value: publicReviewCount, emphasis: "neutral" },
+            { label: "Public lists", value: publicListCount, emphasis: "gold" },
+          ]}
+        />
 
-        <div className="mt-12 space-y-12">
-          <ProfilePanel id="favorites" eyebrow="Curated" title="Favorite films and shows" description={`${allFavorites.length} titles selected by ${user.name || "this member"}.`}>
+        <div className="mt-10 space-y-10">
+          <ProfilePanel
+            id="favorites"
+            eyebrow="Curated"
+            title="Favorite films and shows"
+            description={favorites.length < allFavorites.length ? `Showing ${favorites.length} of ${allFavorites.length} titles.` : "A considered selection of movies and shows."}
+          >
             {favorites.length ? (
-              <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-6">
                 {favorites.map((movie) => (
                   <Link
                     key={mediaKey(movie.mediaType, movie.movieId)}
                     href={normalizeMediaType(movie.mediaType) === "tv" ? `/tv/${movie.movieId}` : `/movie/${movie.movieId}`}
-                    className="kin-focus group relative block aspect-2/3 overflow-hidden rounded-card border border-white/10 bg-neutral-950 shadow-card transition hover:-translate-y-0.5 hover:border-gold/30"
+                    className="kin-focus group relative block aspect-2/3 overflow-hidden rounded-sm border border-white/10 bg-neutral-950 transition-colors hover:border-gold/40"
                     aria-label={`${movie.title} (${normalizeMediaType(movie.mediaType) === "tv" ? "TV show" : "movie"})`}
                   >
                     {tmdbImage(movie.posterPath, "w342") ? (
-                      <Image src={tmdbImage(movie.posterPath, "w342") as string} alt="" fill sizes="(min-width: 768px) 16vw, 30vw" className="object-cover transition duration-500 group-hover:scale-[1.03]" />
+                      <Image
+                        src={tmdbImage(movie.posterPath, "w342") as string}
+                        alt=""
+                        fill
+                        sizes="(min-width: 768px) 16vw, 30vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                      />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-neutral-700"><UserIcon className="h-8 w-8" /></div>
+                      <div className="flex h-full items-center justify-center text-neutral-700">
+                        <UserIcon className="h-8 w-8" />
+                      </div>
                     )}
                   </Link>
                 ))}
               </div>
             ) : (
-              <EmptyState title="No favorites yet" description="This member has not added any public favorites." />
+              <EmptyState compact title="No favorites yet" description="This member has not added any public favorites." />
             )}
           </ProfilePanel>
 
-          <div className="grid gap-10 xl:grid-cols-2">
-            <ProfilePanel id="reviews" eyebrow="From the archive" title="Public reviews">
-              <div className="space-y-3">
-                {reviews.length ? reviews.map((review) => {
-                  const mediaType = normalizeMediaType(review.mediaType);
-                  const href = review.movieId ? (mediaType === "tv" ? `/tv/${review.movieId}` : `/movie/${review.movieId}`) : "/reviews";
-                  const rating = ratingMap.get(mediaKey(review.mediaType, review.movieId)) || 0;
-                  return (
-                    <article key={review._id.toString()} className="premium-card rounded-card p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <h3>
-                          <Link href={href} className="kin-focus rounded-sm font-display text-lg font-semibold text-white transition hover:text-gold">{review.movieTitle}</Link>
-                        </h3>
-                        {rating > 0 && <span className="shrink-0 text-sm font-bold text-gold">{(rating / 2).toFixed(1)} ★</span>}
-                      </div>
-                      {review.spoiler ? <SpoilerText text={review.body} /> : <p className="mt-3 line-clamp-4 text-sm leading-6 text-neutral-400">{review.body}</p>}
-                    </article>
-                  );
-                }) : <EmptyState title="No public reviews yet" description="This member has not shared any reviews." />}
-              </div>
+          <div className="grid gap-8 xl:grid-cols-2">
+            <ProfilePanel
+              id="reviews"
+              eyebrow="From the archive"
+              title="Recent public reviews"
+              description={reviews.length < publicReviewCount ? `Showing ${reviews.length} of ${publicReviewCount} public reviews.` : undefined}
+            >
+              {reviews.length ? (
+                <div className="border-y border-white/10">
+                  {reviews.map((review) => {
+                    const mediaType = normalizeMediaType(review.mediaType);
+                    const href = review.movieId
+                      ? mediaType === "tv"
+                        ? `/tv/${review.movieId}`
+                        : `/movie/${review.movieId}`
+                      : "/reviews";
+                    const rating = ratingMap.get(mediaKey(review.mediaType, review.movieId)) || 0;
+                    return (
+                      <article
+                        key={review._id.toString()}
+                        className="border-b border-white/10 py-4 last:border-b-0"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <h3>
+                            <Link
+                              href={href}
+                              className="kin-focus rounded-sm font-display text-base font-medium text-white transition-colors hover:text-gold"
+                            >
+                              {review.movieTitle}
+                            </Link>
+                          </h3>
+                          {rating > 0 && (
+                            <span className="shrink-0 text-sm font-semibold text-gold">
+                              {(rating / 2).toFixed(1)} ★
+                            </span>
+                          )}
+                        </div>
+                        {review.spoiler ? (
+                          <SpoilerText text={review.body} />
+                        ) : (
+                          <p className="mt-2 line-clamp-4 text-sm leading-6 text-neutral-400">
+                            {review.body}
+                          </p>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyState compact title="No public reviews yet" description="This member has not shared any reviews." />
+              )}
             </ProfilePanel>
 
-            <ProfilePanel id="lists" eyebrow="Worth a watch" title="Public lists">
-              <div className="space-y-3">
-                {lists.length ? lists.map((list) => (
-                  <Link key={list._id.toString()} href={`/lists/${list._id}`} className="kin-focus premium-card group block rounded-card p-5 transition hover:-translate-y-0.5 hover:border-gold/30">
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="font-display text-lg font-semibold text-white group-hover:text-gold">{list.title}</h3>
-                      <span className="shrink-0 text-xs text-neutral-500">{list.movieCount} titles</span>
-                    </div>
-                    {list.description && <p className="mt-3 line-clamp-3 text-sm leading-6 text-neutral-400">{list.description}</p>}
-                  </Link>
-                )) : <EmptyState title="No public lists yet" description="This member has not shared any lists." />}
-              </div>
+            <ProfilePanel
+              id="lists"
+              eyebrow="Worth a watch"
+              title="Recent public lists"
+              description={lists.length < publicListCount ? `Showing ${lists.length} of ${publicListCount} public lists.` : undefined}
+            >
+              {lists.length ? (
+                <div className="border-y border-white/10">
+                  {lists.map((list) => (
+                    <Link
+                      key={list._id.toString()}
+                      href={`/lists/${list._id}`}
+                      className="kin-focus group block border-b border-white/10 py-4 transition-colors last:border-b-0 hover:bg-neutral-900/30"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-display text-base font-medium text-white group-hover:text-gold">
+                          {list.title}
+                        </h3>
+                        <span className="shrink-0 text-xs text-neutral-400">
+                          {list.movieCount} titles
+                        </span>
+                      </div>
+                      {list.description && (
+                        <p className="mt-2 line-clamp-3 text-sm leading-6 text-neutral-400">
+                          {list.description}
+                        </p>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState compact title="No public lists yet" description="This member has not shared any lists." />
+              )}
             </ProfilePanel>
           </div>
         </div>

@@ -2,17 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import {
-  Bookmark,
-  CalendarDays,
-  Download,
-  ExternalLink,
-  Film,
-  Heart,
-  List,
-  MessageSquare,
-  Star,
-} from "lucide-react";
+import { Download, ExternalLink, Film } from "lucide-react";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import { buildInsights, yearsFromJournal } from "@/lib/insights";
@@ -35,11 +25,11 @@ import ProfileActions from "@/components/profileActions";
 import ProfileFavorites from "@/components/ProfileFavorites";
 import ProfileHeader from "@/components/ProfileHeader";
 import ProfileInsights from "@/components/ProfileInsights";
+import ProfileMetricRail from "@/components/ProfileMetricRail";
 import ProfilePagination from "@/components/ProfilePagination";
 import ProfilePanel from "@/components/ProfilePanel";
 import ProfileTabs, { type ProfileTab } from "@/components/ProfileTabs";
 import ReviewCard from "@/components/ReviewCard";
-import StatCard from "@/components/StatCard";
 import type { JournalItem, MovieListItem, ReviewItem, WatchlistMovie } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -119,18 +109,18 @@ function JournalCard({ item }: { item: JournalItem }) {
       </div>
       <div className="p-3">
         <h3 className="truncate text-sm font-semibold text-white">{item.movieTitle}</h3>
-        <p className="mt-1 text-xs text-neutral-500">{formatDate(item.watchedAt)}</p>
+        <p className="mt-1 text-xs text-neutral-400">{formatDate(item.watchedAt)}</p>
         {item.note && <p className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-400">{item.note}</p>}
       </div>
     </>
   );
-  const className = "kin-focus block overflow-hidden rounded-card border border-white/10 bg-neutral-900/55 transition hover:-translate-y-0.5 hover:border-gold/30";
+  const className = "kin-focus block overflow-hidden rounded-sm border border-white/10 bg-neutral-900/45 transition-colors hover:border-gold/40";
   return href ? <Link href={href} className={className}>{content}</Link> : <div className={className}>{content}</div>;
 }
 
 function CompactReview({ review }: { review: ReviewItem }) {
   return (
-    <Link href="/reviews" className="kin-focus premium-card group block rounded-card p-4 transition hover:-translate-y-0.5 hover:border-gold/30">
+    <Link href="/reviews" className="kin-focus group block border-b border-white/10 py-4 transition-colors last:border-b-0 hover:bg-neutral-900/25">
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-display text-lg font-semibold text-white group-hover:text-gold">{review.movieTitle}</h3>
         {review.spoiler && <span className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-yellow-300">Spoiler</span>}
@@ -142,10 +132,10 @@ function CompactReview({ review }: { review: ReviewItem }) {
 
 function CompactList({ list }: { list: MovieListItem }) {
   return (
-    <Link href={`/lists/${list._id}`} className="kin-focus premium-card group block rounded-card p-4 transition hover:-translate-y-0.5 hover:border-gold/30">
+    <Link href={`/lists/${list._id}`} className="kin-focus group block border-b border-white/10 py-4 transition-colors last:border-b-0 hover:bg-neutral-900/25">
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-display text-lg font-semibold text-white group-hover:text-gold">{list.title}</h3>
-        <span className="shrink-0 text-xs text-neutral-500">{list.movies.length} titles</span>
+        <span className="shrink-0 text-xs text-neutral-400">{list.movies.length} titles</span>
       </div>
       {list.description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-neutral-400">{list.description}</p>}
     </Link>
@@ -155,45 +145,50 @@ function CompactList({ list }: { list: MovieListItem }) {
 function OverviewPanel({ data }: { data: Awaited<ReturnType<typeof getProfileOverview>> }) {
   return (
     <div className="space-y-8">
-      <ProfilePanel id="overview" eyebrow="At a glance" title="Your profile" description="A focused view of your library and recent activity across KinOrbia.">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard icon={<Film className="h-5 w-5 text-blue-300" />} label="Titles watched" value={data.uniqueWatchedCount.toString()} detail="Unique movies and shows" />
-          <StatCard icon={<CalendarDays className="h-5 w-5 text-red-300" />} label="Current streak" value={`${data.currentStreak} days`} detail="Consecutive watch-log dates" />
-          <StatCard icon={<Star className="h-5 w-5 text-yellow-300" />} label="Average rating" value={data.averageRating.toFixed(1)} detail={`${data.ratedCount} rated ${data.ratedCount === 1 ? "favorite" : "favorites"}`} emphasis="gold" />
-          <StatCard icon={<Heart className="h-5 w-5 text-red-300" />} label="Favorites" value={data.favoriteCount.toString()} detail="Your personal movie shelf" emphasis="red" />
-        </div>
-      </ProfilePanel>
-
-      <ProfilePanel id="snapshot" eyebrow="Library" title="Snapshot" action={{ href: "/profile?tab=insights", label: "Open insights" }}>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section id="overview" aria-labelledby="overview-heading">
+        <h2 id="overview-heading" className="sr-only">Profile overview</h2>
+        <ProfileMetricRail
+          ariaLabel="Profile summary"
+          metrics={[
+            { label: "Titles watched", value: data.uniqueWatchedCount, detail: "Unique movies and shows" },
+            { label: "Current streak", value: `${data.currentStreak} days`, detail: "Consecutive watch-log dates" },
+            {
+              label: "Average rating",
+              value: data.ratedCount ? `${data.averageRating.toFixed(1)}/5` : "—",
+              detail: data.ratedCount ? `${data.ratedCount} rated ${data.ratedCount === 1 ? "favorite" : "favorites"}` : "No ratings yet",
+              emphasis: "gold",
+            },
+            { label: "Favorites", value: data.favoriteCount, detail: "Personal shelf", emphasis: "red" },
+          ]}
+        />
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-white/10 pb-4 text-xs text-neutral-400">
           {[
-            { label: "Watch logs", value: data.watchLogCount, icon: CalendarDays, href: "/profile?tab=journal" },
-            { label: "Watchlist", value: data.watchlistCount, icon: Bookmark, href: "/profile?tab=watchlist" },
-            { label: "Reviews", value: data.reviewCount, icon: MessageSquare, href: "/profile?tab=reviews" },
-            { label: "Lists", value: data.listCount, icon: List, href: "/profile?tab=lists" },
+            { label: "watch logs", value: data.watchLogCount, href: "/profile?tab=journal" },
+            { label: "watchlist", value: data.watchlistCount, href: "/profile?tab=watchlist" },
+            { label: "reviews", value: data.reviewCount, href: "/profile?tab=reviews" },
+            { label: "lists", value: data.listCount, href: "/profile?tab=lists" },
           ].map((item) => (
-            <Link key={item.label} href={item.href} className="kin-focus premium-card group flex items-center gap-4 rounded-card p-4 transition hover:border-gold/30">
-              <span className="rounded-xl border border-white/10 bg-white/5 p-3 text-gold"><item.icon className="h-5 w-5" /></span>
-              <span><span className="block font-display text-2xl font-bold text-white">{item.value}</span><span className="text-xs uppercase tracking-wider text-neutral-500">{item.label}</span></span>
+            <Link key={item.label} href={item.href} className="kin-focus rounded-sm transition-colors hover:text-gold">
+              <span className="font-display text-base text-white">{item.value}</span> {item.label}
             </Link>
           ))}
         </div>
-      </ProfilePanel>
+      </section>
 
-      <ProfilePanel id="recent" eyebrow="Recently watched" title="Your latest titles" action={{ href: "/profile?tab=journal", label: "View journal" }}>
+      <ProfilePanel id="recent" eyebrow="Last watched" title="Recent titles" action={{ href: "/profile?tab=journal", label: "View journal" }}>
         {data.recentJournal.length ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">{data.recentJournal.map((item) => <JournalCard key={item._id} item={item} />)}</div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{data.recentJournal.map((item) => <JournalCard key={item._id} item={item} />)}</div>
         ) : (
-          <EmptyState title="No watch history yet" description="Mark a title as watched and it will appear here." />
+          <EmptyState compact title="No watch history yet" description="Mark a title as watched and it will appear here." />
         )}
       </ProfilePanel>
 
-      <div className="grid gap-8 xl:grid-cols-2">
-        <ProfilePanel id="recent-reviews" eyebrow="Latest writing" title="Recent reviews" action={{ href: "/profile?tab=reviews", label: "View all" }}>
-          <div className="space-y-3">{data.recentReviews.length ? data.recentReviews.map((review) => <CompactReview key={review._id} review={review} />) : <EmptyState title="No reviews yet" description="Write a review to start your archive." />}</div>
+      <div className="grid gap-8 lg:grid-cols-2">
+        <ProfilePanel id="recent-reviews" eyebrow="Writing" title="Recent reviews" action={{ href: "/profile?tab=reviews", label: "View all" }}>
+          <div>{data.recentReviews.length ? data.recentReviews.map((review) => <CompactReview key={review._id} review={review} />) : <EmptyState compact title="No reviews yet" description="Write a review to start your archive." />}</div>
         </ProfilePanel>
         <ProfilePanel id="recent-lists" eyebrow="Collections" title="Recent lists" action={{ href: "/profile?tab=lists", label: "View all" }}>
-          <div className="space-y-3">{data.recentLists.length ? data.recentLists.map((list) => <CompactList key={list._id} list={list} />) : <EmptyState title="No lists yet" description="Create a list to organize your recommendations." />}</div>
+          <div>{data.recentLists.length ? data.recentLists.map((list) => <CompactList key={list._id} list={list} />) : <EmptyState compact title="No lists yet" description="Create a list to organize your recommendations." />}</div>
         </ProfilePanel>
       </div>
     </div>
@@ -261,7 +256,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     const result = await getFavoritePage(email, requestedPage);
     panel = (
       <ProfilePanel id="favorites" eyebrow="Personal shelf" title="Favorites" description="Rate the titles you love and keep your personal ratings up to date.">
-        {result.total ? <ProfileFavorites initialFavorites={result.items} /> : <EmptyState title="No favorites yet" description="Add movies and shows to build your personal shelf." />}
+        {result.total ? <ProfileFavorites initialFavorites={result.items} /> : <EmptyState compact title="No favorites yet" description="Add movies and shows to build your personal shelf." />}
         <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.favorites} />
       </ProfilePanel>
     );
@@ -269,7 +264,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     const result = await getWatchlistPage(email, requestedPage);
     panel = (
       <ProfilePanel id="watchlist" eyebrow="Up next" title="Watchlist" description="The movies and shows you are planning to watch next.">
-        {result.total ? <WatchlistGrid items={result.items} /> : <EmptyState title="Your watchlist is empty" description="Add titles from any movie or show page." />}
+        {result.total ? <WatchlistGrid items={result.items} /> : <EmptyState compact title="Your watchlist is empty" description="Add titles from any movie or show page." />}
         <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.watchlist} />
       </ProfilePanel>
     );
@@ -277,7 +272,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     const result = await getReviewPage(email, requestedPage);
     panel = (
       <ProfilePanel id="reviews" eyebrow="Writing archive" title="Reviews" description="Your public and private reviews across every title.">
-        {result.total ? <div className="grid gap-4 xl:grid-cols-2">{result.items.map((review) => <ReviewCard key={review._id} review={review} rating={result.ratingMap.get(mediaKey(review.mediaType, review.movieId)) || 0} currentUserEmail={email} path="/profile" />)}</div> : <EmptyState title="No reviews yet" description="Write your first review from a movie or show page." />}
+        {result.total ? <div className="grid gap-4 xl:grid-cols-2">{result.items.map((review) => <ReviewCard key={review._id} review={review} rating={result.ratingMap.get(mediaKey(review.mediaType, review.movieId)) || 0} currentUserEmail={email} path="/profile" />)}</div> : <EmptyState compact title="No reviews yet" description="Write your first review from a movie or show page." />}
         <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.reviews} />
       </ProfilePanel>
     );
@@ -285,7 +280,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     const result = await getListPage(email, requestedPage);
     panel = (
       <ProfilePanel id="lists" eyebrow="Collections" title="Lists" description="Public and private collections built from movies and shows.">
-        {result.total ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{result.items.map((list) => <CompactList key={list._id} list={list} />)}</div> : <EmptyState title="No lists yet" description="Create a list to collect recommendations." />}
+        {result.total ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{result.items.map((list) => <CompactList key={list._id} list={list} />)}</div> : <EmptyState compact title="No lists yet" description="Create a list to collect recommendations." />}
         <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.lists} />
       </ProfilePanel>
     );
@@ -293,7 +288,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     const result = await getJournalPage(email, requestedPage);
     panel = (
       <ProfilePanel id="journal" eyebrow="Watch log" title="Journal" description="Dates, notes, and the history behind your titles-watched metrics." action={{ href: "/journal", label: "Open journal" }}>
-        {result.total ? <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">{result.items.map((item) => <JournalCard key={item._id} item={item} />)}</div> : <EmptyState title="Your journal is empty" description="Log your first watch to begin your history." />}
+        {result.total ? <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">{result.items.map((item) => <JournalCard key={item._id} item={item} />)}</div> : <EmptyState compact title="Your journal is empty" description="Log your first watch to begin your history." />}
         <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.journal} />
       </ProfilePanel>
     );
@@ -301,7 +296,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   const relationships = await relationshipPromise;
   return (
-    <div className="min-h-screen px-4 pb-20 pt-24 sm:px-6">
+    <div className="min-h-screen px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
       <div className="mx-auto max-w-6xl">
         <ProfileHeader
           name={identity.name || sessionName || "KinOrbia user"}
@@ -317,7 +312,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <a href="/api/user/export" className="kin-focus inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:border-gold/30 hover:text-white"><Download className="h-4 w-4" />Export data</a>
         </ProfileHeader>
 
-        <div className="sticky top-20 z-30 -mx-4 mt-6 border-y border-white/10 bg-neutral-950/90 px-4 py-3 backdrop-blur-xl sm:mx-0 sm:rounded-full sm:border sm:px-2">
+        <div className="sticky top-20 z-30 -mx-4 mt-5 border-y border-white/10 bg-neutral-950/95 px-4 py-2 backdrop-blur-xl sm:mx-0 sm:px-0">
           <ProfileTabs current={tab} year={selectedYear} />
         </div>
 
