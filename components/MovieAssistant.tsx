@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Bot, Film, Loader2, Send, Sparkles, X } from "lucide-react";
 import type { MovieSummary } from "@/types";
 import AssistantMovieActions from "./AssistantMovieActions";
-import { normalizeMediaType } from "@/lib/media";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
+import { normalizeMediaType, tmdbImage } from "@/lib/media";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -76,6 +76,28 @@ function saveHistory(messages: ChatMessage[]) {
 
 function movieYear(movie: MovieSummary) {
   return movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
+}
+
+function AssistantPoster({ movie }: { movie: MovieSummary }) {
+  const poster = tmdbImage(movie.poster_path, "w185");
+
+  if (!poster) {
+    return (
+      <div className="flex h-full items-center justify-center text-content-subtle">
+        <Film className="h-5 w-5" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  return (
+    <TmdbPosterImage
+      src={poster}
+      alt={movie.title}
+      fill
+      sizes="56px"
+      className="object-cover"
+    />
+  );
 }
 
 export default function MovieAssistant() {
@@ -256,19 +278,7 @@ export default function MovieAssistant() {
                           className="flex gap-3"
                         >
                           <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-md bg-neutral-900">
-                            {movie.poster_path ? (
-                              <Image
-                                src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
-                                alt={movie.title}
-                                fill
-                                sizes="56px"
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center text-neutral-600">
-                                <Film className="h-5 w-5" />
-                              </div>
-                            )}
+                            <AssistantPoster movie={movie} />
                           </div>
                           <div className="min-w-0 py-1">
                             <p className="truncate text-sm font-bold text-white">{movie.title}</p>

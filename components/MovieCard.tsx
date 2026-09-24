@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
 import { Film, Star } from "lucide-react";
+import { tmdbImage } from "@/lib/media";
 import type { MovieSummary } from "@/types";
 
 export type MovieProp = MovieSummary;
@@ -10,7 +10,6 @@ export default function MovieCard({
   movie,
   index,
   loading,
-  safeImage = false,
   onRateClick,
 }: {
   movie: MovieProp;
@@ -22,28 +21,17 @@ export default function MovieCard({
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
   const href = movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`;
   const isEager = loading ? loading === "eager" : index !== undefined && index < 3;
-  const posterElement = movie.poster_path ? (
-    safeImage ? (
-      <TmdbPosterImage
-        src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-        alt={movie.title}
-        fill
-        loading={isEager ? "eager" : undefined}
-        fetchPriority={isEager ? "high" : undefined}
-        sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
-        className="object-cover transition duration-500 group-hover:scale-[1.025] group-hover:saturate-110"
-      />
-    ) : (
-      <Image
-        src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-        alt={movie.title}
-        fill
-        loading={isEager ? "eager" : undefined}
-        fetchPriority={isEager ? "high" : undefined}
-        sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
-        className="object-cover transition duration-500 group-hover:scale-[1.025] group-hover:saturate-110"
-      />
-    )
+  const poster = tmdbImage(movie.poster_path, "w500");
+  const posterElement = poster ? (
+    <TmdbPosterImage
+      src={poster}
+      alt={movie.title}
+      fill
+      loading={isEager ? "eager" : undefined}
+      fetchPriority={isEager ? "high" : undefined}
+      sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
+      className="object-cover transition duration-500 group-hover:scale-[1.025] group-hover:saturate-110"
+    />
   ) : (
     <div className="h-full bg-neutral-900 flex items-center justify-center">
       <Film className="text-neutral-600" />

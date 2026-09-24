@@ -4,18 +4,19 @@ import Image, { type ImageProps } from "next/image";
 import { Film } from "lucide-react";
 import { useState } from "react";
 
-type TmdbPosterImageProps = Omit<ImageProps, "src" | "onError"> & {
+type TmdbPosterImageProps = Omit<ImageProps, "src" | "onError" | "unoptimized"> & {
   src: string;
 };
 
 export default function TmdbPosterImage({ src, alt, className, ...props }: TmdbPosterImageProps) {
-  const [mode, setMode] = useState<"optimized" | "direct" | "fallback">("optimized");
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
-  if (mode === "fallback") {
+  if (failedSrc === src) {
     return (
       <div
-        role="img"
-        aria-label={alt}
+        role={alt ? "img" : undefined}
+        aria-label={alt || undefined}
+        aria-hidden={alt ? undefined : true}
         className={`flex h-full w-full items-center justify-center bg-neutral-900 ${className || ""}`}
       >
         <Film className="h-8 w-8 text-neutral-700" aria-hidden="true" />
@@ -29,8 +30,8 @@ export default function TmdbPosterImage({ src, alt, className, ...props }: TmdbP
       src={src}
       alt={alt}
       className={className}
-      unoptimized={mode === "direct"}
-      onError={() => setMode(mode === "optimized" ? "direct" : "fallback")}
+      unoptimized
+      onError={() => setFailedSrc(src)}
     />
   );
 }

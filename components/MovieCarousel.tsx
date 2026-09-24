@@ -2,9 +2,9 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
-import { normalizeMediaType } from "@/lib/media";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
+import { normalizeMediaType, tmdbImage } from "@/lib/media";
 
 export interface CarouselMovie {
   id: number;
@@ -12,6 +12,24 @@ export interface CarouselMovie {
   poster_path: string | null;
   release_date: string;
   mediaType?: "movie" | "tv";
+}
+
+function CarouselPoster({ movie }: { movie: CarouselMovie }) {
+  const poster = tmdbImage(movie.poster_path, "w500");
+
+  if (!poster) {
+    return <ImageIcon className="h-10 w-10 text-neutral-700" aria-hidden="true" />;
+  }
+
+  return (
+    <TmdbPosterImage
+      src={poster}
+      alt={movie.title}
+      fill
+      sizes="(max-width: 768px) 144px, 192px"
+      className="object-cover transition duration-500 group-hover/card:scale-[1.025] group-hover/card:saturate-110"
+    />
+  );
 }
 
 export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
@@ -49,17 +67,7 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
             aria-label={movie.title}
           >
             <div className="aspect-2/3 relative bg-neutral-900 flex items-center justify-center overflow-hidden">
-              {movie.poster_path ? (
-                <Image
-                  src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                  alt={movie.title}
-                  fill
-                  sizes="(max-width: 768px) 144px, 192px"
-                  className="object-cover transition duration-500 group-hover/card:scale-[1.025] group-hover/card:saturate-110"
-                />
-              ) : (
-                <ImageIcon className="w-10 h-10 text-neutral-700" />
-              )}
+              <CarouselPoster movie={movie} />
               <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover/card:bg-black/8" />
               <div className="absolute top-2 left-2 rounded-full border border-white/10 bg-black/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md">
                 {movie.release_date ? movie.release_date.substring(0, 4) : "TBD"}

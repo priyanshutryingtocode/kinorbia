@@ -8,9 +8,6 @@ type SearchTrackerFormProps = {
   children: ReactNode;
 };
 
-// Renders the plain GET search form and records the query into the
-// per-media-type history only when the form is actually submitted. Toggling
-// the Movies/Shows tab never touches history.
 export default function SearchTrackerForm({ mediaType, children }: SearchTrackerFormProps) {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     const formData = new FormData(event.currentTarget);
@@ -21,7 +18,14 @@ export default function SearchTrackerForm({ mediaType, children }: SearchTracker
   };
 
   return (
-    <form action="/search" onSubmit={handleSubmit} className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 mb-10">
+    <form
+      action="/search"
+      method="get"
+      role="search"
+      aria-label={mediaType === "tv" ? "Search TV shows" : "Search movies"}
+      onSubmit={handleSubmit}
+      className="kin-panel mb-8 p-4 sm:p-5"
+    >
       <input type="hidden" name="type" value={mediaType} />
       {children}
     </form>

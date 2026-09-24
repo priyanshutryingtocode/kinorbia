@@ -16,19 +16,23 @@ export default function SearchHistory({ mediaType }: { mediaType: SearchMediaTyp
   }
 
   return (
-    <div className="mb-8">
-      <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">Recent Searches</p>
-      <div className="flex flex-wrap gap-2">
+    <nav aria-labelledby="recent-searches-heading" className="mb-6 border-y border-rule py-3">
+      <h2 id="recent-searches-heading" className="kin-overline mb-2 text-content-subtle">
+        Recent searches
+      </h2>
+      <ul className="flex flex-wrap gap-2">
         {recent.map((item) => (
-          <Link
-            key={item}
-            href={`/search?q=${encodeURIComponent(item)}&type=${mediaType}`}
-            className="text-sm px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-neutral-300 hover:text-white hover:border-red-500/40 transition"
-          >
-            {item}
-          </Link>
+          <li key={item}>
+            <Link
+              href={`/search?q=${encodeURIComponent(item)}&type=${mediaType}`}
+              title={item}
+              className="kin-focus inline-flex min-h-9 max-w-full items-center rounded-control border border-rule bg-surface-raised px-3 py-1.5 text-sm text-content-muted transition-colors hover:border-highlight/35 hover:bg-surface hover:text-highlight"
+            >
+              <span className="truncate">{item}</span>
+            </Link>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </nav>
   );
 }

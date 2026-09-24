@@ -299,6 +299,25 @@ html {
     transition-duration: var(--duration-fast);
   }
 
+  .kin-search-input {
+    padding-left: 3rem;
+    padding-right: 7rem;
+  }
+
+  .kin-filter-control {
+    height: 3rem;
+    min-height: 3rem;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .kin-search-input {
+      padding-right: 8rem;
+    }
+  }
+
   .glass-input {
     @apply w-full rounded-control border border-rule bg-surface-raised px-3.5 py-2.5 text-sm text-content placeholder:text-content-subtle transition-colors focus-visible:border-accent-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-50;
     transition-duration: var(--duration-fast);

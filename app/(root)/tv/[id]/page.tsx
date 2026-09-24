@@ -6,6 +6,7 @@ import FavoriteButton from "@/components/FavouriteButton";
 import WatchedButton from "@/components/WatchedButton";
 import WatchlistButton from "@/components/WatchlistButton";
 import MovieRatingControl from "@/components/MovieRatingControl";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -17,7 +18,7 @@ import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import TrailerButton from "@/components/TrailerButton";
 import PageContainer from "@/components/PageContainer";
 import { getTvWithStatus, getTvCredits, getTvVideos, pickMainTrailer } from "@/lib/tmdb";
-import { normalizeMediaType } from "@/lib/media";
+import { normalizeMediaType, tmdbImage } from "@/lib/media";
 
 async function getTvDetails(id: string): Promise<TmdbTvDetails> {
   const { tv, notFound: missing } = await getTvWithStatus(id);
@@ -104,6 +105,8 @@ export default async function TvPage({ params }: Props) {
     typeof tv.vote_average === "number" ? tv.vote_average.toFixed(1) : "N/A";
 
   const topCast = [...credits.cast].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).slice(0, 6);
+  const backdrop = tmdbImage(tv.backdrop_path, "w1280");
+  const poster = tmdbImage(tv.poster_path, "w500");
 
   const show = {
     id: tv.id.toString(),
@@ -118,9 +121,9 @@ export default async function TvPage({ params }: Props) {
   return (
     <div className="relative overflow-hidden pb-20 text-white">
       <div className="absolute inset-x-0 top-0 h-[55svh] opacity-50 sm:h-[70svh] lg:h-svh">
-        {tv.backdrop_path && (
-          <Image
-            src={`https://image.tmdb.org/t/p/original${tv.backdrop_path}`}
+        {backdrop && (
+          <TmdbPosterImage
+            src={backdrop}
             alt=""
             fill
             priority
@@ -135,9 +138,9 @@ export default async function TvPage({ params }: Props) {
       <PageContainer width="frame" className="relative pt-28 sm:pt-32">
         <div className="relative grid gap-8 lg:grid-cols-[minmax(260px,360px)_1fr] lg:gap-12">
           <div className="mx-auto w-full max-w-67.5 sm:max-w-82.5 lg:max-w-none">
-            {tv.poster_path ? (
-              <Image
-                src={`https://image.tmdb.org/t/p/w500${tv.poster_path}`}
+            {poster ? (
+              <TmdbPosterImage
+                src={poster}
                 alt={tv.name}
                 width={320}
                 height={480}
@@ -216,6 +219,7 @@ export default async function TvPage({ params }: Props) {
                     <Image
                       src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
                       alt={member.name}
+                      unoptimized
                       width={120}
                       height={120}
                       className="mx-auto aspect-square rounded-full object-cover"

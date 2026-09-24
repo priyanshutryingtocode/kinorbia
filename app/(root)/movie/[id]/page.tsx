@@ -6,6 +6,7 @@ import FavoriteButton from "@/components/FavouriteButton";
 import WatchedButton from "@/components/WatchedButton";
 import WatchlistButton from "@/components/WatchlistButton";
 import MovieRatingControl from "@/components/MovieRatingControl";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -17,7 +18,7 @@ import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import TrailerButton from "@/components/TrailerButton";
 import PageContainer from "@/components/PageContainer";
 import { getMovieWithStatus, getMovieCredits, getMovieVideos, pickMainTrailer } from "@/lib/tmdb";
-import { normalizeMediaType } from "@/lib/media";
+import { normalizeMediaType, tmdbImage } from "@/lib/media";
 
 async function getMovieDetails(id: string): Promise<TmdbMovieDetails> {
   const { movie, notFound: missing } = await getMovieWithStatus(id);
@@ -111,13 +112,15 @@ if (user?.favorites) {
   const directors = credits.crew.filter((member) => member.job === "Director");
   const producers = credits.crew.filter((member) => member.job === "Producer");
   const topCast = [...credits.cast].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).slice(0, 6);
+  const backdrop = tmdbImage(movie.backdrop_path, "w1280");
+  const poster = tmdbImage(movie.poster_path, "w500");
 
   return (
     <div className="relative overflow-hidden pb-20 text-white">
       <div className="absolute inset-x-0 top-0 h-[55svh] opacity-50 sm:h-[70svh] lg:h-svh">
-        {movie.backdrop_path && (
-          <Image
-            src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
+        {backdrop && (
+          <TmdbPosterImage
+            src={backdrop}
             alt=""
             fill
             priority
@@ -132,9 +135,9 @@ if (user?.favorites) {
       <PageContainer width="frame" className="relative pt-28 sm:pt-32">
         <div className="relative grid gap-8 lg:grid-cols-[minmax(260px,360px)_1fr] lg:gap-12">
           <div className="mx-auto w-full max-w-67.5 sm:max-w-82.5 lg:max-w-none">
-            {movie.poster_path ? (
-              <Image
-                src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+            {poster ? (
+              <TmdbPosterImage
+                src={poster}
                 alt={movie.title}
                 width={320}
                 height={480}
@@ -272,6 +275,7 @@ if (user?.favorites) {
                     <Image
                       src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
                       alt={member.name}
+                      unoptimized
                       width={120}
                       height={120}
                       className="mx-auto aspect-square rounded-full object-cover"
