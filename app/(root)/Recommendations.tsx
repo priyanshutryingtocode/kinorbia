@@ -37,8 +37,8 @@ export default async function Recommendations() {
         </h2>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-        {recommendations.map((movie) => (
-          <MovieCard key={movie.id} movie={movie} />
+        {recommendations.map((movie, index) => (
+          <MovieCard key={movie.id} movie={movie} loading={index === 0 ? "eager" : undefined} />
         ))}
       </div>
     </section>

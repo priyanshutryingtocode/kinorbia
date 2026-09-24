@@ -27,7 +27,7 @@ function messageFor(item: NotificationItem) {
 
 function hrefFor(item: NotificationItem) {
   if (item.type === "follow") {
-    return `/u/${item.targetTitle}`;
+    return item.targetTitle ? `/u/${item.targetTitle}` : "/activity";
   }
 
   if (item.targetType === "list") {

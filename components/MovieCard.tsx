@@ -8,14 +8,17 @@ export type MovieProp = MovieSummary;
 export default function MovieCard({
   movie,
   index,
+  loading,
   onRateClick,
 }: {
   movie: MovieProp;
   index?: number;
+  loading?: "eager" | "lazy";
   onRateClick?: (movie: MovieProp) => void;
 }) {
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
   const href = movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`;
+  const isEager = loading ? loading === "eager" : index !== undefined && index < 3;
 
   return (
     <div className="group relative overflow-hidden rounded-lg border border-white/10 bg-neutral-950 shadow-card transition-all hover:-translate-y-1 hover:border-white/18 hover:shadow-card-hover">
@@ -30,7 +33,8 @@ export default function MovieCard({
             src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
             alt={movie.title}
             fill
-            priority={index !== undefined && index < 3}
+            loading={isEager ? "eager" : undefined}
+            fetchPriority={isEager ? "high" : undefined}
             sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
             className="object-cover transition duration-500 group-hover:scale-[1.025] group-hover:saturate-110"
           />
@@ -52,6 +56,8 @@ export default function MovieCard({
       {movie.personalRating !== undefined && (
         <button
           onClick={() => onRateClick?.(movie)}
+          aria-label={`Rate ${movie.title}`}
+          aria-haspopup={onRateClick ? "dialog" : undefined}
           className={`kin-focus absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-xs font-bold backdrop-blur-md transition-colors ${
             movie.personalRating > 0
               ? "bg-yellow-400/12 text-yellow-300 hover:bg-yellow-400/20"

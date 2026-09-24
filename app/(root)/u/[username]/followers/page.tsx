@@ -8,10 +8,20 @@ export const metadata = {
 };
 
 type Props = {
-  params: Promise<{ username: string }> | { username: string };
+  params: Promise<{ username: string }>;
+  searchParams: Promise<{
+    q?: string | string[];
+    page?: string | string[];
+  }>;
 };
 
-export default async function FollowersPage({ params }: Props) {
-  const username = (await Promise.resolve(params)).username.toLowerCase();
-  return <PeopleFollowPage username={username} mode="followers" />;
+export default async function FollowersPage({ params, searchParams }: Props) {
+  const { username } = await params;
+  return (
+    <PeopleFollowPage
+      username={username.toLowerCase()}
+      mode="followers"
+      searchParams={searchParams}
+    />
+  );
 }

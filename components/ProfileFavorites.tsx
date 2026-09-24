@@ -1,35 +1,61 @@
 "use client";
 
-import { useState } from "react";
-import MovieCard, { MovieProp } from "./MovieCard";
-import { Film, X, Loader2 } from "lucide-react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Film, Loader2, Star, X } from "lucide-react";
+import MovieCard, { type MovieProp } from "@/components/MovieCard";
+import AccessibleDialog from "@/components/AccessibleDialog";
+import { useToast } from "@/components/ToastProvider";
+import { mediaKey, normalizeMediaType } from "@/lib/media";
 import type { FavoriteMovie } from "@/types";
-import { normalizeMediaType } from "@/lib/media";
 
 export default function ProfileFavorites({ initialFavorites }: { initialFavorites: FavoriteMovie[] }) {
   const [selectedMovie, setSelectedMovie] = useState<MovieProp | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
+  const { showToast } = useToast();
+
+  const closeDialog = useCallback(() => {
+    if (!loading) {
+      setSelectedMovie(null);
+      setError("");
+    }
+  }, [loading]);
 
   const handleRate = async (rating: number) => {
-    if (!selectedMovie) return;
+    if (!selectedMovie) {
+      return;
+    }
+
     setLoading(true);
+    setError("");
 
     try {
       const res = await fetch("/api/user/favorites/rate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ movieId: selectedMovie.id, rating, mediaType: normalizeMediaType(selectedMovie.mediaType) }),
+        body: JSON.stringify({
+          movieId: selectedMovie.id,
+          rating,
+          mediaType: normalizeMediaType(selectedMovie.mediaType),
+        }),
       });
 
-      if (res.ok) {
-        setSelectedMovie(null); 
-        router.refresh();       
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.message || "Could not update this rating.");
+        showToast(data?.message || "Could not update this rating.", "error");
+        return;
       }
+
+      showToast(`Updated your rating for ${selectedMovie.title}.`, "success");
+      setSelectedMovie(null);
+      router.refresh();
     } catch {
-      console.error("Failed to rate");
+      setError("Could not update this rating. Please try again.");
+      showToast("Could not update this rating.", "error");
     } finally {
       setLoading(false);
     }
@@ -37,73 +63,95 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
 
   if (initialFavorites.length === 0) {
     return (
-      <div className="h-64 rounded-2xl border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center text-neutral-500 gap-4">
-         <Film className="w-12 h-12 opacity-20" />
-         <p>You have not added any favorites yet.</p>
-         <Link href="/" className="text-red-500 hover:text-red-400 text-sm hover:underline">
-           Browse Movies
-         </Link>
+      <div className="flex flex-col items-center justify-center gap-4 rounded-panel border border-dashed border-white/10 bg-white/[0.03] px-6 py-16 text-center text-neutral-500">
+        <Film className="h-12 w-12 opacity-30" aria-hidden="true" />
+        <p>You have not added any favorites yet.</p>
+        <Link href="/" className="kin-focus rounded-sm text-sm font-semibold text-red-300 transition hover:text-red-200">
+          Browse movies and shows
+        </Link>
       </div>
     );
   }
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {initialFavorites.map((fav) => (
-          <MovieCard 
-            key={fav.movieId} 
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        {initialFavorites.map((favorite, index) => (
+          <MovieCard
+            key={mediaKey(favorite.mediaType, favorite.movieId)}
+            index={index}
             movie={{
-              id: fav.movieId,
-              title: fav.title,
-              poster_path: fav.posterPath,
-              vote_average: fav.voteAverage,
-              release_date: fav.releaseDate,
-              personalRating: fav.personalRating || 0,
-              mediaType: normalizeMediaType(fav.mediaType),
-            }} 
+              id: favorite.movieId,
+              title: favorite.title,
+              poster_path: favorite.posterPath,
+              vote_average: favorite.voteAverage,
+              release_date: favorite.releaseDate,
+              personalRating: favorite.personalRating || 0,
+              mediaType: normalizeMediaType(favorite.mediaType),
+            }}
             onRateClick={setSelectedMovie}
           />
         ))}
       </div>
 
-      {selectedMovie && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !loading && setSelectedMovie(null)}></div>
-          
-          <div className="relative w-full max-w-sm bg-neutral-900 border border-white/10 rounded-2xl p-6 shadow-2xl text-center">
-            <button 
-              onClick={() => setSelectedMovie(null)} 
-              className="absolute top-4 right-4 text-neutral-400 hover:text-white"
+      <AccessibleDialog
+        open={Boolean(selectedMovie)}
+        onClose={closeDialog}
+        titleId="rate-title-dialog"
+        className="max-w-sm"
+      >
+        {selectedMovie && (
+          <>
+            <button
+              type="button"
+              onClick={closeDialog}
               disabled={loading}
+              className="kin-focus absolute right-4 top-4 rounded-full border border-white/10 bg-white/5 p-2 text-neutral-400 transition hover:text-white disabled:opacity-50"
+              aria-label="Close rating dialog"
             >
-              <X className="w-5 h-5" />
+              <X className="h-4 w-4" />
             </button>
+            <div className="pr-10 text-center">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">Your rating</p>
+              <h2 id="rate-title-dialog" className="mt-1 font-display text-2xl font-bold text-white">
+                {selectedMovie.title}
+              </h2>
+              <p className="mt-2 text-sm text-neutral-500">Choose a score from 1 to 10.</p>
+            </div>
 
-            <h3 className="text-xl font-bold text-white mb-2">Rate Movie</h3>
-            <p className="text-sm text-neutral-400 mb-6">{selectedMovie.title}</p>
-
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+            <div className="mt-6 grid grid-cols-5 gap-2" role="group" aria-label={`Rating for ${selectedMovie.title}`}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
                 <button
-                  key={star}
-                  onClick={() => handleRate(star)}
+                  key={rating}
+                  type="button"
+                  onClick={() => handleRate(rating)}
                   disabled={loading}
-                  className={`w-10 h-10 rounded-full border transition flex items-center justify-center ${
-                    selectedMovie.personalRating === star 
-                      ? "bg-yellow-500 border-yellow-400 text-black shadow-[0_0_15px_rgba(234,179,8,0.5)]" 
-                      : "border-white/10 text-neutral-400 hover:border-yellow-500 hover:text-yellow-500 bg-white/5"
+                  aria-label={`Rate ${selectedMovie.title} ${rating} out of 10`}
+                  aria-pressed={selectedMovie.personalRating === rating}
+                  className={`kin-focus flex h-11 items-center justify-center rounded-full border text-sm font-bold transition disabled:opacity-50 ${
+                    selectedMovie.personalRating === rating
+                      ? "border-yellow-400 bg-yellow-400 text-black"
+                      : "border-white/10 bg-white/5 text-neutral-300 hover:border-yellow-500/50 hover:text-yellow-300"
                   }`}
                 >
-                  <span className="text-sm font-bold">{star}</span>
+                  {rating}
                 </button>
               ))}
             </div>
 
-            {loading && <Loader2 className="w-6 h-6 animate-spin text-yellow-500 mx-auto" />}
-          </div>
-        </div>
-      )}
+            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-neutral-500">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin text-yellow-400" /> : <Star className="h-4 w-4 text-yellow-400" />}
+              {loading ? "Saving rating..." : "Ratings are shown out of five stars."}
+            </div>
+
+            {error && (
+              <p role="alert" className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                {error}
+              </p>
+            )}
+          </>
+        )}
+      </AccessibleDialog>
     </>
   );
 }

@@ -10,7 +10,10 @@ export default function SpoilerText({ text }: { text: string }) {
   if (!revealed) {
     return (
       <div className="relative mt-3">
-        <div className="select-none whitespace-pre-wrap text-sm leading-6 text-neutral-300 opacity-50 blur-sm">
+        <div
+          aria-hidden="true"
+          className="select-none whitespace-pre-wrap text-sm leading-6 text-neutral-300 opacity-50 blur-sm"
+        >
           {renderRichText(text)}
         </div>
         <button

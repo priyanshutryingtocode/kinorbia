@@ -3,6 +3,7 @@ import { genreName } from "@/lib/genres";
 import { normalizeMediaType } from "@/lib/media";
 
 export type MonthlyPoint = {
+  key: string;
   label: string;
   count: number;
 };
@@ -38,6 +39,8 @@ export type InsightsData = {
   topRated: TopRatedItem[];
   movieCount: number;
   showCount: number;
+  movieEntryCount?: number;
+  showEntryCount?: number;
   genreBreakdown: GenreBreakdown[];
   bestMonthLabel: string | null;
   topGenre: string | null;
@@ -49,6 +52,8 @@ type JournalLike = {
   movieTitle: string;
   posterPath?: string | null;
   movieId?: string;
+  id?: string | number;
+  _id?: string | number | { toString(): string };
 };
 
 function pad(value: number) {
@@ -65,6 +70,26 @@ function utcDayStr(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+function journalKey(entry: JournalLike, manualOccurrences: Map<string, number>) {
+  const mediaType = normalizeMediaType(entry.mediaType);
+  const movieId = entry.movieId == null ? "" : String(entry.movieId);
+  if (movieId) {
+    return `${mediaType}:${movieId}`;
+  }
+
+  const entryId = entry.id ?? entry._id;
+  if (entryId !== undefined && entryId !== null && String(entryId) !== "") {
+    return `${mediaType}:entry:${String(entryId)}`;
+  }
+
+  const date = new Date(entry.watchedAt);
+  const dateKey = Number.isNaN(date.getTime()) ? String(entry.watchedAt) : date.toISOString();
+  const baseKey = `${mediaType}:manual:${entry.movieTitle}:${dateKey}`;
+  const occurrence = manualOccurrences.get(baseKey) || 0;
+  manualOccurrences.set(baseKey, occurrence + 1);
+  return `${baseKey}:${occurrence}`;
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Calendar-day number derived from the YYYY-MM-DD string itself, so streak
@@ -74,12 +99,17 @@ function dayNumber(day: string) {
   return Math.round(Date.UTC(y, m - 1, d) / DAY_MS);
 }
 
-function computeStreaks(dayStrs: string[]) {
+function computeStreaks(dayStrs: string[], now = new Date()) {
+  const today = dayNumber(utcDayStr(now));
+  const days = [...new Set(dayStrs)]
+    .filter((day) => Number.isFinite(dayNumber(day)) && dayNumber(day) <= today)
+    .sort();
+
   let best = 0;
   let run = 0;
   let prev: number | null = null;
 
-  for (const day of dayStrs) {
+  for (const day of days) {
     const n = dayNumber(day);
     run = prev !== null && n - prev === 1 ? run + 1 : 1;
     best = Math.max(best, run);
@@ -87,11 +117,11 @@ function computeStreaks(dayStrs: string[]) {
   }
 
   let current = 0;
-  if (dayStrs.length > 0) {
-    const last = dayNumber(dayStrs[dayStrs.length - 1]);
-    if (dayNumber(utcDayStr(new Date())) - last <= 1) {
-      for (let i = dayStrs.length - 1; i >= 0; i--) {
-        if (i === dayStrs.length - 1 || dayNumber(dayStrs[i]) === dayNumber(dayStrs[i + 1]) - 1) {
+  if (days.length > 0) {
+    const last = dayNumber(days[days.length - 1]);
+    if (today - last <= 1) {
+      for (let i = days.length - 1; i >= 0; i--) {
+        if (i === days.length - 1 || dayNumber(days[i]) === dayNumber(days[i + 1]) - 1) {
           current += 1;
         } else {
           break;
@@ -101,6 +131,13 @@ function computeStreaks(dayStrs: string[]) {
   }
 
   return { current, best };
+}
+
+export function buildWatchStreaks(watchDates: Array<string | Date>, now = new Date()) {
+  return computeStreaks(
+    watchDates.map((value) => utcDayStr(new Date(value))),
+    now
+  );
 }
 
 function toStars(rating?: number) {
@@ -121,7 +158,7 @@ export function yearsFromJournal(journal: JournalLike[]): number[] {
 function monthKeysFor(now: Date, year?: number): { key: string; label: string }[] {
   const keys: { key: string; label: string }[] = [];
 
-  if (year) {
+  if (year !== undefined) {
     for (let month = 0; month < 12; month += 1) {
       keys.push({
         key: `${year}-${pad(month + 1)}`,
@@ -150,14 +187,14 @@ export function buildInsights(
 ): InsightsData {
   const now = new Date();
 
-  const filteredJournal = year
+  const filteredJournal = year !== undefined
     ? journal.filter((entry) => new Date(entry.watchedAt).getUTCFullYear() === year)
     : journal;
 
-  const filteredFavorites = year
+  const filteredFavorites = year !== undefined
     ? favorites.filter((favorite) => {
         const addedAt = favorite.addedAt ? new Date(favorite.addedAt).getTime() : NaN;
-        return !Number.isNaN(addedAt) && new Date(addedAt).getFullYear() === year;
+        return !Number.isNaN(addedAt) && new Date(addedAt).getUTCFullYear() === year;
       })
     : favorites;
 
@@ -165,8 +202,12 @@ export function buildInsights(
 
   const monthCounts = new Map<string, number>();
   const dayStrs: string[] = [];
+  const manualOccurrences = new Map<string, number>();
+  const watchedKeys = new Set<string>();
   let movieCount = 0;
   let showCount = 0;
+  let movieEntryCount = 0;
+  let showEntryCount = 0;
 
   for (const entry of filteredJournal) {
     const date = new Date(entry.watchedAt);
@@ -174,14 +215,26 @@ export function buildInsights(
     monthCounts.set(key, (monthCounts.get(key) || 0) + 1);
     dayStrs.push(utcDayStr(date));
 
-    if ((normalizeMediaType(entry.mediaType)) === "tv") {
-      showCount += 1;
+    const mediaType = normalizeMediaType(entry.mediaType);
+    if (mediaType === "tv") {
+      showEntryCount += 1;
     } else {
-      movieCount += 1;
+      movieEntryCount += 1;
+    }
+
+    const watchedKey = journalKey(entry, manualOccurrences);
+    if (!watchedKeys.has(watchedKey)) {
+      watchedKeys.add(watchedKey);
+      if (mediaType === "tv") {
+        showCount += 1;
+      } else {
+        movieCount += 1;
+      }
     }
   }
 
   const monthly: MonthlyPoint[] = monthKeys.map(({ key, label }) => ({
+    key,
     label,
     count: monthCounts.get(key) || 0,
   }));
@@ -195,7 +248,7 @@ export function buildInsights(
     }
   }
 
-  const { current, best } = computeStreaks([...new Set(dayStrs)].sort());
+  const { current, best } = computeStreaks(dayStrs, now);
 
   const starCounts = new Map<number, number>();
   for (const favorite of filteredFavorites) {
@@ -258,6 +311,8 @@ export function buildInsights(
     topRated,
     movieCount,
     showCount,
+    movieEntryCount,
+    showEntryCount,
     genreBreakdown,
     bestMonthLabel,
     topGenre: genreBreakdown[0]?.name || null,
