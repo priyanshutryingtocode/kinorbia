@@ -3,8 +3,14 @@ import { redirect } from "next/navigation";
 import { MessageSquare } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import ActionForm from "@/components/ActionForm";
 import EmptyState from "@/components/EmptyState";
+import FormPanel from "@/components/FormPanel";
 import PageContainer from "@/components/PageContainer";
+import PageHeader from "@/components/PageHeader";
+import ReviewCard from "@/components/ReviewCard";
+import SectionHeader from "@/components/SectionHeader";
+import SubmitButton from "@/components/SubmitButton";
 import dbConnect from "@/lib/dbConnect";
 import { buildReviewerRatingMaps, dedupeFavorites, lookupRating } from "@/lib/reviewRatings";
 import Review from "@/models/Review";
@@ -13,8 +19,6 @@ import { createReview } from "./actions";
 import { serializeReview, type RawReview } from "@/lib/serialize";
 import { normalizeMediaType, mediaKey } from "@/lib/media";
 import type { FavoriteMovie } from "@/types";
-import SubmitButton from "@/components/SubmitButton";
-import ReviewCard from "@/components/ReviewCard";
 
 export const metadata: Metadata = {
   title: "Reviews",
@@ -49,136 +53,138 @@ export default async function ReviewsPage() {
   const favorites = dedupeFavorites((user?.favorites || []) as FavoriteMovie[]);
   const ratedFavorites = favorites.filter((movie) => (movie.personalRating || 0) > 0);
 
+  const favoriteMovieId = "review-favorite-movie";
+  const reviewBodyId = "review-body";
+
   return (
-    <div className="bg-neutral-950 pt-10 pb-16 text-white">
+    <div className="bg-canvas pb-16 pt-6 sm:pt-8">
       <PageContainer width="page">
-        <header className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
-          <div>
-            <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
-              Community
-            </p>
-            <h1 className="text-4xl md:text-5xl font-bold">Recent Reviews</h1>
-            <p className="text-neutral-400 mt-3 max-w-2xl">
-              Share quick reactions, longer takes, and the ratings behind your favorite films.
-            </p>
-          </div>
-        </header>
+        <PageHeader
+          eyebrow="Community"
+          title="Recent Reviews"
+          description="Share quick reactions, longer takes, and the ratings behind your favorite films."
+        />
 
-        <section className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-8">
-          <aside className="bg-neutral-900/50 border border-white/10 rounded-xl p-5 h-fit">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <MessageSquare className="w-5 h-5 text-red-400" />
-              </div>
-              <h2 className="font-bold text-lg">Write a Review</h2>
-            </div>
-
+        <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+          <FormPanel
+            id="write-review"
+            eyebrow="New entry"
+            title="Write a review"
+            description="Choose a rated title and leave a note for the community."
+            className="lg:sticky lg:top-24"
+          >
             {ratedFavorites.length > 0 ? (
-              <form action={createReview} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                      Pick a rated movie
-                    </label>
-                    <select
-                      name="favoriteMovieId"
-                      required
-                      className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-red-500"
-                      defaultValue=""
-                    >
-                      <option value="" disabled>
-                        Choose a rated movie
-                      </option>
-                      {ratedFavorites.map((movie) => (
-                        <option key={`${normalizeMediaType(movie.mediaType)}-${movie.movieId}`} value={mediaKey(movie.mediaType, movie.movieId)}>
-                          {movie.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                      Review
-                    </label>
-                    <textarea
-                      name="body"
-                      required
-                      maxLength={1200}
-                      rows={6}
-                      placeholder="What stayed with you?"
-                      className="w-full bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500 resize-none"
-                    />
-                  </div>
-
-                  <fieldset>
-                    <legend className="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                      Visibility
-                    </legend>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
-                        <input
-                          type="radio"
-                          name="visibility"
-                          value="public"
-                          defaultChecked
-                          className="accent-red-600"
-                        />
-                        Public
-                      </label>
-                      <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
-                        <input
-                          type="radio"
-                          name="visibility"
-                          value="private"
-                          className="accent-red-600"
-                        />
-                        Private
-                      </label>
-                    </div>
-                  </fieldset>
-
-                  <label className="flex items-center gap-2 bg-neutral-950 border border-white/10 rounded-lg px-3 py-3 text-sm cursor-pointer hover:border-red-500/50">
-                    <input type="checkbox" name="spoiler" className="accent-red-600" />
-                    Contains spoilers
+              <ActionForm action={createReview} successMessage="Review published." resetOnSuccess className="kin-form-stack">
+                <div className="kin-field">
+                  <label htmlFor={favoriteMovieId} className="kin-label">
+                    Rated movie
                   </label>
+                  <select
+                    id={favoriteMovieId}
+                    name="favoriteMovieId"
+                    required
+                    defaultValue=""
+                    className="kin-input"
+                  >
+                    <option value="" disabled>
+                      Choose a rated movie
+                    </option>
+                    {ratedFavorites.map((movie) => (
+                      <option
+                        key={`${normalizeMediaType(movie.mediaType)}-${movie.movieId}`}
+                        value={mediaKey(movie.mediaType, movie.movieId)}
+                      >
+                        {movie.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                  <SubmitButton pendingLabel="Publishing..." className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition">
-                    Publish Review
-                  </SubmitButton>
-              </form>
+                <div className="kin-field">
+                  <label htmlFor={reviewBodyId} className="kin-label">
+                    Review
+                  </label>
+                  <textarea
+                    id={reviewBodyId}
+                    name="body"
+                    required
+                    maxLength={1200}
+                    rows={6}
+                    placeholder="What stayed with you?"
+                    className="kin-input resize-y"
+                  />
+                </div>
+
+                <fieldset className="kin-field">
+                  <legend className="kin-label">Visibility</legend>
+                  <div className="kin-choice-group">
+                    <label className="kin-choice">
+                      <input type="radio" name="visibility" value="public" defaultChecked />
+                      Public
+                    </label>
+                    <label className="kin-choice">
+                      <input type="radio" name="visibility" value="private" />
+                      Private
+                    </label>
+                  </div>
+                </fieldset>
+
+                <label className="kin-choice">
+                  <input type="checkbox" name="spoiler" />
+                  Contains spoilers
+                </label>
+
+                <SubmitButton pendingLabel="Publishing..." variant="primary" className="w-full">
+                  Publish review
+                </SubmitButton>
+              </ActionForm>
             ) : (
-              <div className="rounded-xl border border-dashed border-white/10 bg-neutral-950/70 p-6 text-center">
-<p className="mb-2 text-sm text-neutral-400">
-                  Your rating lives on each movie page &mdash; tap the stars to rate, then come back here to review it.
-                </p>
-                <Link href="/" className="text-red-500 hover:text-red-400 text-sm hover:underline">
+              <EmptyState
+                compact
+                icon={<MessageSquare className="h-5 w-5" aria-hidden="true" />}
+                title="Rate a movie first"
+                description="Your rating lives on each movie page. Rate a title, then return here to review it."
+              >
+                <Link href="/" className="kin-focus text-sm font-semibold text-highlight underline-offset-4 hover:underline">
                   Browse movies to rate
                 </Link>
-              </div>
+              </EmptyState>
             )}
-          </aside>
+          </FormPanel>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {reviews.length > 0 ? (
-              reviews.map((review) => (
-                <ReviewCard
-                  key={review._id}
-                  review={review}
-                  rating={lookupRating(ratingMaps, review)}
-                  currentUserEmail={currentUserEmail}
-                  path="/reviews"
-                />
-              ))
-            ) : (
-              <div className="md:col-span-2">
+          <section aria-labelledby="reviews-list-heading">
+            <SectionHeader
+              id="reviews-list"
+              eyebrow="Community desk"
+              title="Latest reviews"
+              description={
+                reviews.length > 0
+                  ? `${reviews.length} recent ${reviews.length === 1 ? "review" : "reviews"}`
+                  : "The latest public and personal reviews"
+              }
+            />
+            <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {reviews.length > 0 ? (
+                reviews.map((review) => (
+                  <ReviewCard
+                    key={review._id}
+                    review={review}
+                    rating={lookupRating(ratingMaps, review)}
+                    currentUserEmail={currentUserEmail}
+                    path="/reviews"
+                  />
+                ))
+              ) : (
                 <EmptyState
+                  compact
+                  className="xl:col-span-2"
                   title="No reviews yet"
                   description="Be the first to publish a review."
                 />
-              </div>
-            )}
-          </div>
-        </section>
+              )}
+            </div>
+          </section>
+        </div>
       </PageContainer>
     </div>
   );

@@ -1,23 +1,34 @@
-import Skeleton from "@/components/Skeleton";
 import PageContainer from "@/components/PageContainer";
+import Skeleton from "@/components/Skeleton";
+import SkeletonRegion from "@/components/SkeletonRegion";
 
 export default function Loading() {
   return (
-    <div className="bg-neutral-950 pt-10 pb-16 text-white">
+    <div className="bg-canvas pb-16 pt-6 sm:pt-8">
       <PageContainer width="page">
-        <header className="mb-10">
-          <Skeleton className="mb-3 h-4 w-16" />
-          <Skeleton className="mb-3 h-11 w-72" />
-          <Skeleton className="h-5 w-full max-w-2xl" />
-        </header>
-        <section className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-8">
-          <Skeleton className="h-96 rounded-xl" />
-          <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <Skeleton key={index} className="h-28 w-full rounded-xl" />
-            ))}
+        <SkeletonRegion label="Loading reviews">
+          <div className="border-t border-rule pt-5">
+            <Skeleton className="mb-2 h-3 w-20" />
+            <Skeleton className="h-10 w-72 max-w-full" />
+            <Skeleton className="mt-3 h-4 w-full max-w-2xl" />
           </div>
-        </section>
+          <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+            <Skeleton className="h-[32rem] w-full" />
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="flex min-w-0 gap-4 rounded-sheet border border-rule bg-surface/65 p-4">
+                  <Skeleton className="aspect-2/3 w-20 shrink-0" />
+                  <div className="min-w-0 flex-1 space-y-3 py-1">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-5/6" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SkeletonRegion>
       </PageContainer>
     </div>
   );

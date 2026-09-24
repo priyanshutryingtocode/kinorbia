@@ -1,9 +1,13 @@
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { List, MessageSquare, Star } from "lucide-react";
 import type { Metadata } from "next";
 import PageContainer from "@/components/PageContainer";
+import PageHeader from "@/components/PageHeader";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
+import SpoilerText from "@/components/SpoilerText";
+import FeedTabs from "@/components/FeedTabs";
+import EmptyState from "@/components/EmptyState";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
@@ -11,8 +15,6 @@ import type { MediaType } from "@/types";
 import User from "@/models/User";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
-import FeedTabs from "@/components/FeedTabs";
-import EmptyState from "@/components/EmptyState";
 import { tmdbImage } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
@@ -86,71 +88,158 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
   ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 18);
 
   return (
-    <div className="pt-10 pb-16 text-white">
+    <div className="bg-canvas pt-6 pb-16 sm:pt-8">
       <PageContainer width="standard">
-        <header className="mb-10">
-          <p className="mb-3 text-sm font-bold uppercase tracking-widest text-red-400">Community</p>
-          <h1 className="text-4xl font-bold md:text-5xl">Activity</h1>
-          <p className="mt-3 max-w-2xl text-neutral-400">
-            {isFollowingFeed
+        <PageHeader
+          eyebrow="Community"
+          title="Activity"
+          description={
+            isFollowingFeed
               ? "Fresh reviews and lists from the members you follow."
-              : "Fresh public reviews and lists from KinOrbia members."}
-          </p>
-          <div className="mt-6">
-            <FeedTabs />
-          </div>
-        </header>
+              : "Fresh public reviews and lists from KinOrbia members."
+          }
+        />
+
+        <div className="mt-6">
+          <FeedTabs />
+        </div>
 
         {isFollowingFeed && following.length === 0 ? (
           <EmptyState
+            compact
+            headingLevel={2}
+            className="mt-8"
             title="You are not following anyone yet"
             description="Follow members from their profiles and their reviews and lists will show up here."
           />
         ) : items.length > 0 ? (
-          <div className="space-y-4">
-            {items.map((item) => item.kind === "review" ? (
-              <article key={`review-${item.review._id}`} className="flex gap-4 rounded-lg border border-white/10 bg-neutral-900/50 p-4">
-                <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-md bg-neutral-950">
-                  {tmdbImage(item.review.posterPath, "w185") ? (
-                    <Image src={tmdbImage(item.review.posterPath, "w185") as string} alt={item.review.movieTitle} fill sizes="64px" className="object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-neutral-700">
-                      <MessageSquare className="h-5 w-5" />
+          <ol className="kin-editorial-list mt-8" aria-label="Activity feed">
+            {items.map((item) => {
+              if (item.kind === "review") {
+                const poster = tmdbImage(item.review.posterPath, "w185");
+                const rating = lookupRating(ratingMaps, item.review);
+
+                return (
+                  <li
+                    key={`review-${item.review._id}`}
+                    className="kin-editorial-row gap-4 transition-colors hover:bg-surface/40"
+                  >
+                    <div className="relative h-24 w-16 shrink-0 overflow-hidden bg-surface-raised">
+                      {poster ? (
+                        <TmdbPosterImage
+                          src={poster}
+                          alt={item.review.movieTitle}
+                          fill
+                          sizes="64px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-content-subtle">
+                          <MessageSquare className="h-5 w-5" aria-hidden="true" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-widest text-neutral-500">{item.review.userName} reviewed</p>
-                  <h2 className="mt-1 font-bold">{item.review.movieTitle}</h2>
-                  {lookupRating(ratingMaps, item.review) > 0 && (
-                    <p className="mt-1 flex items-center gap-1 text-sm font-bold text-yellow-400">
-                      <Star className="h-3.5 w-3.5 fill-current" />
-                      {(lookupRating(ratingMaps, item.review) / 2).toFixed(1)} stars
-                    </p>
-                  )}
-                  {item.review.spoiler && (
-                    <span className="mt-2 inline-flex rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-yellow-300">
-                      Spoiler
-                    </span>
-                  )}
-                  <p className={`mt-3 line-clamp-2 text-sm text-neutral-300 ${item.review.spoiler ? "select-none opacity-40 blur-sm" : ""}`}>{item.review.body}</p>
-                </div>
-              </article>
-            ) : (
-              <Link key={`list-${item.list._id}`} href={`/lists/${item.list._id}`} className="block rounded-lg border border-white/10 bg-neutral-900/50 p-4 hover:border-red-500/40">
-                <p className="text-xs uppercase tracking-widest text-neutral-500">{item.list.userName} created a list</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <List className="h-4 w-4 text-red-400" />
-                  <h2 className="font-bold">{item.list.title}</h2>
-                </div>
-                {item.list.description && <p className="mt-3 line-clamp-2 text-sm text-neutral-300">{item.list.description}</p>}
-              </Link>
-            ))}
-          </div>
+                    <article className="min-w-0 flex-1">
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-subtle">
+                        <span className="font-semibold uppercase tracking-overline text-content-muted">
+                          {item.review.userName} reviewed
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <time dateTime={new Date(item.review.createdAt).toISOString()}>
+                          {new Date(item.review.createdAt).toLocaleDateString()}
+                        </time>
+                        {rating > 0 && (
+                          <span
+                            className="inline-flex items-center gap-1 font-semibold text-highlight"
+                            aria-label={`${rating} out of 10`}
+                          >
+                            <Star className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+                            {(rating / 2).toFixed(1)} stars
+                          </span>
+                        )}
+                      </div>
+                      <h2 className="mt-2 break-words font-display text-xl font-medium leading-tight text-content">
+                        {item.review.movieTitle}
+                      </h2>
+                      {item.review.spoiler && (
+                        <span className="mt-2 inline-flex items-center border border-highlight/25 bg-highlight-soft px-2 py-1 text-overline font-medium uppercase tracking-overline text-highlight">
+                          Spoiler
+                        </span>
+                      )}
+                      <div className="mt-3 min-w-0 break-words">
+                        {item.review.spoiler ? (
+                          <SpoilerText text={item.review.body} />
+                        ) : (
+                          <p className="whitespace-pre-wrap break-words text-sm leading-6 text-content-muted">
+                            {item.review.body}
+                          </p>
+                        )}
+                      </div>
+                    </article>
+                  </li>
+                );
+              }
+
+              const poster = tmdbImage(item.list.movies?.[0]?.posterPath, "w185");
+
+              return (
+                <li
+                  key={`list-${item.list._id}`}
+                  className="kin-editorial-row gap-4 transition-colors hover:bg-surface/40"
+                >
+                  <div className="relative h-24 w-16 shrink-0 overflow-hidden bg-surface-raised">
+                    {poster ? (
+                      <TmdbPosterImage
+                        src={poster}
+                        alt=""
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-highlight">
+                        <List className="h-5 w-5" aria-hidden="true" />
+                      </div>
+                    )}
+                  </div>
+                  <Link
+                    href={`/lists/${item.list._id}`}
+                    className="kin-focus group min-w-0 flex-1 py-0.5"
+                  >
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-subtle">
+                      <span className="font-semibold uppercase tracking-overline text-content-muted">
+                        {item.list.userName} created a list
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <time dateTime={new Date(item.list.createdAt).toISOString()}>
+                        {new Date(item.list.createdAt).toLocaleDateString()}
+                      </time>
+                    </div>
+                    <h2 className="mt-2 flex min-w-0 items-start gap-2 break-words font-display text-xl font-medium leading-tight text-content transition-colors group-hover:text-highlight">
+                      <List className="mt-1 h-4 w-4 shrink-0 text-highlight" aria-hidden="true" />
+                      <span className="min-w-0 break-words">{item.list.title}</span>
+                    </h2>
+                    {item.list.description && (
+                      <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-content-muted">
+                        {item.list.description}
+                      </p>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
         ) : (
           <EmptyState
+            compact
+            headingLevel={2}
+            className="mt-8"
             title="Nothing here yet"
-            description={isFollowingFeed ? "Members you follow haven't shared anything recently." : "Be the first to share a review or list."}
+            description={
+              isFollowingFeed
+                ? "Members you follow haven't shared anything recently."
+                : "Be the first to share a review or list."
+            }
           />
         )}
       </PageContainer>

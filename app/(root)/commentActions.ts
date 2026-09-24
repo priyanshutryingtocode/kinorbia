@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { resolveActionArgs, type ActionState } from "@/lib/actionState";
 import dbConnect from "@/lib/dbConnect";
 import Comment from "@/models/Comment";
 import MovieList from "@/models/MovieList";
@@ -11,20 +12,28 @@ import { rateLimit } from "@/lib/rateLimit";
 import { isObjectId } from "@/lib/objectId";
 import { normalizeMediaType } from "@/lib/media";
 
-export async function createComment(formData: FormData) {
+function withState(state: ActionState, status: ActionState["status"], message: string): ActionState {
+  return { ...state, status, message };
+}
+
+export async function createComment(stateOrFormData: ActionState | FormData, formData?: FormData): Promise<ActionState> {
+  const { state, formData: resolvedFormData } = resolveActionArgs(stateOrFormData, formData);
   const { email, name } = await requireUser();
 
   if (!(await rateLimit(`comments:${email}`, { limit: 10, windowMs: 60 * 1000 }))) {
-    return;
+    return withState(state, "error", "You are commenting too quickly. Try again shortly.");
   }
 
-  const parentType = getString(formData, "parentType");
-  const parentId = getString(formData, "parentId");
-  const body = getString(formData, "body");
-  const path = getString(formData, "path");
+  const parentType = getString(resolvedFormData, "parentType");
+  const parentId = getString(resolvedFormData, "parentId");
+  const body = getString(resolvedFormData, "body");
+  const path = getString(resolvedFormData, "path");
 
   if (!["review", "list"].includes(parentType) || !isObjectId(parentId) || !body) {
-    return;
+    return withState(state, "error", "Write a comment before posting.");
+  }
+  if (body.length > 500) {
+    return withState(state, "error", "Comments must be 500 characters or fewer.");
   }
 
   await dbConnect();
@@ -40,19 +49,25 @@ export async function createComment(formData: FormData) {
     } | null>();
 
   if (!parent) {
-    return;
+    return withState(state, "error", "This discussion is no longer available.");
   }
 
+  let comment;
   try {
-    const comment = await Comment.create({
+    comment = await Comment.create({
       parentType,
       parentId,
       userEmail: email,
       userName: name,
       body,
     });
+  } catch (error) {
+    console.error("Error creating comment:", error);
+    return withState(state, "error", "Your comment could not be posted. Please try again.");
+  }
 
-    if (parent.userEmail !== email) {
+  if (parent.userEmail !== email) {
+    try {
       await Notification.create({
         userEmail: parent.userEmail,
         type: "comment",
@@ -65,24 +80,25 @@ export async function createComment(formData: FormData) {
         movieId: parentType === "review" ? parent.movieId || "" : "",
         mediaType: parentType === "review" ? normalizeMediaType(parent.mediaType) : "movie",
       });
+    } catch (error) {
+      console.error("Error creating comment notification:", error);
     }
-  } catch (error) {
-    console.error("Error creating comment:", error);
-    return;
   }
 
   if (path) {
     revalidatePath(path);
   }
+  return withState(state, "success", "Comment posted.");
 }
 
-export async function deleteComment(formData: FormData) {
+export async function deleteComment(stateOrFormData: ActionState | FormData, formData?: FormData): Promise<ActionState> {
+  const { state, formData: resolvedFormData } = resolveActionArgs(stateOrFormData, formData);
   const { email } = await requireUser();
-  const commentId = getString(formData, "commentId");
-  const path = getString(formData, "path");
+  const commentId = getString(resolvedFormData, "commentId");
+  const path = getString(resolvedFormData, "path");
 
   if (!isObjectId(commentId)) {
-    return;
+    return withState(state, "error", "This comment could not be found.");
   }
 
   await dbConnect();
@@ -92,36 +108,38 @@ export async function deleteComment(formData: FormData) {
     );
 
     if (!comment) {
-      return;
+      return withState(state, "error", "This comment is no longer available.");
     }
 
     await Comment.deleteOne({ _id: commentId, userEmail: email });
 
     if (comment.parentId && comment.parentType) {
-      // Scope cleanup to this specific comment so other comments by the same
-      // actor on the same target keep their notifications.
-      await Notification.deleteOne({
-        type: "comment",
-        actorEmail: email,
-        targetType: comment.parentType,
-        targetId: comment.parentId.toString(),
-        commentId,
-      });
-      // Legacy notifications created before commentId existed.
-      await Notification.deleteMany({
-        type: "comment",
-        actorEmail: email,
-        targetType: comment.parentType,
-        targetId: comment.parentId.toString(),
-        commentId: "",
-      });
+      try {
+        await Notification.deleteOne({
+          type: "comment",
+          actorEmail: email,
+          targetType: comment.parentType,
+          targetId: comment.parentId.toString(),
+          commentId,
+        });
+        await Notification.deleteMany({
+          type: "comment",
+          actorEmail: email,
+          targetType: comment.parentType,
+          targetId: comment.parentId.toString(),
+          commentId: "",
+        });
+      } catch (error) {
+        console.error("Error cleaning up comment notification:", error);
+      }
     }
   } catch (error) {
     console.error("Error deleting comment:", error);
-    return;
+    return withState(state, "error", "Your comment could not be deleted. Please try again.");
   }
 
   if (path) {
     revalidatePath(path);
   }
+  return withState(state, "success", "Comment deleted.");
 }

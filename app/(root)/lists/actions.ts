@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { resolveActionArgs, type ActionState } from "@/lib/actionState";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import MovieList from "@/models/MovieList";
@@ -24,45 +25,73 @@ function toListMovie(movie: FavoriteMovie): ListMovie {
 }
 
 function parseMovieRef(value: string) {
-  const [mediaType, ...rest] = value.split(":");
+  const separator = value.indexOf(":");
+  if (separator < 1 || separator === value.length - 1) {
+    return null;
+  }
+
   return {
-    mediaType: normalizeMediaType(mediaType),
-    movieId: rest.join(":"),
+    mediaType: normalizeMediaType(value.slice(0, separator)),
+    movieId: value.slice(separator + 1),
   };
 }
 
-export async function createMovieList(formData: FormData) {
-  const { email, name } = await requireUser();
-
-  const title = getString(formData, "title");
-  const description = getString(formData, "description");
-  const visibility = getString(formData, "visibility") === "private" ? "private" : "public";
-  const movieIds = formData.getAll("movieIds").filter((value): value is string => {
-    return typeof value === "string" && value.length > 0;
+function uniqueFavorites(favorites: FavoriteMovie[]) {
+  const unique = new Map<string, FavoriteMovie>();
+  favorites.forEach((movie) => {
+    const key = mediaKey(movie.mediaType, movie.movieId);
+    if (!unique.has(key)) {
+      unique.set(key, movie);
+    }
   });
-  const refs = movieIds.map(parseMovieRef);
+  return Array.from(unique.values());
+}
+
+export async function createMovieList(
+  stateOrFormData: ActionState | FormData,
+  formData?: FormData
+): Promise<ActionState> {
+  const { formData: resolvedFormData } = resolveActionArgs(stateOrFormData, formData);
+  const { email, name } = await requireUser();
+  const title = getString(resolvedFormData, "title");
+  const description = getString(resolvedFormData, "description");
+  const visibility = getString(resolvedFormData, "visibility") === "private" ? "private" : "public";
+  const selectedKeys = new Set(
+    resolvedFormData
+      .getAll("movieIds")
+      .filter((value): value is string => typeof value === "string" && value.length > 0)
+      .map((value) => {
+        const ref = parseMovieRef(value);
+        return ref ? mediaKey(ref.mediaType, ref.movieId) : null;
+      })
+      .filter((value): value is string => value !== null)
+  );
 
   if (!title) {
-    return;
+    return { status: "error", message: "Add a title for the list." };
+  }
+  if (title.length > 80) {
+    return { status: "error", message: "List titles must be 80 characters or fewer." };
+  }
+  if (description.length > 300) {
+    return { status: "error", message: "Descriptions must be 300 characters or fewer." };
   }
 
-  await dbConnect();
-
   try {
+    await dbConnect();
     const user = await User.findOne({ email }).lean<{
       favorites?: FavoriteMovie[];
     } | null>();
-    const favorites = (user?.favorites || []) as FavoriteMovie[];
+    const favorites = uniqueFavorites((user?.favorites || []) as FavoriteMovie[]);
     const selectedMovies = favorites
-      .filter((movie) =>
-        refs.some(
-          (ref) => ref.movieId === movie.movieId && ref.mediaType === normalizeMediaType(movie.mediaType)
-        )
-      )
+      .filter((movie) => selectedKeys.has(mediaKey(movie.mediaType, movie.movieId)))
       .map(toListMovie);
 
     if (selectedMovies.length > MAX_LIST_MOVIES) {
-      return;
+      return {
+        status: "error",
+        message: `Choose no more than ${MAX_LIST_MOVIES} titles for a list.`,
+      };
     }
 
     await MovieList.create({
@@ -75,34 +104,49 @@ export async function createMovieList(formData: FormData) {
     });
   } catch (error) {
     console.error("Error creating list:", error);
-    return;
+    return { status: "error", message: "The list could not be created. Please try again." };
   }
 
   revalidatePath("/lists");
+  return { status: "success", message: "List created." };
 }
 
-export async function updateMovieList(formData: FormData) {
+export async function updateMovieList(
+  stateOrFormData: ActionState | FormData,
+  formData?: FormData
+): Promise<ActionState> {
+  const { formData: resolvedFormData } = resolveActionArgs(stateOrFormData, formData);
   const { email } = await requireUser();
+  const listId = getString(resolvedFormData, "listId");
+  const title = getString(resolvedFormData, "title");
+  const description = getString(resolvedFormData, "description");
+  const visibility = getString(resolvedFormData, "visibility") === "private" ? "private" : "public";
+  const selectedKeys = new Set(
+    resolvedFormData
+      .getAll("movieIds")
+      .filter((value): value is string => typeof value === "string" && value.length > 0)
+      .map((value) => {
+        const ref = parseMovieRef(value);
+        return ref ? mediaKey(ref.mediaType, ref.movieId) : null;
+      })
+      .filter((value): value is string => value !== null)
+  );
 
-  const listId = getString(formData, "listId");
-  const title = getString(formData, "title");
-  const description = getString(formData, "description");
-  const visibility = getString(formData, "visibility") === "private" ? "private" : "public";
-  const movieIds = formData.getAll("movieIds").filter((value): value is string => {
-    return typeof value === "string" && value.length > 0;
-  });
-  const refs = movieIds.map(parseMovieRef);
-
-  if (!listId || !isObjectId(listId) || !title) {
-    return;
+  if (!listId || !isObjectId(listId)) {
+    return { status: "error", message: "This list could not be found." };
+  }
+  if (!title) {
+    return { status: "error", message: "Add a title for the list." };
+  }
+  if (title.length > 80) {
+    return { status: "error", message: "List titles must be 80 characters or fewer." };
+  }
+  if (description.length > 300) {
+    return { status: "error", message: "Descriptions must be 300 characters or fewer." };
   }
 
-  await dbConnect();
-
   try {
-    // The manage form only renders checkboxes for the user's *current*
-    // favorites. Movies that were un-favorited since the list was created
-    // must be preserved rather than silently dropped on save.
+    await dbConnect();
     const [user, existing] = await Promise.all([
       User.findOne({ email }).lean<{ favorites?: FavoriteMovie[] } | null>(),
       MovieList.findOne({ _id: listId, userEmail: email })
@@ -110,62 +154,83 @@ export async function updateMovieList(formData: FormData) {
         .lean<{ movies?: ListMovie[] } | null>(),
     ]);
 
-    const favorites = (user?.favorites || []) as FavoriteMovie[];
+    if (!existing) {
+      return { status: "error", message: "This list could not be found." };
+    }
+
+    const favorites = uniqueFavorites((user?.favorites || []) as FavoriteMovie[]);
     const favoriteKeys = new Set(
       favorites.map((movie) => mediaKey(movie.mediaType, movie.movieId))
     );
-    const selectedKeys = new Set(refs.map((ref) => `${ref.mediaType}:${ref.movieId}`));
-
     const selectedMovies = favorites
-      .filter((movie) =>
-        selectedKeys.has(mediaKey(movie.mediaType, movie.movieId))
-      )
+      .filter((movie) => selectedKeys.has(mediaKey(movie.mediaType, movie.movieId)))
       .map(toListMovie);
-
-    // Keep list entries that are no longer favorites (they aren't shown in
-    // the form, so their absence is not an explicit removal).
-    const preserved = (existing?.movies || []).filter(
+    const preserved = (existing.movies || []).filter(
       (movie) => !favoriteKeys.has(mediaKey(movie.mediaType, movie.movieId))
     );
-
     const mergedMovies = [...preserved, ...selectedMovies];
+
     if (mergedMovies.length > MAX_LIST_MOVIES) {
-      return;
+      return {
+        status: "error",
+        message: `Lists can contain no more than ${MAX_LIST_MOVIES} titles.`,
+      };
     }
 
-    await MovieList.updateOne(
+    const result = await MovieList.updateOne(
       { _id: listId, userEmail: email },
       { $set: { title, description, visibility, movies: mergedMovies } }
     );
+
+    if (result.matchedCount !== 1) {
+      return { status: "error", message: "This list could not be found." };
+    }
   } catch (error) {
     console.error("Error updating list:", error);
-    return;
+    return { status: "error", message: "The list could not be updated. Please try again." };
   }
 
   revalidatePath("/lists");
   revalidatePath(`/lists/${listId}`);
   revalidatePath("/profile");
+  return { status: "success", message: "List updated." };
 }
 
-export async function deleteMovieList(formData: FormData) {
+export async function deleteMovieList(
+  stateOrFormData: ActionState | FormData,
+  formData?: FormData
+): Promise<ActionState> {
+  const { formData: resolvedFormData } = resolveActionArgs(stateOrFormData, formData);
   const { email } = await requireUser();
+  const listId = getString(resolvedFormData, "listId");
 
-  const listId = getString(formData, "listId");
   if (!listId || !isObjectId(listId)) {
-    return;
+    return { status: "error", message: "This list could not be found." };
   }
 
   try {
     await dbConnect();
-    await MovieList.deleteOne({ _id: listId, userEmail: email });
-    await Comment.deleteMany({ parentType: "list", parentId: listId });
-    await Notification.deleteMany({ targetType: "list", targetId: listId });
+    const result = await MovieList.deleteOne({ _id: listId, userEmail: email });
+
+    if (result.deletedCount !== 1) {
+      return { status: "error", message: "This list could not be found." };
+    }
+
+    try {
+      await Promise.all([
+        Comment.deleteMany({ parentType: "list", parentId: listId }),
+        Notification.deleteMany({ targetType: "list", targetId: listId }),
+      ]);
+    } catch (error) {
+      console.error("Error cleaning up deleted list data:", error);
+    }
   } catch (error) {
     console.error("Error deleting list:", error);
-    return;
+    return { status: "error", message: "The list could not be deleted. Please try again." };
   }
 
   revalidatePath("/lists");
   revalidatePath(`/lists/${listId}`);
   revalidatePath("/profile");
+  return { status: "success", message: "List deleted." };
 }

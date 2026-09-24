@@ -1,9 +1,9 @@
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import Comment from "@/models/Comment";
+import type { CommentItem } from "@/types";
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
-import type { CommentItem } from "@/types";
 
 type RawComment = {
   _id: { toString: () => string };
@@ -44,16 +44,16 @@ export default async function CommentSection({ parentType, parentId, path }: Com
   }
 
   return (
-    <div className="mt-4">
+    <section className="mt-5 border-t border-rule pt-4" aria-label="Comments">
       {comments.length > 0 && (
         <div className="mb-3">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
-            Comments ({comments.length})
-          </p>
+          <h3 className="font-display text-base font-medium text-content">
+            Comments <span className="text-content-subtle">({comments.length})</span>
+          </h3>
           <CommentList comments={comments} currentUserEmail={currentUserEmail} path={path} />
         </div>
       )}
       {currentUserEmail && <CommentForm parentType={parentType} parentId={parentId} path={path} />}
-    </div>
+    </section>
   );
 }

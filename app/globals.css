@@ -82,6 +82,15 @@ html {
 }
 
 @layer base {
+  fieldset {
+    border: 0;
+    padding: 0;
+  }
+
+  legend {
+    padding: 0;
+  }
+
   body {
     display: flex;
     min-height: 100dvh;
@@ -92,6 +101,11 @@ html {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent-hover);
+    outline-offset: 2px;
   }
 }
 
@@ -225,6 +239,59 @@ html {
 
   .kin-overline {
     @apply text-overline font-medium uppercase tracking-overline;
+  }
+
+  .kin-form-stack {
+    @apply space-y-4;
+  }
+
+  .kin-field {
+    @apply space-y-1.5;
+  }
+
+  .kin-label,
+  .kin-form-label {
+    @apply block text-xs font-medium uppercase tracking-[0.12em] text-content-muted;
+  }
+
+  .kin-choice-group {
+    @apply grid gap-2 sm:grid-cols-2;
+  }
+
+  .kin-choice {
+    @apply flex min-h-10 cursor-pointer items-center gap-2.5 rounded-control border border-rule bg-surface-raised px-3 py-2 text-sm text-content transition-colors hover:border-rule-strong hover:bg-surface;
+  }
+
+  .kin-choice > input {
+    accent-color: var(--accent);
+  }
+
+  .kin-choice:has(input:checked) {
+    border-color: rgba(220, 38, 38, 0.45);
+    background: rgba(220, 38, 38, 0.08);
+  }
+
+  .kin-choice:has(input:focus-visible) {
+    outline: 2px solid var(--accent-hover);
+    outline-offset: 2px;
+  }
+
+  .kin-choice:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .kin-panel,
+  .kin-compact-panel {
+    @apply rounded-sheet border border-rule bg-surface/70 p-4;
+  }
+
+  .kin-editorial-list {
+    @apply divide-y divide-rule border-y border-rule;
+  }
+
+  .kin-editorial-row {
+    @apply flex min-w-0 items-start gap-3 py-3;
   }
 
   .kin-input {

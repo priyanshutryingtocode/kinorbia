@@ -20,6 +20,9 @@ export default function SocialActionButton({
   path,
 }: SocialActionButtonProps) {
   const Icon = action === "like" ? Heart : Bookmark;
+  const target = type === "review" ? "review" : "list";
+  const verb = action === "like" ? "Like" : "Save";
+  const countLabel = count > 0 ? `, ${count} ${action === "like" ? (count === 1 ? "like" : "likes") : count === 1 ? "save" : "saves"}` : "";
 
   return (
     <form action={toggleSocialAction}>
@@ -29,16 +32,19 @@ export default function SocialActionButton({
       <input type="hidden" name="path" value={path} />
       <SubmitButton
         pendingLabel="..."
-        className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+        variant="quiet"
+        aria-label={`${verb} this ${target}${countLabel}`}
+        aria-pressed={active}
+        className={`min-h-8 gap-1.5 rounded-control border px-2.5 py-1.5 text-xs ${
           active
             ? action === "like"
-              ? "border-red-500/30 bg-red-500/10 text-red-300"
-              : "border-blue-500/30 bg-blue-500/10 text-blue-300"
-            : "border-white/10 bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white"
+              ? "border-accent/30 bg-accent/10 text-red-300 hover:text-red-200"
+              : "border-highlight/30 bg-highlight-soft text-highlight hover:text-highlight"
+            : "border-rule text-content-subtle hover:text-content"
         }`}
       >
-        <Icon className={`h-3.5 w-3.5 ${active ? "fill-current" : ""}`} />
-        {count}
+        <Icon className={`h-3.5 w-3.5 ${active ? "fill-current" : ""}`} aria-hidden="true" />
+        <span aria-hidden="true">{count}</span>
       </SubmitButton>
     </form>
   );

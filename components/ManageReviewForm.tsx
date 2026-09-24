@@ -1,51 +1,66 @@
 import { updateReview, deleteReview } from "@/app/(root)/reviews/actions";
-import SubmitButton from "./SubmitButton";
 import type { ReviewItem } from "@/types";
+import ActionForm from "./ActionForm";
+import SubmitButton from "./SubmitButton";
 
 export default function ManageReviewForm({ review }: { review: ReviewItem }) {
+  const bodyId = `review-body-${review._id}`;
+  const visibilityId = `review-visibility-${review._id}`;
+
   return (
-    <details className="mt-4 border-t border-white/10 pt-4">
-      <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white">
-        Manage
+    <details className="mt-4 border-t border-rule pt-3">
+      <summary className="kin-focus w-fit cursor-pointer rounded-control text-overline font-medium uppercase tracking-overline text-content-muted transition-colors hover:text-highlight">
+        Manage review
       </summary>
-      <form action={updateReview} className="mt-4 space-y-3">
+      <ActionForm action={updateReview} successMessage="Review updated." className="kin-form-stack mt-3">
         <input type="hidden" name="reviewId" value={review._id} />
-        <textarea
-          name="body"
-          required
-          maxLength={1200}
-          rows={4}
-          defaultValue={review.body}
-          className="w-full resize-none rounded-lg border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-white focus:border-red-500 focus:outline-none"
-        />
-        <select
-          name="visibility"
-          defaultValue={review.visibility}
-          className="w-full rounded-lg border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-white focus:border-red-500 focus:outline-none"
-        >
-          <option value="public">Public</option>
-          <option value="private">Private</option>
-        </select>
-        <label className="flex items-center gap-2 text-sm text-neutral-300">
-          <input type="checkbox" name="spoiler" defaultChecked={review.spoiler} className="accent-red-600" />
+        <div className="kin-field">
+          <label htmlFor={bodyId} className="kin-label">
+            Review
+          </label>
+          <textarea
+            id={bodyId}
+            name="body"
+            required
+            maxLength={1200}
+            rows={4}
+            defaultValue={review.body}
+            className="kin-input resize-y"
+          />
+        </div>
+        <div className="kin-field">
+          <label htmlFor={visibilityId} className="kin-label">
+            Visibility
+          </label>
+          <select
+            id={visibilityId}
+            name="visibility"
+            defaultValue={review.visibility}
+            className="kin-input"
+          >
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
+        </div>
+        <label className="kin-choice">
+          <input type="checkbox" name="spoiler" defaultChecked={review.spoiler} />
           Contains spoilers
         </label>
-        <SubmitButton
-          pendingLabel="Saving..."
-          className="w-full rounded-lg bg-white/10 py-2 font-bold text-white transition hover:bg-white/15"
-        >
-          Save Review
+        <SubmitButton pendingLabel="Saving..." variant="secondary" className="w-full sm:w-auto">
+          Save review
         </SubmitButton>
-      </form>
-      <form action={deleteReview} className="mt-2">
+      </ActionForm>
+      <ActionForm action={deleteReview} successMessage="Review deleted." className="mt-3">
         <input type="hidden" name="reviewId" value={review._id} />
         <SubmitButton
           pendingLabel="Deleting..."
-          className="w-full rounded-lg border border-red-500/30 py-2 font-bold text-red-300 transition hover:bg-red-500/10"
+          variant="danger"
+          confirmText="Delete this review?"
+          className="w-full sm:w-auto"
         >
-          Delete Review
+          Delete review
         </SubmitButton>
-      </form>
+      </ActionForm>
     </details>
   );
 }

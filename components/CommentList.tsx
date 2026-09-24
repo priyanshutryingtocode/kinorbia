@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { deleteComment } from "@/app/(root)/commentActions";
-import SubmitButton from "./SubmitButton";
+import ActionForm from "./ActionForm";
 import type { CommentItem } from "@/types";
+import SubmitButton from "./SubmitButton";
 
 type CommentListProps = {
   comments: CommentItem[];
@@ -25,38 +26,43 @@ export default function CommentList({ comments, currentUserEmail, path }: Commen
   const hiddenCount = comments.length - visible.length;
 
   return (
-    <div className="space-y-2">
-      {visible.map((comment) => (
-        <div key={comment._id} className="rounded-lg border border-white/10 bg-neutral-950/60 px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-bold text-neutral-400">
-              {comment.userName}
-              <span className="ml-2 font-normal text-neutral-600">
-                {new Date(comment.createdAt).toLocaleDateString()}
-              </span>
-            </p>
-            {comment.userEmail === currentUserEmail && (
-              <form action={deleteComment}>
-                <input type="hidden" name="commentId" value={comment._id} />
-                <input type="hidden" name="path" value={path} />
-                <SubmitButton
-                  pendingLabel="..."
-                  className="p-1 text-neutral-600 transition hover:text-red-400"
-                  aria-label="Delete comment"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </SubmitButton>
-              </form>
-            )}
-          </div>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-200">{comment.body}</p>
-        </div>
-      ))}
+    <div>
+      <ol className="kin-editorial-list">
+        {visible.map((comment) => (
+          <li key={comment._id} className="kin-editorial-row">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 text-xs">
+                  <span className="font-semibold text-content">{comment.userName}</span>
+                  <time className="ml-2 text-content-subtle" dateTime={comment.createdAt}>
+                    {new Date(comment.createdAt).toLocaleDateString()}
+                  </time>
+                </p>
+                {comment.userEmail === currentUserEmail && (
+                  <ActionForm action={deleteComment} successMessage="Comment deleted." className="shrink-0">
+                    <input type="hidden" name="commentId" value={comment._id} />
+                    <input type="hidden" name="path" value={path} />
+                    <SubmitButton
+                      pendingLabel="..."
+                      variant="quiet"
+                      className="min-h-8 px-2 text-content-subtle hover:text-red-300"
+                      aria-label={`Delete comment by ${comment.userName}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    </SubmitButton>
+                  </ActionForm>
+                )}
+              </div>
+              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-content-muted [overflow-wrap:anywhere]">{comment.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
       {hiddenCount > 0 && (
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-red-400 transition"
+          className="kin-focus mt-2 rounded-control text-xs font-medium text-content-muted transition-colors hover:text-highlight"
         >
           Show {hiddenCount} more {hiddenCount === 1 ? "comment" : "comments"}
         </button>
