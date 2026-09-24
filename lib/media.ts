@@ -9,7 +9,33 @@ export function mediaKey(mediaType: string | null | undefined, id: string | numb
 }
 
 export function tmdbImage(path: string | null | undefined, size: string) {
-  return path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
+  const value = path?.trim();
+  if (!value) {
+    return null;
+  }
+
+  const candidate = value.startsWith("//") ? `https:${value}` : value;
+
+  if (/^https?:\/\//i.test(candidate)) {
+    try {
+      const url = new URL(candidate);
+      if (url.hostname !== "image.tmdb.org") {
+        return null;
+      }
+
+      const match = url.pathname.match(/^\/t\/p\/[^/]+\/(.+)$/);
+      if (!match) {
+        return null;
+      }
+
+      return `https://image.tmdb.org/t/p/${size}/${match[1]}`;
+    } catch {
+      return null;
+    }
+  }
+
+  const relative = value.replace(/^\/+/, "").replace(/^t\/p\/[^/]+\//, "");
+  return relative ? `https://image.tmdb.org/t/p/${size}/${relative}` : null;
 }
 
 export function mediaMatch(mediaType: MediaType) {

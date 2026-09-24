@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import PageContainer from "@/components/PageContainer";
 import { Film, Search } from "lucide-react";
 import type { Metadata } from "next";
 import SearchHistory from "@/components/SearchHistory";
@@ -120,8 +121,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   });
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white px-6 py-12">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-neutral-950 pt-10 pb-16 text-white">
+      <PageContainer width="page">
         <header className="mb-10">
           <p className="text-gold text-xs font-bold uppercase tracking-[0.18em] mb-3">
             Search
@@ -315,7 +316,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </div>
           </>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }

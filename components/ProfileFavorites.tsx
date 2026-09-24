@@ -80,6 +80,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
           <MovieCard
             key={mediaKey(favorite.mediaType, favorite.movieId)}
             index={index}
+            safeImage
             movie={{
               id: favorite.movieId,
               title: favorite.title,

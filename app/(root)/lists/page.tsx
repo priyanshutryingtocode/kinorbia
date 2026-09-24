@@ -11,6 +11,7 @@ import type { FavoriteMovie } from "@/types";
 import SubmitButton from "@/components/SubmitButton";
 import SocialActionButton from "@/components/SocialActionButton";
 import EmptyState from "@/components/EmptyState";
+import PageContainer from "@/components/PageContainer";
 import { serializeList, type RawMovieList } from "@/lib/serialize";
 import { normalizeMediaType, mediaKey, tmdbImage } from "@/lib/media";
 import type { Metadata } from "next";
@@ -47,8 +48,8 @@ export default async function ListsPage() {
   const favorites = (user?.favorites || []) as FavoriteMovie[];
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white px-6 py-12">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-neutral-950 pt-10 pb-16 text-white">
+      <PageContainer width="page">
         <header className="mb-10">
           <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
             Collections
@@ -316,7 +317,7 @@ export default async function ListsPage() {
             )}
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   );
 }

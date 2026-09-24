@@ -3,7 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 
 const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])';
 
 type AccessibleDialogProps = {
   open: boolean;
@@ -12,6 +12,12 @@ type AccessibleDialogProps = {
   children: ReactNode;
   className?: string;
 };
+
+function getFocusableElements(container: HTMLElement) {
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+    (element) => !element.hasAttribute("disabled") && element.getAttribute("aria-hidden") !== "true" && element.getClientRects().length > 0,
+  );
+}
 
 export default function AccessibleDialog({
   open,
@@ -36,8 +42,8 @@ export default function AccessibleDialog({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const focusable = panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
-    focusable?.[0]?.focus();
+    const focusable = panelRef.current ? getFocusableElements(panelRef.current) : [];
+    (focusable[0] ?? panelRef.current)?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -49,15 +55,19 @@ export default function AccessibleDialog({
         return;
       }
 
-      const elements = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+      const elements = getFocusableElements(panelRef.current);
       if (elements.length === 0) {
         event.preventDefault();
+        panelRef.current.focus();
         return;
       }
 
       const first = elements[0];
       const last = elements[elements.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (!elements.includes(document.activeElement as HTMLElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -79,18 +89,15 @@ export default function AccessibleDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/85 backdrop-blur-sm"
-        aria-hidden="true"
-        onMouseDown={() => onCloseRef.current()}
-      />
+    <div className="shell-overlay p-4">
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" aria-hidden="true" onMouseDown={() => onCloseRef.current()} />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`trailer-panel relative max-h-[90svh] w-full overflow-y-auto rounded-panel border border-white/10 bg-neutral-950 p-6 shadow-2xl ${className}`}
+        tabIndex={-1}
+        className={`shell-overlay-panel relative max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-overlay border border-rule bg-canvas p-6 shadow-2xl focus:outline-none ${className}`}
       >
         {children}
       </div>

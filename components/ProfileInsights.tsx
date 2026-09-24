@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import Image from "next/image";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
 import Link from "next/link";
 import { BarChart3, Clapperboard, Film, Star, TrendingUp } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
@@ -429,7 +429,7 @@ export default function ProfileInsights({
                     >
                       <div className="relative aspect-2/3 overflow-hidden bg-neutral-900">
                         {tmdbImage(item.posterPath, "w185") ? (
-                          <Image
+                          <TmdbPosterImage
                             src={tmdbImage(item.posterPath, "w185") as string}
                             alt={item.title}
                             fill

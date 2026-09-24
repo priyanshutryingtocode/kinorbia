@@ -1,4 +1,4 @@
-import Image from "next/image";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, Minus, Users } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
@@ -109,7 +109,7 @@ export default async function ProfileCommunityComparison({
                     <div className="flex min-w-0 items-center gap-3">
                       {poster && (
                         <div className="relative h-12 w-8 shrink-0 overflow-hidden bg-neutral-900">
-                          <Image src={poster} alt="" fill sizes="32px" className="object-cover" />
+                          <TmdbPosterImage src={poster} alt="" fill sizes="32px" className="object-cover" />
                         </div>
                       )}
                       <div className="min-w-0">

@@ -1,9 +1,10 @@
+import PageContainer from "@/components/PageContainer";
 import { Film, Heart, ListVideo, NotebookTabs, Star } from "lucide-react";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-neutral-950 text-white px-6 py-16">
-      <div className="max-w-5xl mx-auto">
+    <div className="bg-neutral-950 pt-10 pb-16 text-white">
+      <PageContainer width="standard">
         <header className="mb-12">
           <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
             About
@@ -53,7 +54,7 @@ export default function AboutPage() {
             </article>
           ))}
         </section>
-      </div>
+      </PageContainer>
     </div>
   );
 }

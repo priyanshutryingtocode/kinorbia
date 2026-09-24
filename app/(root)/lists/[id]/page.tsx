@@ -8,6 +8,7 @@ import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import SocialActionButton from "@/components/SocialActionButton";
 import CommentSection from "@/components/CommentSection";
+import PageContainer from "@/components/PageContainer";
 import { serializeList, type RawMovieList } from "@/lib/serialize";
 import { normalizeMediaType, tmdbImage } from "@/lib/media";
 
@@ -43,8 +44,8 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
   const list = serializeList(rawList);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white px-6 py-12">
-      <div className="max-w-6xl mx-auto">
+    <div className="bg-neutral-950 pt-10 pb-16 text-white">
+      <PageContainer width="frame">
         <Link href="/lists" className="text-sm text-neutral-400 hover:text-red-400 transition">
           Back to lists
         </Link>
@@ -138,7 +139,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
             <CommentSection parentType="list" parentId={list._id} path={`/lists/${list._id}`} />
           </div>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }

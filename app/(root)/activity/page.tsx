@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { List, MessageSquare, Star } from "lucide-react";
 import type { Metadata } from "next";
+import PageContainer from "@/components/PageContainer";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
@@ -85,8 +86,8 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
   ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 18);
 
   return (
-    <div className="min-h-screen px-6 py-12 text-white">
-      <div className="mx-auto max-w-5xl">
+    <div className="pt-10 pb-16 text-white">
+      <PageContainer width="standard">
         <header className="mb-10">
           <p className="mb-3 text-sm font-bold uppercase tracking-widest text-red-400">Community</p>
           <h1 className="text-4xl font-bold md:text-5xl">Activity</h1>
@@ -152,7 +153,7 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
             description={isFollowingFeed ? "Members you follow haven't shared anything recently." : "Be the first to share a review or list."}
           />
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import Skeleton from "@/components/Skeleton";
+import PageContainer from "@/components/PageContainer";
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-neutral-950 text-white px-6 py-12">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-neutral-950 pt-10 pb-16 text-white">
+      <PageContainer width="page">
         <header className="mb-10">
           <Skeleton className="mb-3 h-4 w-20" />
           <Skeleton className="mb-3 h-11 w-64" />
@@ -14,7 +15,7 @@ export default function Loading() {
             <Skeleton key={index} className="h-40 w-full rounded-xl" />
           ))}
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }

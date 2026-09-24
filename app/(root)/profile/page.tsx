@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
+import PageContainer from "@/components/PageContainer";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Download, ExternalLink, Film } from "lucide-react";
@@ -102,7 +103,7 @@ function JournalCard({ item }: { item: JournalItem }) {
     <>
       <div className="relative aspect-2/3 bg-neutral-900">
         {poster ? (
-          <Image src={poster} alt={item.movieTitle} fill sizes="(min-width: 768px) 20vw, 45vw" className="object-cover" />
+          <TmdbPosterImage src={poster} alt={item.movieTitle} fill sizes="(min-width: 768px) 20vw, 45vw" className="object-cover" />
         ) : (
           <div className="flex h-full items-center justify-center text-neutral-700"><Film className="h-8 w-8" /></div>
         )}
@@ -202,6 +203,7 @@ function WatchlistGrid({ items }: { items: WatchlistMovie[] }) {
         <MovieCard
           key={mediaKey(movie.mediaType, movie.movieId)}
           index={index}
+          safeImage
           movie={{
             id: movie.movieId,
             title: movie.title,
@@ -296,8 +298,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   const relationships = await relationshipPromise;
   return (
-    <div className="min-h-screen px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
-      <div className="mx-auto max-w-6xl">
+    <div className="pb-20 pt-6 sm:pt-8">
+      <PageContainer width="frame">
         <ProfileHeader
           name={identity.name || sessionName || "KinOrbia user"}
           username={identity.username}
@@ -317,7 +319,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         </div>
 
         <div className="mt-8">{panel}</div>
-      </div>
+      </PageContainer>
     </div>
   );
 }

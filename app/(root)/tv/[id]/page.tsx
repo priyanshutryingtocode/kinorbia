@@ -15,6 +15,7 @@ import type { Metadata } from "next";
 import SimilarMedia from "@/components/SimilarMedia";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import TrailerButton from "@/components/TrailerButton";
+import PageContainer from "@/components/PageContainer";
 import { getTvWithStatus, getTvCredits, getTvVideos, pickMainTrailer } from "@/lib/tmdb";
 import { normalizeMediaType } from "@/lib/media";
 
@@ -115,7 +116,7 @@ export default async function TvPage({ params }: Props) {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-20 text-white">
+    <div className="relative overflow-hidden pb-20 text-white">
       <div className="absolute inset-x-0 top-0 h-[55svh] opacity-50 sm:h-[70svh] lg:h-svh">
         {tv.backdrop_path && (
           <Image
@@ -131,8 +132,8 @@ export default async function TvPage({ params }: Props) {
         <div className="film-grain absolute inset-0" aria-hidden />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 pt-28 sm:px-6 sm:pt-32">
-        <div className="grid gap-8 lg:grid-cols-[minmax(260px,360px)_1fr] lg:gap-12">
+      <PageContainer width="frame" className="relative pt-28 sm:pt-32">
+        <div className="relative grid gap-8 lg:grid-cols-[minmax(260px,360px)_1fr] lg:gap-12">
           <div className="mx-auto w-full max-w-67.5 sm:max-w-82.5 lg:max-w-none">
             {tv.poster_path ? (
               <Image
@@ -243,7 +244,7 @@ export default async function TvPage({ params }: Props) {
         <Suspense fallback={null}>
           <SimilarMedia id={id} mediaType="tv" />
         </Suspense>
-      </div>
+      </PageContainer>
     </div>
   );
 }

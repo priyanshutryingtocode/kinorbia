@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Info, XCircle } from "lucide-react";
 
 type ToastType = "success" | "error" | "info";
@@ -19,9 +19,10 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const nextId = useRef(0);
 
   const showToast = useCallback((message: string, type: ToastType = "info") => {
-    const id = Date.now();
+    const id = ++nextId.current;
     setToasts((current) => [...current, { id, message, type }].slice(-4));
     window.setTimeout(() => {
       setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -34,14 +35,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div
-        className="fixed right-5 top-24 z-200 flex w-[calc(100vw-2.5rem)] max-w-sm flex-col gap-3"
+        className="shell-toast-region pointer-events-none flex flex-col gap-3"
         aria-live="polite"
         aria-atomic="false"
       >
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className="flex items-start gap-3 rounded-xl border border-white/10 bg-neutral-950/85 px-4 py-3 text-sm text-white shadow-2xl shadow-black/50 backdrop-blur-xl"
+            className="flex items-start gap-3 rounded-control border border-rule bg-canvas/90 px-4 py-3 text-sm text-content shadow-float backdrop-blur-xl"
           >
             {toast.type === "success" ? (
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
@@ -50,7 +51,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             ) : (
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
             )}
-            <span className="leading-relaxed text-neutral-100">{toast.message}</span>
+            <span className="leading-relaxed text-content">{toast.message}</span>
           </div>
         ))}
       </div>

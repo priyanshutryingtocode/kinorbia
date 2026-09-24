@@ -10,8 +10,14 @@ export default function MainLayout({
 }>) {
   return (
     <>
+      <a
+        href="#main"
+        className="kin-focus sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-control focus:bg-content focus:px-4 focus:py-2 focus:text-canvas focus:outline-none"
+      >
+        Skip to content
+      </a>
       <Navbar />
-      <main id="main" className="relative z-0 mt-20 flex-1">
+      <main id="main" tabIndex={-1} className="shell-main focus:outline-none">
         {children}
       </main>
       <Footer />

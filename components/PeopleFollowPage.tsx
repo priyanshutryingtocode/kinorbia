@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import PeopleList from "@/components/PeopleList";
+import PageContainer from "@/components/PageContainer";
 
 const PEOPLE_PER_PAGE = 24;
 
@@ -140,8 +141,8 @@ export default async function PeopleFollowPage({
   const path = `/u/${encodeURIComponent(username)}/${mode}`;
 
   return (
-    <div className="min-h-screen px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
-      <div className="mx-auto max-w-5xl">
+    <div className="pb-20 pt-6 sm:pt-8">
+      <PageContainer width="standard">
         <Link
           href={`/u/${encodeURIComponent(username)}`}
           className="kin-focus group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-400 transition-colors hover:text-gold"
@@ -171,7 +172,7 @@ export default async function PeopleFollowPage({
           emptyTitle={copy.emptyTitle}
           emptyDescription={copy.emptyDescription}
         />
-      </div>
+      </PageContainer>
     </div>
   );
 }

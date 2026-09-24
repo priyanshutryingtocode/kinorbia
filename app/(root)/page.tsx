@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import PageContainer from "@/components/PageContainer";
 import MovieCard from "@/components/MovieCard";
 import LoadMore from "@/components/LoadMore";
 import GenreFilter from "@/components/GenreFilter";
@@ -18,8 +19,8 @@ export default async function Home({ searchParams }: Props) {
   const movies = await fetchMovies(1, genre);
 
   return (
-    <main className="min-h-screen px-6 pt-24 pb-20">
-      <div className="max-w-7xl mx-auto">
+    <div className="pt-10 pb-16">
+      <PageContainer width="page">
 
         {!genre && (
           <Suspense fallback={<RecommendationsSkeleton />}>
@@ -59,7 +60,7 @@ export default async function Home({ searchParams }: Props) {
 
         {movies.length > 0 && <LoadMore key={genre || "all"} genre={genre} />}
 
-      </div>
-    </main>
+      </PageContainer>
+    </div>
   );
 }

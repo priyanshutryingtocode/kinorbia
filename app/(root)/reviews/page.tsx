@@ -4,6 +4,7 @@ import { MessageSquare } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import EmptyState from "@/components/EmptyState";
+import PageContainer from "@/components/PageContainer";
 import dbConnect from "@/lib/dbConnect";
 import { buildReviewerRatingMaps, dedupeFavorites, lookupRating } from "@/lib/reviewRatings";
 import Review from "@/models/Review";
@@ -49,8 +50,8 @@ export default async function ReviewsPage() {
   const ratedFavorites = favorites.filter((movie) => (movie.personalRating || 0) > 0);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white px-6 py-12">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-neutral-950 pt-10 pb-16 text-white">
+      <PageContainer width="page">
         <header className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
           <div>
             <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
@@ -178,7 +179,7 @@ export default async function ReviewsPage() {
             )}
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   );
 }

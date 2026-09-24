@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { BookOpen, CalendarDays } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
+import PageContainer from "@/components/PageContainer";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
@@ -43,8 +44,8 @@ export default async function JournalPage() {
   const entries = rawEntries.map(serializeJournalEntry);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white px-6 py-12">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-neutral-950 pt-10 pb-16 text-white">
+      <PageContainer width="page">
         <header className="mb-10">
           <p className="text-red-500 text-sm font-bold uppercase tracking-widest mb-3">
             Personal
@@ -204,7 +205,7 @@ export default async function JournalPage() {
             )}
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   );
 }

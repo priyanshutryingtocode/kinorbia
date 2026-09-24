@@ -1,3 +1,4 @@
+import PageContainer from "@/components/PageContainer";
 import MovieCard, { MovieProp } from "@/components/MovieCard";
 import LoadMore from "@/components/LoadMore";
 import GenreFilter from "@/components/GenreFilter";
@@ -21,8 +22,8 @@ export default async function Shows({ searchParams }: Props) {
   const shows: MovieProp[] = await fetchTvShows(1, genre);
 
   return (
-    <main className="min-h-screen px-6 pt-24 pb-20">
-      <div className="max-w-7xl mx-auto">
+    <div className="pt-10 pb-16">
+      <PageContainer width="page">
         <div className="mb-8 max-w-3xl">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-gold">
             KinOrbia Picks
@@ -54,7 +55,7 @@ export default async function Shows({ searchParams }: Props) {
         )}
 
         {shows.length > 0 && <LoadMore key={genre || "all"} genre={genre} mediaType="tv" />}
-      </div>
-    </main>
+      </PageContainer>
+    </div>
   );
 }

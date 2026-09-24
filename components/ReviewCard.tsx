@@ -1,4 +1,4 @@
-import Image from "next/image";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
 import { MessageSquare, Star } from "lucide-react";
 import type { ReviewItem } from "@/types";
 import SocialActionButton from "./SocialActionButton";
@@ -33,7 +33,7 @@ export default function ReviewCard({
     <article className="flex overflow-hidden rounded-xl border border-white/10 bg-neutral-900/50">
       <div className="relative w-24 shrink-0 bg-neutral-900 sm:w-32">
         {tmdbImage(review.posterPath, "w342") ? (
-          <Image
+          <TmdbPosterImage
             src={tmdbImage(review.posterPath, "w342") as string}
             alt={review.movieTitle}
             fill

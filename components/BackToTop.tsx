@@ -13,16 +13,22 @@ export default function BackToTop() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  if (!visible) {
+    return null;
+  }
+
   return (
     <button
+      data-back-to-top
       type="button"
       aria-label="Back to top"
-      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className={`fixed left-5 top-24 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-neutral-900/80 text-neutral-300 shadow-lg backdrop-blur transition hover:border-red-500/40 hover:text-white ${
-        visible ? "opacity-100" : "pointer-events-none opacity-0"
-      }`}
+      onClick={() => {
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+      }}
+      className="back-to-top kin-focus flex h-11 w-11 items-center justify-center rounded-full border border-rule bg-surface/90 text-content-muted shadow-lg backdrop-blur transition hover:border-accent/40 hover:text-content"
     >
-      <ArrowUp className="h-5 w-5" />
+      <ArrowUp className="h-5 w-5" aria-hidden="true" />
     </button>
   );
 }

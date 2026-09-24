@@ -1,4 +1,5 @@
-import Image from "next/image";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
+import PageContainer from "@/components/PageContainer";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { User as UserIcon } from "lucide-react";
@@ -111,8 +112,8 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   const isFollowing = Boolean(currentUser?.following?.some((email) => email.toLowerCase() === targetEmail));
 
   return (
-    <div className="min-h-screen px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
-      <div className="mx-auto max-w-6xl">
+    <div className="pb-20 pt-6 sm:pt-8">
+      <PageContainer width="frame">
         <ProfileHeader
           name={user.name || "KinOrbia user"}
           username={user.username}
@@ -175,7 +176,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                     aria-label={`${movie.title} (${normalizeMediaType(movie.mediaType) === "tv" ? "TV show" : "movie"})`}
                   >
                     {tmdbImage(movie.posterPath, "w342") ? (
-                      <Image
+                      <TmdbPosterImage
                         src={tmdbImage(movie.posterPath, "w342") as string}
                         alt=""
                         fill
@@ -284,7 +285,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
             </ProfilePanel>
           </div>
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }

@@ -17,15 +17,26 @@ export default function SubmitButton({
   const { pending } = useFormStatus();
 
   return (
-    <button type="submit" disabled={pending} className={`${className} disabled:opacity-70`} {...rest}>
-      {pending ? (
-        <span className="flex items-center justify-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          {pendingLabel}
-        </span>
-      ) : (
-        children
-      )}
-    </button>
+    <>
+      <button
+        type="submit"
+        disabled={pending}
+        aria-busy={pending}
+        className={`${className} disabled:cursor-not-allowed disabled:opacity-50`}
+        {...rest}
+      >
+        {pending ? (
+          <span className="flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+            {pendingLabel}
+          </span>
+        ) : (
+          children
+        )}
+      </button>
+      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {pending ? pendingLabel : ""}
+      </span>
+    </>
   );
 }

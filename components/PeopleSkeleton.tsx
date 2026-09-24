@@ -1,10 +1,12 @@
 import Skeleton from "@/components/Skeleton";
+import PageContainer from "@/components/PageContainer";
 
 export default function PeopleSkeleton() {
   return (
-    <div className="min-h-screen px-4 pb-20 pt-6 sm:px-6 sm:pt-8" aria-busy="true">
+    <div className="pb-20 pt-6 sm:pt-8" aria-busy="true">
       <span className="sr-only" role="status">Loading people</span>
-      <div className="mx-auto max-w-5xl" aria-hidden="true">
+      <div aria-hidden="true">
+        <PageContainer width="standard">
         <Skeleton className="h-4 w-28" />
         <Skeleton className="mt-5 h-3 w-28" />
         <Skeleton className="mt-2 h-10 w-64 max-w-full" />
@@ -21,6 +23,7 @@ export default function PeopleSkeleton() {
             </div>
           ))}
         </div>
+        </PageContainer>
       </div>
     </div>
   );

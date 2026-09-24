@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import TmdbPosterImage from "@/components/TmdbPosterImage";
 import { Film, Star } from "lucide-react";
 import type { MovieSummary } from "@/types";
 
@@ -9,16 +10,45 @@ export default function MovieCard({
   movie,
   index,
   loading,
+  safeImage = false,
   onRateClick,
 }: {
   movie: MovieProp;
   index?: number;
   loading?: "eager" | "lazy";
+  safeImage?: boolean;
   onRateClick?: (movie: MovieProp) => void;
 }) {
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
   const href = movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`;
   const isEager = loading ? loading === "eager" : index !== undefined && index < 3;
+  const posterElement = movie.poster_path ? (
+    safeImage ? (
+      <TmdbPosterImage
+        src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+        alt={movie.title}
+        fill
+        loading={isEager ? "eager" : undefined}
+        fetchPriority={isEager ? "high" : undefined}
+        sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
+        className="object-cover transition duration-500 group-hover:scale-[1.025] group-hover:saturate-110"
+      />
+    ) : (
+      <Image
+        src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+        alt={movie.title}
+        fill
+        loading={isEager ? "eager" : undefined}
+        fetchPriority={isEager ? "high" : undefined}
+        sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
+        className="object-cover transition duration-500 group-hover:scale-[1.025] group-hover:saturate-110"
+      />
+    )
+  ) : (
+    <div className="h-full bg-neutral-900 flex items-center justify-center">
+      <Film className="text-neutral-600" />
+    </div>
+  );
 
   return (
     <div className="group relative overflow-hidden rounded-lg border border-white/10 bg-neutral-950 shadow-card transition-all hover:-translate-y-1 hover:border-white/18 hover:shadow-card-hover">
@@ -28,21 +58,7 @@ export default function MovieCard({
         className="kin-focus relative block aspect-2/3 overflow-hidden bg-neutral-900"
         aria-label={`${movie.title} (${releaseYear})`}
       >
-        {movie.poster_path ? (
-          <Image
-            src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-            alt={movie.title}
-            fill
-            loading={isEager ? "eager" : undefined}
-            fetchPriority={isEager ? "high" : undefined}
-            sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
-            className="object-cover transition duration-500 group-hover:scale-[1.025] group-hover:saturate-110"
-          />
-        ) : (
-          <div className="h-full bg-neutral-900 flex items-center justify-center">
-            <Film className="text-neutral-600" />
-          </div>
-        )}
+        {posterElement}
         <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/8" />
         <div className="absolute top-1.5 left-1.5 rounded-full border border-white/10 bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-md sm:top-2 sm:left-2 sm:px-2.5 sm:py-1 sm:text-xs">
           {releaseYear}

@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Film, Search, User, LogOut, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import NotificationBell from "./NotificationBell";
 
 const NAV_LINKS = [
@@ -19,31 +19,131 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  return <NavbarShell pathname={pathname} />;
+}
+
+function NavbarShell({ pathname }: { pathname: string }) {
   const { data: session, status } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileButtonRef = useRef<HTMLButtonElement>(null);
+  const previousPathname = useRef(pathname);
 
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) =>
+    path === "/" ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
+
+  useEffect(() => {
+    if (previousPathname.current === pathname) {
+      return;
+    }
+
+    previousPathname.current = pathname;
+    const frame = window.requestAnimationFrame(() => {
+      setMobileOpen(false);
+      setAccountOpen(false);
+      setNotificationOpen(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!accountOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (accountRef.current && !accountRef.current.contains(event.target as Node)) {
+        setAccountOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setAccountOpen(false);
+        accountButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [accountOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileOpen(false);
+        mobileButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOpen]);
+
+  const toggleMobile = () => {
+    setMobileOpen((value) => {
+      if (!value) {
+        setAccountOpen(false);
+        setNotificationOpen(false);
+      }
+      return !value;
+    });
+  };
+
+  const toggleAccount = () => {
+    setAccountOpen((value) => {
+      if (!value) {
+        setMobileOpen(false);
+        setNotificationOpen(false);
+      }
+      return !value;
+    });
+  };
+
+  const handleNotificationOpenChange = (value: boolean) => {
+    setNotificationOpen(value);
+    if (value) {
+      setMobileOpen(false);
+      setAccountOpen(false);
+    }
+  };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-neutral-950/75 shadow-[0_18px_60px_-42px_rgba(0,0,0,0.95)] backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-        
-        <Link href="/" className="flex items-center gap-2 group">
-          <Film className="w-7 h-7 sm:w-8 sm:h-8 text-red-600 transition-transform group-hover:rotate-12" />
-          <span className="font-display text-xl font-bold text-white sm:text-2xl">
-            Kin<span className="text-red-600">Orbia</span>
+    <header className="shell-header" data-mobile-open={mobileOpen ? "true" : undefined}>
+      <nav aria-label="Primary navigation" className="shell-row">
+        <Link
+          href="/"
+          onClick={() => setMobileOpen(false)}
+          className="kin-focus group flex shrink-0 items-center gap-2 rounded-control text-content"
+          aria-label="KinOrbia home"
+        >
+          <Film className="h-7 w-7 text-accent transition-transform group-hover:rotate-12 sm:h-8 sm:w-8" aria-hidden="true" />
+          <span className="hidden font-display text-xl font-bold min-[360px]:inline sm:text-2xl">
+            Kin<span className="text-accent">Orbia</span>
           </span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-2 rounded-full border border-white/10 bg-white/3 p-1">
+        <div className="hidden items-center gap-1 rounded-control border border-rule bg-white/3 p-1 lg:flex">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.name}
               href={link.href}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              aria-current={isActive(link.href) ? "page" : undefined}
+              className={`kin-focus rounded-control px-3 py-2 text-sm font-medium transition-colors ${
                 isActive(link.href)
-                  ? "bg-red-500/12 text-red-200 ring-1 ring-red-500/25"
-                  : "text-neutral-400 hover:bg-white/7 hover:text-white"
+                  ? "bg-accent/10 text-red-200 ring-1 ring-accent/25"
+                  : "text-content-muted hover:bg-white/7 hover:text-content"
               }`}
             >
               {link.name}
@@ -51,91 +151,113 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link href="/search" className="kin-focus rounded-full border border-white/10 bg-white/3 p-2 text-neutral-400 transition hover:border-white/20 hover:bg-white/10 hover:text-white">
-            <Search className="w-5 h-5" />
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <Link
+            href="/search"
+            onClick={() => setMobileOpen(false)}
+            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-white/10 hover:text-content"
+            aria-label="Search films"
+          >
+            <Search className="h-5 w-5" aria-hidden="true" />
           </Link>
 
           {status === "loading" ? (
-             <div className="w-9 h-9 rounded-full bg-neutral-800 animate-pulse border border-white/5"></div>
+            <div className="h-10 w-10 animate-pulse rounded-full border border-rule bg-surface-raised" role="status">
+              <span className="sr-only">Loading account</span>
+            </div>
           ) : session?.user ? (
             <>
-              <NotificationBell />
-              <div className="relative group cursor-pointer h-9 flex items-center">
-              {session.user.image ? (
-                <Image
-                  src={session.user.image}
-                  alt="Profile"
-                  width={36}
-                  height={36}
-                  className="w-9 h-9 rounded-full border border-white/10 group-hover:border-red-500 transition-all object-cover"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-full border border-white/10 group-hover:border-red-500 transition-all bg-white/5 flex items-center justify-center text-neutral-400">
-                  <User className="w-5 h-5" />
-                </div>
-              )}
-              
-              <div className="absolute right-0 top-full pt-3 w-56 hidden group-hover:block">
-                <div className="premium-surface overflow-hidden rounded-lg ring-1 ring-white/5">
-                  <div className="px-4 py-3 border-b border-white/5 bg-white/5">
-                    <p className="text-sm text-white font-medium truncate">{session.user.name}</p>
-                    <p className="text-xs text-neutral-400 truncate">{session.user.email}</p>
+              <NotificationBell open={notificationOpen} onOpenChange={handleNotificationOpenChange} />
+              <div ref={accountRef} className="relative">
+                <button
+                  ref={accountButtonRef}
+                  type="button"
+                  onClick={toggleAccount}
+                  className="kin-focus flex h-10 w-10 items-center justify-center rounded-full border border-rule bg-white/3 transition hover:border-accent/50"
+                  aria-label="Account menu"
+                  aria-expanded={accountOpen}
+                  aria-controls="account-menu"
+                >
+                  {session.user.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt=""
+                      width={36}
+                      height={36}
+                      className="h-8 w-8 rounded-full object-cover sm:h-9 sm:w-9"
+                    />
+                  ) : (
+                    <User className="h-4 w-4 text-content-muted" aria-hidden="true" />
+                  )}
+                </button>
+
+                {accountOpen && (
+                  <div id="account-menu" className="premium-surface absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-overlay">
+                    <div className="border-b border-rule bg-white/5 px-4 py-3">
+                      <p className="truncate text-sm font-medium text-content">{session.user.name}</p>
+                      <p className="truncate text-xs text-content-muted">{session.user.email}</p>
+                    </div>
+                    <div className="py-1">
+                      <Link
+                        href="/profile"
+                        onClick={() => setAccountOpen(false)}
+                        className="kin-focus-inset flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-content-muted transition hover:bg-white/5 hover:text-content"
+                      >
+                        <User className="h-4 w-4" aria-hidden="true" />
+                        Profile
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="kin-focus-inset flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-red-400 transition hover:bg-accent/10 hover:text-red-300"
+                      >
+                        <LogOut className="h-4 w-4" aria-hidden="true" />
+                        Sign Out
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="py-1">
-                    <Link 
-                      href="/profile" 
-                      className="w-full text-left px-4 py-3 text-sm text-neutral-300 hover:bg-white/5 hover:text-white transition flex items-center gap-2"
-                    >
-                      <User className="w-4 h-4" />
-                      Profile
-                    </Link>
-
-                    <button 
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition flex items-center gap-2"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              </div>
-
+                )}
               </div>
             </>
           ) : (
-            <Link href="/login" className="kin-focus rounded-full border border-white/10 bg-white/3 p-2 text-neutral-400 transition hover:border-white/20 hover:bg-white/10 hover:text-white group">
-              <User className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <Link
+              href="/login"
+              onClick={() => setMobileOpen(false)}
+              className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-white/10 hover:text-content"
+              aria-label="Sign in"
+            >
+              <User className="h-5 w-5" aria-hidden="true" />
             </Link>
           )}
 
           <button
+            ref={mobileButtonRef}
             type="button"
-            onClick={() => setMobileOpen((value) => !value)}
-            className="kin-focus rounded-full border border-white/10 bg-white/3 p-2 text-neutral-400 transition hover:border-white/20 hover:bg-white/10 hover:text-white md:hidden"
+            onClick={toggleMobile}
+            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-white/10 hover:text-content lg:hidden"
             aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={mobileOpen}
+            aria-controls="mobile-navigation"
           >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
           </button>
         </div>
-      </div>
+      </nav>
 
       {mobileOpen && (
-        <div className="border-t border-white/10 px-4 pb-4 md:hidden">
-          <div className="premium-surface mx-auto max-w-7xl overflow-hidden rounded-lg">
+        <div className="shell-mobile-panel border-t border-rule px-4 pb-4 lg:hidden">
+          <nav id="mobile-navigation" aria-label="Mobile navigation" className="premium-surface mx-auto max-w-page overflow-hidden rounded-overlay">
             <div className="grid gap-1 p-1.5">
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`rounded-md px-4 py-3 text-sm font-medium transition-all ${
+                  aria-current={isActive(link.href) ? "page" : undefined}
+                  className={`rounded-control px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive(link.href)
-                      ? "bg-red-500/12 text-red-200 ring-1 ring-red-500/25"
-                      : "text-neutral-300 hover:bg-white/7 hover:text-white"
+                      ? "bg-accent/10 text-red-200 ring-1 ring-accent/25"
+                      : "text-content-muted hover:bg-white/7 hover:text-content"
                   }`}
                 >
                   {link.name}
@@ -144,13 +266,13 @@ export default function Navbar() {
 
               {session?.user && (
                 <>
-                  <div className="my-1 h-px bg-white/10" />
+                  <div className="my-1 h-px bg-rule" />
                   <Link
                     href="/profile"
                     onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 rounded-md px-4 py-3 text-sm font-medium text-neutral-300 transition-all hover:bg-white/7 hover:text-white"
+                    className="flex items-center gap-2 rounded-control px-3 py-2.5 text-sm font-medium text-content-muted transition hover:bg-white/7 hover:text-content"
                   >
-                    <User className="h-4 w-4" />
+                    <User className="h-4 w-4" aria-hidden="true" />
                     Profile
                   </Link>
                   <button
@@ -159,17 +281,17 @@ export default function Navbar() {
                       setMobileOpen(false);
                       signOut({ callbackUrl: "/" });
                     }}
-                    className="flex items-center gap-2 rounded-md px-4 py-3 text-left text-sm font-medium text-red-400 transition-all hover:bg-red-500/10 hover:text-red-300"
+                    className="flex items-center gap-2 rounded-control px-3 py-2.5 text-left text-sm font-medium text-red-400 transition hover:bg-accent/10 hover:text-red-300"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-4 w-4" aria-hidden="true" />
                     Sign Out
                   </button>
                 </>
               )}
             </div>
-          </div>
+          </nav>
         </div>
       )}
-    </nav>
+    </header>
   );
 }
