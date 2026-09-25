@@ -25,14 +25,14 @@ export default async function Shows({ searchParams }: Props) {
     <div className="pt-10 pb-16">
       <PageContainer width="page">
         <div className="mb-8 max-w-3xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-gold">
+          <p className="mb-3 text-xs font-bold uppercase tracking-overline text-gold">
             KinOrbia Picks
           </p>
-          <h1 className="font-display mb-3 text-4xl font-bold leading-[0.95] text-white md:text-5xl">
+          <h1 className="font-display mb-3 text-4xl font-bold leading-editorial text-white md:text-5xl">
             Popular <span className="italic font-normal text-red-500">Shows</span>
           </h1>
           <p className="max-w-xl text-base leading-7 text-neutral-400">
-            {genre ? "Explore TV shows in your selected genre." : "Trending shows from around the globe — dense, tactile, yours to collect."}
+            {genre ? "Explore TV shows in your selected genre." : "Trending shows from around the globe"}
           </p>
           <div className="mt-4 h-px w-12 bg-gold/40" />
         </div>

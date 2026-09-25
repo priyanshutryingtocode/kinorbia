@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import NotificationBell from "./NotificationBell";
 
 const NAV_LINKS = [
-  { name: "Home", href: "/" },
+  { name: "Movies", href: "/" },
   { name: "Shows", href: "/shows" },
   { name: "Reviews", href: "/reviews" },
   { name: "Lists", href: "/lists" },

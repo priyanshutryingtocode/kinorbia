@@ -17,7 +17,7 @@ import VisibilityBadge from "@/components/VisibilityBadge";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import dbConnect from "@/lib/dbConnect";
 import { mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
-import { serializeList, type RawMovieList } from "@/lib/serialize";
+import { serializeFavorites, serializeList, type RawFavoriteMovie, type RawMovieList } from "@/lib/serialize";
 import MovieList from "@/models/MovieList";
 import User from "@/models/User";
 import type { FavoriteMovie, ListMovie, MovieListItem } from "@/types";
@@ -262,12 +262,12 @@ export default async function ListsPage() {
       .sort({ createdAt: -1 })
       .limit(18)
       .lean<RawMovieList[]>(),
-    User.findOne({ email: currentUserEmail }).lean<{
-      favorites?: FavoriteMovie[];
+    User.findOne({ email: currentUserEmail }).select("favorites").lean<{
+      favorites?: RawFavoriteMovie[];
     } | null>(),
   ]);
   const lists = rawLists.map(serializeList);
-  const favorites = (user?.favorites || []) as FavoriteMovie[];
+  const favorites = serializeFavorites(user?.favorites);
 
   return (
     <div className="pb-20 pt-6 sm:pt-8">

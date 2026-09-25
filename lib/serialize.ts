@@ -1,4 +1,5 @@
-import type { JournalItem, MovieListItem, ReviewItem } from "@/types";
+import { normalizeMediaType } from "@/lib/media";
+import type { FavoriteMovie, JournalItem, MovieListItem, ReviewItem } from "@/types";
 
 export type RawReview = Omit<ReviewItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
@@ -15,6 +16,25 @@ export type RawMovieList = Omit<MovieListItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
   createdAt: Date;
 };
+
+export type RawFavoriteMovie = Omit<FavoriteMovie, "addedAt"> & {
+  _id?: { toString: () => string };
+  addedAt?: Date | string;
+};
+
+export function serializeFavorites(favorites: RawFavoriteMovie[] = []): FavoriteMovie[] {
+  return favorites.map((favorite) => ({
+    movieId: favorite.movieId,
+    title: favorite.title,
+    posterPath: favorite.posterPath || null,
+    voteAverage: favorite.voteAverage || 0,
+    releaseDate: favorite.releaseDate,
+    personalRating: favorite.personalRating || 0,
+    mediaType: normalizeMediaType(favorite.mediaType),
+    genreIds: favorite.genreIds || [],
+    addedAt: favorite.addedAt ? new Date(favorite.addedAt).toISOString() : undefined,
+  }));
+}
 
 export function serializeReview(review: RawReview): ReviewItem {
   return {

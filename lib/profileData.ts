@@ -6,11 +6,12 @@ import Review from "@/models/Review";
 import MovieList from "@/models/MovieList";
 import { buildWatchStreaks } from "@/lib/insights";
 import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
-import { normalizeMediaType } from "@/lib/media";
 import {
+  serializeFavorites,
   serializeJournalEntry,
   serializeList,
   serializeReview,
+  type RawFavoriteMovie,
   type RawJournalEntry,
   type RawMovieList,
   type RawReview,
@@ -24,11 +25,6 @@ export const PROFILE_PAGE_SIZES = {
   lists: 9,
   journal: 10,
 } as const;
-
-type RawFavoriteMovie = Omit<FavoriteMovie, "addedAt"> & {
-  _id?: { toString: () => string };
-  addedAt?: Date | string;
-};
 
 type JournalHistoryRecord = {
   _id: { toString: () => string };
@@ -76,20 +72,6 @@ export type InsightsSource = {
   favorites: FavoriteMovie[];
   journal: JournalHistoryRecord[];
 };
-
-export function serializeFavorites(favorites: RawFavoriteMovie[] = []): FavoriteMovie[] {
-  return favorites.map((favorite) => ({
-    movieId: favorite.movieId,
-    title: favorite.title,
-    posterPath: favorite.posterPath || null,
-    voteAverage: favorite.voteAverage || 0,
-    releaseDate: favorite.releaseDate,
-    personalRating: favorite.personalRating || 0,
-    mediaType: normalizeMediaType(favorite.mediaType),
-    genreIds: favorite.genreIds || [],
-    addedAt: favorite.addedAt ? new Date(favorite.addedAt).toISOString() : undefined,
-  }));
-}
 
 function uniqueMediaItems(field: "favorites" | "watchlist") {
   return {

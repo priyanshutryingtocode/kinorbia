@@ -1,6 +1,6 @@
-# Kinorbia 🌌
+# Kinorbia
 
-Kinorbia is a modern, full-stack movie discovery, tracking, and journaling platform. Built with Next.js and designed with a sleek, immersive "Modern Deep Space" aesthetic using Tailwind CSS v4, it allows users to explore movies, curate personalized lists, write reviews, and maintain a cinematic journal.
+Kinorbia is a modern, full-stack movie/show discovery, tracking, and journaling platform. Built with Next.js and designed with a sleek, immersive aesthetic using Tailwind CSS v4, it allows users to explore movies, curate personalized lists, write reviews, and maintain a cinematic journal.
 
 Demo users (password demo1234 for all, log in via email + password):
 - demo1@kinorbia.dev — Ava Moreno (ava.moreno)
@@ -9,12 +9,12 @@ Demo users (password demo1234 for all, log in via email + password):
 
 ## 🚀 Features
 
-* **Movie Discovery:** Search and browse through an extensive database of movies, including similar movie recommendations.
+* **Movie/Show Discovery:** Search and browse through an extensive database of movies and shows, including similar recommendations.
 * **User Authentication:** Secure login and registration flows powered by NextAuth.js.
-* **Personalized Profiles:** Manage your favorite movies, custom lists, and track your cinematic journey.
+* **Personalized Profiles:** Manage your favorite movies/shows, custom lists, and track your cinematic journey.
 * **Cinematic Journal:** Write and maintain a personal journal of your movie-watching experiences.
-* **Reviews & Ratings:** Rate movies and write comprehensive reviews to share your thoughts.
-* **Curated Lists:** Create, manage, and customize movie lists for different moods or genres.
+* **Reviews & Ratings:** Rate movies/shows and write comprehensive reviews to share your thoughts.
+* **Curated Lists:** Create, manage, and customize movie/show lists for different moods or genres.
 * **Modern UI/UX:** A clean, responsive interface utilizing Tailwind CSS v4 utility classes and optimized components.
 
 ## 🛠️ Tech Stack

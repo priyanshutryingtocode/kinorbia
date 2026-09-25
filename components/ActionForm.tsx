@@ -53,7 +53,7 @@ export default function ActionForm({ action, className = "", children, successMe
 
   return (
     <FormPendingProvider pending={pending}>
-      <form key={formVersion} action={nativeAction} method="post" onSubmit={handleSubmit} className={className} aria-busy={pending}>
+      <form key={formVersion} action={nativeAction} onSubmit={handleSubmit} className={className} aria-busy={pending}>
         {children}
       </form>
       {feedback && (
