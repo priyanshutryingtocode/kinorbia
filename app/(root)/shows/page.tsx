@@ -1,4 +1,4 @@
-import PageContainer from "@/components/PageContainer";
+import RouteShell from "@/components/RouteShell";
 import MovieCard, { MovieProp } from "@/components/MovieCard";
 import LoadMore from "@/components/LoadMore";
 import GenreFilter from "@/components/GenreFilter";
@@ -22,40 +22,38 @@ export default async function Shows({ searchParams }: Props) {
   const shows: MovieProp[] = await fetchTvShows(1, genre);
 
   return (
-    <div className="pt-10 pb-16">
-      <PageContainer width="page">
-        <div className="mb-8 max-w-3xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-overline text-gold">
-            KinOrbia Picks
-          </p>
-          <h1 className="font-display mb-3 text-4xl font-bold leading-editorial text-white md:text-5xl">
-            Popular <span className="italic font-normal text-red-500">Shows</span>
-          </h1>
-          <p className="max-w-xl text-base leading-7 text-neutral-400">
-            {genre ? "Explore TV shows in your selected genre." : "Trending shows from around the globe"}
-          </p>
-          <div className="mt-4 h-px w-12 bg-gold/40" />
+    <RouteShell spacing="immersive" width="page">
+      <div className="mb-8 max-w-3xl">
+        <p className="mb-3 text-xs font-bold uppercase tracking-overline text-gold">
+          KinOrbia Picks
+        </p>
+        <h1 className="font-display mb-3 text-4xl font-bold leading-editorial text-white md:text-5xl">
+          Popular <span className="italic font-normal text-red-500">Shows</span>
+        </h1>
+        <p className="max-w-xl text-base leading-7 text-neutral-400">
+          {genre ? "Explore TV shows in your selected genre." : "Trending shows from around the globe"}
+        </p>
+        <div className="mt-4 h-px w-12 bg-gold/40" />
+      </div>
+
+      <GenreFilter mediaType="tv" />
+
+      {shows.length > 0 ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {shows.map((show) => (
+            <MovieCard key={show.id} movie={show} />
+          ))}
         </div>
+      ) : (
+        <EmptyState
+          title="Couldn't load shows right now"
+          description="Popular shows are temporarily unavailable. Refresh to try again."
+        >
+          <RetryButton />
+        </EmptyState>
+      )}
 
-        <GenreFilter mediaType="tv" />
-
-        {shows.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {shows.map((show) => (
-              <MovieCard key={show.id} movie={show} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title="Couldn't load shows right now"
-            description="Popular shows are temporarily unavailable. Refresh to try again."
-          >
-            <RetryButton />
-          </EmptyState>
-        )}
-
-        {shows.length > 0 && <LoadMore key={genre || "all"} genre={genre} mediaType="tv" />}
-      </PageContainer>
-    </div>
+      {shows.length > 0 && <LoadMore key={genre || "all"} genre={genre} mediaType="tv" />}
+    </RouteShell>
   );
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
 import { Film, Star } from "lucide-react";
-import { tmdbImage } from "@/lib/media";
+import { mediaHref, tmdbImage } from "@/lib/media";
 import type { MovieSummary } from "@/types";
 
 export type MovieProp = MovieSummary;
@@ -15,11 +15,10 @@ export default function MovieCard({
   movie: MovieProp;
   index?: number;
   loading?: "eager" | "lazy";
-  safeImage?: boolean;
   onRateClick?: (movie: MovieProp) => void;
 }) {
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
-  const href = movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`;
+  const href = mediaHref(movie.mediaType, movie.id);
   const isEager = loading ? loading === "eager" : index !== undefined && index < 3;
   const poster = tmdbImage(movie.poster_path, "w500");
   const posterElement = poster ? (

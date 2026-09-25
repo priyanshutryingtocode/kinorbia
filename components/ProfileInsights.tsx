@@ -344,7 +344,7 @@ export default function ProfileInsights({
             <section className="py-8" aria-labelledby="watch-activity-heading">
               <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="profile-overline text-gold/80">Watch rhythm</p>
+                  <p className="kin-overline text-gold/80">Watch rhythm</p>
                   <h3 id="watch-activity-heading" className="mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white">
                     <BarChart3 className="h-5 w-5 text-red-300" aria-hidden="true" />
                     Monthly activity
@@ -361,7 +361,7 @@ export default function ProfileInsights({
 
             <div className="grid xl:grid-cols-2 xl:divide-x xl:divide-white/10">
               <section className="border-b border-white/10 py-8 xl:border-b-0 xl:pr-8" aria-labelledby="rating-distribution-heading">
-                <p className="profile-overline text-gold/80">Favorite ratings</p>
+                <p className="kin-overline text-gold/80">Favorite ratings</p>
                 <h3 id="rating-distribution-heading" className="mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white">
                   <Star className="h-5 w-5 text-gold" aria-hidden="true" />
                   Rating distribution
@@ -372,7 +372,7 @@ export default function ProfileInsights({
               </section>
 
               <section className="py-8 xl:pl-8" aria-labelledby="media-mix-heading">
-                <p className="profile-overline text-gold/80">Your library</p>
+                <p className="kin-overline text-gold/80">Your library</p>
                 <h3 id="media-mix-heading" className="mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white">
                   <Clapperboard className="h-5 w-5 text-red-300" aria-hidden="true" />
                   Movies vs shows
@@ -387,7 +387,7 @@ export default function ProfileInsights({
               <section className="py-8" aria-labelledby="favorite-genres-heading">
                 <div className="mb-5 flex items-end justify-between gap-4">
                   <div>
-                    <p className="profile-overline text-gold/80">Taste profile</p>
+                    <p className="kin-overline text-gold/80">Taste profile</p>
                     <h3 id="favorite-genres-heading" className="mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white">
                       <Film className="h-5 w-5 text-gold" aria-hidden="true" />
                       Favorite genres
@@ -415,7 +415,7 @@ export default function ProfileInsights({
 
             {insights.topRated.length > 0 && (
               <section className="py-8" aria-labelledby="top-rated-heading">
-                <p className="profile-overline text-gold/80">Personal picks</p>
+                <p className="kin-overline text-gold/80">Personal picks</p>
                 <h3 id="top-rated-heading" className="mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white">
                   <TrendingUp className="h-5 w-5 text-gold" aria-hidden="true" />
                   Top rated

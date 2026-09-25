@@ -82,7 +82,7 @@ export default function TrailerButton({ videoKey, title }: TrailerButtonProps) {
           <button className="absolute inset-0 bg-black/90 backdrop-blur-md" type="button" onClick={() => setOpen(false)} tabIndex={-1} aria-hidden="true" />
           <div className="pointer-events-none absolute left-1/2 top-1/2 h-120 w-120 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/20 blur-[120px]" aria-hidden="true" />
 
-          <div ref={panelRef} tabIndex={-1} className="trailer-panel relative w-[min(94vw,calc((100dvh-8.5rem)*16/9))] focus:outline-none">
+          <div ref={panelRef} tabIndex={-1} className="shell-panel-enter relative w-[min(94vw,calc((100dvh-8.5rem)*16/9))] focus:outline-none">
             <div className="rounded-overlay border border-rule bg-canvas/90 p-3 shadow-float backdrop-blur-xl sm:p-4">
               <div className="flex items-center justify-between gap-4 px-1 pb-3">
                 <div className="flex min-w-0 items-center gap-3">

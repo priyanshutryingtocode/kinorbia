@@ -46,20 +46,14 @@
   --color-gold: var(--highlight);
   --color-gold-soft: var(--highlight-soft);
   --color-border: var(--rule);
-  --color-surface-card: var(--surface);
   --radius-sheet: 0.125rem;
   --radius-control: 0.25rem;
   --radius-overlay: 0.5rem;
-  --radius-card: 0.75rem;
-  --radius-panel: 1rem;
-  --radius-modal: 1.5rem;
   --shadow-card: 0 18px 45px -34px rgba(0, 0, 0, 0.95);
   --shadow-card-hover: 0 24px 60px -42px rgba(220, 38, 38, 0.45);
   --shadow-float: 0 24px 80px -48px rgba(0, 0, 0, 0.95);
-  --shadow-glow: 0 0 32px -16px rgba(220, 38, 38, 0.55);
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-fraunces);
-  --font-mono: var(--font-geist-mono);
   --text-overline: 0.625rem;
   --text-overline--line-height: 1rem;
   --tracking-overline: 0.18em;
@@ -68,9 +62,6 @@
   --container-frame: 72rem;
   --container-reading: 48rem;
   --container-control: 28rem;
-  --spacing-gutter: 1.5rem;
-  --spacing-stack: 1.5rem;
-  --spacing-section: 3rem;
   --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -120,22 +111,9 @@ html {
   100% { transform: rotate(360deg) scale(1); }
 }
 
-@keyframes trailer-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes trailer-pop {
+@keyframes shell-panel-enter {
   from { opacity: 0; transform: translateY(14px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.trailer-backdrop {
-  animation: trailer-fade var(--duration-fast) ease-out;
-}
-
-.trailer-panel {
-  animation: trailer-pop var(--duration-panel) var(--ease-cinematic);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -221,8 +199,8 @@ html {
     z-index: var(--z-modal);
   }
 
-  .shell-overlay-panel {
-    animation: trailer-pop var(--duration-panel) var(--ease-cinematic);
+  .shell-panel-enter {
+    animation: shell-panel-enter var(--duration-panel) var(--ease-cinematic);
   }
 
   .kin-skeleton {
@@ -249,8 +227,7 @@ html {
     @apply space-y-1.5;
   }
 
-  .kin-label,
-  .kin-form-label {
+  .kin-label {
     @apply block text-xs font-medium uppercase tracking-[0.12em] text-content-muted;
   }
 
@@ -281,8 +258,7 @@ html {
     opacity: 0.5;
   }
 
-  .kin-panel,
-  .kin-compact-panel {
+  .kin-panel {
     @apply rounded-sheet border border-rule bg-surface/70 p-4;
   }
 
@@ -318,17 +294,8 @@ html {
     }
   }
 
-  .glass-input {
-    @apply w-full rounded-control border border-rule bg-surface-raised px-3.5 py-2.5 text-sm text-content placeholder:text-content-subtle transition-colors focus-visible:border-accent-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-50;
-    transition-duration: var(--duration-fast);
-  }
-
   .premium-surface {
     @apply border border-rule bg-canvas/80 shadow-float backdrop-blur-xl;
-  }
-
-  .premium-card {
-    @apply border border-rule bg-surface-raised/65 shadow-card transition-all;
   }
 
   .profile-masthead {
@@ -337,20 +304,6 @@ html {
 
   .profile-wash {
     background: linear-gradient(105deg, rgba(220, 38, 38, 0.075), rgba(212, 165, 116, 0.025) 36%, transparent 68%);
-  }
-
-  .profile-overline {
-    @apply text-overline font-medium uppercase tracking-overline;
-  }
-
-  .profile-header-actions > :is(a, button),
-  .profile-header-actions > form > button,
-  .profile-header-actions > div > :is(a, button) {
-    @apply rounded-control px-3 py-1.5 text-xs;
-  }
-
-  .profile-header-actions > div {
-    @apply gap-2;
   }
 
   .kin-focus {

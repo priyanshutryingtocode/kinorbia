@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Bell, Bookmark, CheckCheck, Heart, Loader2, MessageSquare, UserPlus } from "lucide-react";
+import { mediaHref } from "@/lib/media";
 import type { NotificationItem } from "@/types";
 
 const ICONS: Record<NotificationItem["type"], React.ReactNode> = {
@@ -36,7 +37,7 @@ function hrefFor(item: NotificationItem) {
   }
 
   if (item.movieId) {
-    return item.mediaType === "tv" ? `/tv/${item.movieId}` : `/movie/${item.movieId}`;
+    return mediaHref(item.mediaType, item.movieId);
   }
 
   return "/reviews";

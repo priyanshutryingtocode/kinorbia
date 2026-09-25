@@ -6,7 +6,7 @@ import { Bot, Film, Loader2, Send, Sparkles, X } from "lucide-react";
 import type { MovieSummary } from "@/types";
 import AssistantMovieActions from "./AssistantMovieActions";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
-import { normalizeMediaType, tmdbImage } from "@/lib/media";
+import { mediaHref, normalizeMediaType, tmdbImage } from "@/lib/media";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -26,25 +26,7 @@ const GREETING: ChatMessage = {
   content: "Tell me the mood, genre, pace, or vibe you want. I will suggest a few movies.",
 };
 
-const THREAD_KEY = "kinorbia-assistant-thread";
 const HISTORY_KEY = "kinorbia-assistant-history";
-
-function getThreadId() {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  let id = localStorage.getItem(THREAD_KEY);
-  if (!id) {
-    id =
-      typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `t-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    localStorage.setItem(THREAD_KEY, id);
-  }
-
-  return id;
-}
 
 function loadHistory(): ChatMessage[] {
   if (typeof window === "undefined") {
@@ -158,11 +140,6 @@ export default function MovieAssistant() {
       return;
     }
 
-    const history = messages.slice(-8).map((message) => ({
-      role: message.role,
-      content: message.content,
-    }));
-
     const nextMessages: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
     commitMessages(nextMessages);
     setInput("");
@@ -172,11 +149,7 @@ export default function MovieAssistant() {
       const res = await fetch("/api/assistant/movie", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: trimmed,
-          history,
-          threadId: getThreadId(),
-        }),
+        body: JSON.stringify({ message: trimmed }),
       });
 
       const data = await res.json();
@@ -273,7 +246,7 @@ export default function MovieAssistant() {
                         className="rounded-control border border-rule bg-black/25 p-2 transition hover:border-accent/50 hover:bg-white/8"
                       >
                         <Link
-                          href={movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`}
+                          href={mediaHref(movie.mediaType, movie.id)}
                           onClick={() => closeAssistant(false)}
                           className="flex gap-3"
                         >

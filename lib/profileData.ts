@@ -120,6 +120,43 @@ function pageBounds(total: number, requestedPage: number, pageSize: number) {
   };
 }
 
+type SortSpec = Record<string, 1 | -1>;
+
+type PageableQuery<TRaw> = {
+  sort(sort: SortSpec): PageableQuery<TRaw>;
+  skip(skip: number): PageableQuery<TRaw>;
+  limit(limit: number): PageableQuery<TRaw>;
+  lean(): Promise<TRaw[]>;
+};
+
+type PageableModel<TRaw> = {
+  countDocuments(filter: Record<string, unknown>): Promise<number>;
+  find(filter: Record<string, unknown>): PageableQuery<TRaw>;
+};
+
+// Shared count + windowed fetch. When the requested page is past the end, the
+// clamped page is re-fetched instead of returning an empty result set.
+async function paginate<TRaw>(
+  model: PageableModel<TRaw>,
+  filter: Record<string, unknown>,
+  sort: SortSpec,
+  requestedPage: number,
+  pageSize: number
+): Promise<{ rows: TRaw[]; page: number; totalPages: number; total: number }> {
+  const fetchPage = (page: number) =>
+    model.find(filter).sort(sort).skip((page - 1) * pageSize).limit(pageSize).lean();
+
+  const [total, initialRows] = await Promise.all([
+    model.countDocuments(filter),
+    fetchPage(Math.max(1, requestedPage)),
+  ]);
+
+  const bounds = pageBounds(total, requestedPage, pageSize);
+  const rows = bounds.page === requestedPage ? initialRows : await fetchPage(bounds.page);
+
+  return { rows, total, ...bounds };
+}
+
 async function getEmbeddedPage(
   email: string,
   field: "favorites" | "watchlist",
@@ -285,71 +322,38 @@ export async function getWatchlistPage(email: string, requestedPage: number): Pr
 }
 
 export async function getReviewPage(email: string, requestedPage: number) {
-  const pageSize = PROFILE_PAGE_SIZES.reviews;
-  const [total, initialReviews, user] = await Promise.all([
-    Review.countDocuments({ userEmail: email }),
-    Review.find({ userEmail: email })
-      .sort({ createdAt: -1, _id: -1 })
-      .skip((Math.max(1, requestedPage) - 1) * pageSize)
-      .limit(pageSize)
-      .lean<RawReview[]>(),
+  const [page, user] = await Promise.all([
+    paginate<RawReview>(Review, { userEmail: email }, { createdAt: -1, _id: -1 }, requestedPage, PROFILE_PAGE_SIZES.reviews),
     User.findOne({ email }).select("favorites").lean<{ favorites?: RawFavoriteMovie[] } | null>(),
   ]);
-  const bounds = pageBounds(total, requestedPage, pageSize);
-  const rawReviews = bounds.page === requestedPage
-    ? initialReviews
-    : await Review.find({ userEmail: email })
-        .sort({ createdAt: -1, _id: -1 })
-        .skip((bounds.page - 1) * pageSize)
-        .limit(pageSize)
-        .lean<RawReview[]>();
   const favorites = dedupeFavorites(serializeFavorites(user?.favorites || []));
   return {
-    items: rawReviews.map(serializeReview),
+    items: page.rows.map(serializeReview),
     ratingMap: buildRatingMap(favorites),
-    ...bounds,
-    total,
+    page: page.page,
+    totalPages: page.totalPages,
+    total: page.total,
   };
 }
 
 export async function getListPage(email: string, requestedPage: number): Promise<ProfilePage<ReturnType<typeof serializeList>>> {
-  const pageSize = PROFILE_PAGE_SIZES.lists;
-  const [total, initialItems] = await Promise.all([
-    MovieList.countDocuments({ userEmail: email }),
-    MovieList.find({ userEmail: email })
-      .sort({ createdAt: -1, _id: -1 })
-      .skip((Math.max(1, requestedPage) - 1) * pageSize)
-      .limit(pageSize)
-      .lean<RawMovieList[]>(),
-  ]);
-  const bounds = pageBounds(total, requestedPage, pageSize);
-  const items = bounds.page === requestedPage
-    ? initialItems
-    : await MovieList.find({ userEmail: email })
-        .sort({ createdAt: -1, _id: -1 })
-        .skip((bounds.page - 1) * pageSize)
-        .limit(pageSize)
-        .lean<RawMovieList[]>();
-  return { items: items.map(serializeList), ...bounds, total };
+  const { rows, ...bounds } = await paginate<RawMovieList>(
+    MovieList,
+    { userEmail: email },
+    { createdAt: -1, _id: -1 },
+    requestedPage,
+    PROFILE_PAGE_SIZES.lists
+  );
+  return { items: rows.map(serializeList), ...bounds };
 }
 
 export async function getJournalPage(email: string, requestedPage: number): Promise<ProfilePage<ReturnType<typeof serializeJournalEntry>>> {
-  const pageSize = PROFILE_PAGE_SIZES.journal;
-  const [total, initialItems] = await Promise.all([
-    JournalEntry.countDocuments({ userEmail: email }),
-    JournalEntry.find({ userEmail: email })
-      .sort({ watchedAt: -1, createdAt: -1, _id: -1 })
-      .skip((Math.max(1, requestedPage) - 1) * pageSize)
-      .limit(pageSize)
-      .lean<RawJournalEntry[]>(),
-  ]);
-  const bounds = pageBounds(total, requestedPage, pageSize);
-  const items = bounds.page === requestedPage
-    ? initialItems
-    : await JournalEntry.find({ userEmail: email })
-        .sort({ watchedAt: -1, createdAt: -1, _id: -1 })
-        .skip((bounds.page - 1) * pageSize)
-        .limit(pageSize)
-        .lean<RawJournalEntry[]>();
-  return { items: items.map(serializeJournalEntry), ...bounds, total };
+  const { rows, ...bounds } = await paginate<RawJournalEntry>(
+    JournalEntry,
+    { userEmail: email },
+    { watchedAt: -1, createdAt: -1, _id: -1 },
+    requestedPage,
+    PROFILE_PAGE_SIZES.journal
+  );
+  return { items: rows.map(serializeJournalEntry), ...bounds };
 }

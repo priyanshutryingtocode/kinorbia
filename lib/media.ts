@@ -8,6 +8,19 @@ export function mediaKey(mediaType: string | null | undefined, id: string | numb
   return `${normalizeMediaType(mediaType)}:${id}`;
 }
 
+export function mediaHref(mediaType: string | null | undefined, id: string | number) {
+  return normalizeMediaType(mediaType) === "tv" ? `/tv/${id}` : `/movie/${id}`;
+}
+
+export function formatDate(value: string | Date) {
+  return new Date(value).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export function tmdbImage(path: string | null | undefined, size: string) {
   const value = path?.trim();
   if (!value) {

@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ArrowLeft, Film } from "lucide-react";
-import { auth } from "@/auth";
+import { requireUserEmail } from "@/lib/actions";
 import CommentSection from "@/components/CommentSection";
 import EmptyState from "@/components/EmptyState";
-import PageContainer from "@/components/PageContainer";
+import RouteShell from "@/components/RouteShell";
 import PageHeader from "@/components/PageHeader";
 import SectionHeader from "@/components/SectionHeader";
 import SocialActionButton from "@/components/SocialActionButton";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
 import VisibilityBadge from "@/components/VisibilityBadge";
 import dbConnect from "@/lib/dbConnect";
-import { mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
+import { formatDate, mediaHref, mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
 import { isObjectId } from "@/lib/objectId";
 import { serializeList, type RawMovieList } from "@/lib/serialize";
 import MovieList from "@/models/MovieList";
@@ -27,19 +27,10 @@ type ListDetailPageProps = {
   params: Promise<{ id: string }> | { id: string };
 };
 
-function formatListDate(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 function ListPoster({ movie }: { movie: ListMovie }) {
   const poster = tmdbImage(movie.posterPath, "w342");
   const mediaType = normalizeMediaType(movie.mediaType);
-  const href = mediaType === "tv" ? `/tv/${movie.movieId}` : `/movie/${movie.movieId}`;
+  const href = mediaHref(mediaType, movie.movieId);
   const year = movie.releaseDate?.slice(0, 4) || "Year unknown";
 
   return (
@@ -75,10 +66,7 @@ function ListPoster({ movie }: { movie: ListMovie }) {
 }
 
 export default async function ListDetailPage({ params }: ListDetailPageProps) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const currentUserEmail = await requireUserEmail();
 
   const { id } = await Promise.resolve(params);
   if (!isObjectId(id)) {
@@ -86,7 +74,6 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
   }
 
   await dbConnect();
-  const currentUserEmail = session.user.email.toLowerCase();
   const rawList = await MovieList.findOne({
     _id: id,
     $or: [
@@ -104,93 +91,91 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
   const countLabel = `${list.movies.length} ${list.movies.length === 1 ? "title" : "titles"}`;
 
   return (
-    <div className="pb-20 pt-6 sm:pt-8">
-      <PageContainer width="page">
-        <Link
-          href="/lists"
-          className="kin-focus inline-flex items-center gap-1.5 rounded-sm text-sm font-medium text-content-muted transition-colors hover:text-content"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to lists
-        </Link>
-        <PageHeader
-          className="mt-6 [&_h1]:[overflow-wrap:anywhere]"
-          eyebrow="Collection"
-          title={list.title}
-          description={
-            <>
-              <p>
-                By {list.userName} · {formatListDate(list.createdAt)} · {countLabel}
+    <RouteShell spacing="extended" width="page">
+      <Link
+        href="/lists"
+        className="kin-focus inline-flex items-center gap-1.5 rounded-sm text-sm font-medium text-content-muted transition-colors hover:text-content"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        Back to lists
+      </Link>
+      <PageHeader
+        className="mt-6 [&_h1]:[overflow-wrap:anywhere]"
+        eyebrow="Collection"
+        title={list.title}
+        description={
+          <>
+            <p>
+              By {list.userName} · {formatDate(list.createdAt)} · {countLabel}
+            </p>
+            {list.description && (
+              <p className="mt-2 max-w-3xl break-words [overflow-wrap:anywhere]">
+                {list.description}
               </p>
-              {list.description && (
-                <p className="mt-2 max-w-3xl break-words [overflow-wrap:anywhere]">
-                  {list.description}
-                </p>
-              )}
-            </>
-          }
-          actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <VisibilityBadge visibility={list.visibility} />
-              {list.visibility === "public" && (
-                <>
-                  <SocialActionButton
-                    type="list"
-                    id={list._id}
-                    action="like"
-                    count={list.likedBy?.length || 0}
-                    active={Boolean(list.likedBy?.includes(currentUserEmail))}
-                    path={`/lists/${list._id}`}
-                  />
-                  <SocialActionButton
-                    type="list"
-                    id={list._id}
-                    action="save"
-                    count={list.savedBy?.length || 0}
-                    active={Boolean(list.savedBy?.includes(currentUserEmail))}
-                    path={`/lists/${list._id}`}
-                  />
-                </>
-              )}
-            </div>
-          }
-        />
-
-        <div className="mt-8">
-          <SectionHeader
-            id="list-titles"
-            eyebrow="Selection"
-            title={countLabel}
-            description="Every film and series in this collection."
-          />
-          {list.movies.length > 0 ? (
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-              {list.movies.map((movie) => (
-                <ListPoster key={mediaKey(movie.mediaType, movie.movieId)} movie={movie} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              compact
-              className="mt-4"
-              title="This list has no titles yet"
-              description="The owner can add movies and series from their favorites."
-            />
-          )}
-        </div>
-
-        {list.visibility === "public" && (
-          <div className="mt-12">
-            <SectionHeader
-              id="list-discussion"
-              eyebrow="Community"
-              title="Discussion"
-              description="Join the conversation about this collection."
-            />
-            <CommentSection parentType="list" parentId={list._id} path={`/lists/${list._id}`} />
+            )}
+          </>
+        }
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <VisibilityBadge visibility={list.visibility} />
+            {list.visibility === "public" && (
+              <>
+                <SocialActionButton
+                  type="list"
+                  id={list._id}
+                  action="like"
+                  count={list.likedBy?.length || 0}
+                  active={Boolean(list.likedBy?.includes(currentUserEmail))}
+                  path={`/lists/${list._id}`}
+                />
+                <SocialActionButton
+                  type="list"
+                  id={list._id}
+                  action="save"
+                  count={list.savedBy?.length || 0}
+                  active={Boolean(list.savedBy?.includes(currentUserEmail))}
+                  path={`/lists/${list._id}`}
+                />
+              </>
+            )}
           </div>
+        }
+      />
+
+      <div className="mt-8">
+        <SectionHeader
+          id="list-titles"
+          eyebrow="Selection"
+          title={countLabel}
+          description="Every film and series in this collection."
+        />
+        {list.movies.length > 0 ? (
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            {list.movies.map((movie) => (
+              <ListPoster key={mediaKey(movie.mediaType, movie.movieId)} movie={movie} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            compact
+            className="mt-4"
+            title="This list has no titles yet"
+            description="The owner can add movies and series from their favorites."
+          />
         )}
-      </PageContainer>
-    </div>
+      </div>
+
+      {list.visibility === "public" && (
+        <div className="mt-12">
+          <SectionHeader
+            id="list-discussion"
+            eyebrow="Community"
+            title="Discussion"
+            description="Join the conversation about this collection."
+          />
+          <CommentSection parentType="list" parentId={list._id} path={`/lists/${list._id}`} />
+        </div>
+      )}
+    </RouteShell>
   );
 }

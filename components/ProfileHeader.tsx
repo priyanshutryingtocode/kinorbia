@@ -54,7 +54,7 @@ export default function ProfileHeader({
               <h1 className="break-words font-display text-3xl font-medium leading-tight text-white sm:text-4xl">
                 {name}
               </h1>
-              {username && <p className="profile-overline break-all text-gold/80">@{username}</p>}
+              {username && <p className="kin-overline break-all text-gold/80">@{username}</p>}
             </div>
             {bio ? (
               <p className="mt-2.5 max-w-2xl text-sm leading-6 text-neutral-400">{bio}</p>
@@ -88,7 +88,7 @@ export default function ProfileHeader({
           </div>
         </div>
         {children && (
-          <div className="profile-header-actions flex flex-wrap items-center gap-2 pl-24 sm:pl-[7.25rem] lg:shrink-0 lg:self-end lg:pl-0">
+          <div className="flex flex-wrap items-center gap-2 pl-24 sm:pl-[7.25rem] lg:shrink-0 lg:self-end lg:pl-0">
             {children}
           </div>
         )}

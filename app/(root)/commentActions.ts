@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { resolveActionArgs, type ActionState } from "@/lib/actionState";
+import { resolveActionArgs, withState, type ActionState } from "@/lib/actionState";
 import dbConnect from "@/lib/dbConnect";
 import Comment from "@/models/Comment";
 import MovieList from "@/models/MovieList";
@@ -12,9 +12,6 @@ import { rateLimit } from "@/lib/rateLimit";
 import { isObjectId } from "@/lib/objectId";
 import { normalizeMediaType } from "@/lib/media";
 
-function withState(state: ActionState, status: ActionState["status"], message: string): ActionState {
-  return { ...state, status, message };
-}
 
 export async function createComment(stateOrFormData: ActionState | FormData, formData?: FormData): Promise<ActionState> {
   const { state, formData: resolvedFormData } = resolveActionArgs(stateOrFormData, formData);

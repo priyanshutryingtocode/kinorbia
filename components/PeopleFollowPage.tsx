@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
+import { escapeRegExp, firstValue, parsePage } from "@/lib/searchParams";
 import User from "@/models/User";
 import PeopleList from "@/components/PeopleList";
 import PageContainer from "@/components/PageContainer";
@@ -42,24 +43,6 @@ type ProfileUser = {
 type ViewerUser = {
   following?: string[] | null;
 };
-
-function firstValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function parsePage(value: string | string[] | undefined) {
-  const rawPage = firstValue(value)?.trim();
-  if (!rawPage || !/^[1-9]\d*$/.test(rawPage)) {
-    return 1;
-  }
-
-  const page = Number(rawPage);
-  return Number.isSafeInteger(page) && page > 0 ? page : 1;
-}
-
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 export default async function PeopleFollowPage({
   username,
@@ -156,7 +139,7 @@ export default async function PeopleFollowPage({
           Back to profile
         </Link>
         <header className="mb-6 mt-5 border-b border-white/10 pb-5">
-          <p className="profile-overline text-gold/80">@{username}</p>
+          <p className="kin-overline text-gold/80">@{username}</p>
           <h1 className="mt-2 font-display text-3xl font-medium leading-none text-white sm:text-4xl">
             {copy.heading}
           </h1>

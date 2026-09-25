@@ -1,13 +1,12 @@
 import Skeleton from "@/components/Skeleton";
 import PageContainer from "@/components/PageContainer";
+import SkeletonRegion from "@/components/SkeletonRegion";
 
 export default function ProfileSkeleton({ publicProfile = false }: { publicProfile?: boolean }) {
   const statCount = publicProfile ? 3 : 4;
   return (
-    <div className="pb-20 pt-6 sm:pt-8" aria-busy="true">
-      <span className="sr-only" role="status">Loading profile</span>
-      <div aria-hidden="true">
-        <PageContainer width="frame">
+    <SkeletonRegion label="Loading profile">
+      <PageContainer width="frame">
         <div className="profile-masthead p-5 sm:p-6">
           <div className="flex items-start gap-4 sm:gap-5">
             <Skeleton className="h-20 w-20 shrink-0 rounded-full sm:h-24 sm:w-24" />
@@ -36,8 +35,7 @@ export default function ProfileSkeleton({ publicProfile = false }: { publicProfi
             <Skeleton key={index} className="aspect-2/3 rounded-sm" />
           ))}
         </div>
-        </PageContainer>
-      </div>
-    </div>
+      </PageContainer>
+    </SkeletonRegion>
   );
 }

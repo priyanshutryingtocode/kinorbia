@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { resolveActionArgs, type ActionState } from "@/lib/actionState";
+import { resolveActionArgs, withState, type ActionState } from "@/lib/actionState";
 import dbConnect from "@/lib/dbConnect";
 import JournalEntry from "@/models/JournalEntry";
 import User from "@/models/User";
@@ -13,9 +13,6 @@ import type { FavoriteMovie } from "@/types";
 const MAX_NOTE_LENGTH = 1000;
 const MAX_TITLE_LENGTH = 200;
 
-function withState(state: ActionState, status: ActionState["status"], message: string): ActionState {
-  return { ...state, status, message };
-}
 
 function parseWatchedDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -61,7 +58,9 @@ export async function createJournalEntry(stateOrFormData: ActionState | FormData
     if (favoriteMovieId) {
       const [favMediaType, ...favIdParts] = favoriteMovieId.split(":");
       const favId = favIdParts.join(":");
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email })
+        .select("favorites")
+        .lean<{ favorites?: FavoriteMovie[] } | null>();
       const favorites = (user?.favorites || []) as FavoriteMovie[];
       const favorite = favorites.find(
         (movie) =>

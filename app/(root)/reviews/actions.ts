@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { resolveActionArgs, type ActionState } from "@/lib/actionState";
+import { resolveActionArgs, withState, type ActionState } from "@/lib/actionState";
 import dbConnect from "@/lib/dbConnect";
 import Review from "@/models/Review";
 import Comment from "@/models/Comment";
@@ -14,9 +14,6 @@ import type { FavoriteMovie } from "@/types";
 
 const MAX_REVIEW_LENGTH = 1200;
 
-function withState(state: ActionState, status: ActionState["status"], message: string): ActionState {
-  return { ...state, status, message };
-}
 
 function isTruthyCheckbox(value: string) {
   return value === "on" || value === "true" || value === "1";

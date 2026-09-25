@@ -23,7 +23,6 @@ type GeminiPlan = {
 
 type GeminiSeed = {
   title?: string;
-  movies: MovieSummary[];
 };
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -324,16 +323,15 @@ export const POST = withRateLimit(
         return NextResponse.json({ reply, movies: referenceMovies });
       }
 
-      const history = email
-        ? await getHistory(email)
-        : (body.history || [])
-            .slice(-8)
-            .map((message) => ({ role: message.role, content: message.content }));
+      const history = await getHistory(email);
 
-      const plan = await getGeminiPlan(prompt, history, context, {
-        title: referencedMovie?.title,
-        movies: referenceMovies,
-      }, mediaType);
+      const plan = await getGeminiPlan(
+        prompt,
+        history,
+        context,
+        { title: referencedMovie?.title },
+        mediaType
+      );
 
       const settled = await Promise.allSettled(plan.titles.map((title) => searchTmdbTitle(title, mediaType)));
       const rawMovies = settled.map((result) => (result.status === "fulfilled" ? result.value : null));

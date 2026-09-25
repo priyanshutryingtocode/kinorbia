@@ -58,13 +58,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function MoviePage({ params }: Props) {
 
   const { id } = await params;
-  const [movie, credits, videos] = await Promise.all([
+  const [movie, credits, videos, session] = await Promise.all([
     getMovieDetails(id),
     getCredits(id),
     getMovieVideos(id),
+    auth(),
   ]);
   const trailer = pickMainTrailer(videos?.results);
-  const session = await auth();
 
   let isFavorite = false;
   let isWatched = false;
@@ -114,6 +114,15 @@ if (user?.favorites) {
   const topCast = [...credits.cast].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).slice(0, 6);
   const backdrop = tmdbImage(movie.backdrop_path, "w1280");
   const poster = tmdbImage(movie.poster_path, "w500");
+
+  const summary = {
+    id: movie.id.toString(),
+    title: movie.title,
+    poster_path: movie.poster_path,
+    vote_average: movie.vote_average || 0,
+    release_date: movie.release_date,
+    genre_ids: movie.genres?.map((genre) => genre.id) || [],
+  };
 
   return (
     <div className="relative overflow-hidden pb-20 text-white">
@@ -188,47 +197,11 @@ if (user?.favorites) {
             <div className="mt-8 rounded-lg border border-white/10 bg-neutral-950/70 p-4 backdrop-blur-xl sm:p-5">
               <div className="flex flex-wrap items-center gap-3">
                 {trailer && <TrailerButton videoKey={trailer.key} title={movie.title} />}
-                <FavoriteButton
-                  movie={{
-                    id: movie.id.toString(),
-                    title: movie.title,
-                    poster_path: movie.poster_path,
-                    vote_average: movie.vote_average || 0,
-                    release_date: movie.release_date,
-                    genre_ids: movie.genres?.map((genre) => genre.id) || [],
-                  }}
-                  initialIsFavorite={isFavorite}
-                />
-                <WatchedButton
-                  movie={{
-                    id: movie.id.toString(),
-                    title: movie.title,
-                    poster_path: movie.poster_path,
-                  }}
-                  initialIsWatched={isWatched}
-                />
-                <WatchlistButton
-                  movie={{
-                    id: movie.id.toString(),
-                    title: movie.title,
-                    poster_path: movie.poster_path,
-                    vote_average: movie.vote_average || 0,
-                    release_date: movie.release_date,
-                  }}
-                  initialIsWatchlisted={isWatchlisted}
-                />
-<div className="mt-3 w-full sm:mt-0 sm:w-auto sm:flex-1 sm:min-w-0">
-                  <MovieRatingControl
-                    movie={{
-                      id: movie.id.toString(),
-                      title: movie.title,
-                      poster_path: movie.poster_path,
-                      vote_average: movie.vote_average || 0,
-                      release_date: movie.release_date,
-                      genre_ids: movie.genres?.map((genre) => genre.id) || [],
-                    }}
-                    initialRating={personalRating}
-                  />
+                <FavoriteButton movie={summary} initialIsFavorite={isFavorite} />
+                <WatchedButton movie={summary} initialIsWatched={isWatched} />
+                <WatchlistButton movie={summary} initialIsWatchlisted={isWatchlisted} />
+                <div className="mt-3 w-full sm:mt-0 sm:w-auto sm:flex-1 sm:min-w-0">
+                  <MovieRatingControl movie={summary} initialRating={personalRating} />
                 </div>
               </div>
             </div>

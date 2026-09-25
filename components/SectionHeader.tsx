@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import HeaderBlock from "@/components/HeaderBlock";
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -30,27 +31,24 @@ export default function SectionHeader({
   headingLevel = 2,
   className = "",
 }: SectionHeaderProps) {
-  const Heading = headings[headingLevel];
-  const hasTitle = title !== undefined && title !== null;
-  const headingId = id && hasTitle ? `${id}-heading` : undefined;
+  const headingId = id && title !== undefined && title !== null ? `${id}-heading` : undefined;
 
   return (
-    <div
-      id={id}
-      aria-labelledby={headingId}
-      className={`scroll-mt-32 ${className}`}
-    >
-      <header className="flex flex-col gap-3 border-t border-rule pt-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          {eyebrow && <p className="kin-overline mb-1.5 text-highlight/80">{eyebrow}</p>}
-          {hasTitle && (
-            <Heading id={headingId} className="font-display text-2xl font-medium leading-tight text-content">
-              {title}
-            </Heading>
-          )}
-          {description && <div className="mt-2 max-w-2xl text-sm leading-6 text-content-muted">{description}</div>}
-        </div>
-        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+    <div id={id} aria-labelledby={headingId} className={`scroll-mt-32 ${className}`}>
+      <header className="border-t border-rule pt-4">
+        <HeaderBlock
+          eyebrow={eyebrow}
+          title={title}
+          titleId={headingId}
+          titleTag={headings[headingLevel]}
+          description={description}
+          actions={actions}
+          rowClassName="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+          textClassName="min-w-0"
+          eyebrowClassName="kin-overline mb-1.5 text-highlight/80"
+          titleClassName="font-display text-2xl font-medium leading-tight text-content"
+          descriptionClassName="mt-2 max-w-2xl text-sm leading-6 text-content-muted"
+        />
       </header>
     </div>
   );

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
-import PageContainer from "@/components/PageContainer";
+import RouteShell from "@/components/RouteShell";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Download, ExternalLink, Film } from "lucide-react";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import { buildInsights, yearsFromJournal } from "@/lib/insights";
-import { mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
+import { formatDate, mediaHref, mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
+import { firstValue, parsePage, parseYear } from "@/lib/searchParams";
 import {
   getFavoritePage,
   getInsightsSource,
@@ -56,49 +57,14 @@ type ProfileSearchParams = {
   year?: string | string[];
 };
 
-function firstValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 function parseTab(value: string | string[] | undefined): ProfileTab {
   const tab = firstValue(value);
   return PROFILE_TABS.includes(tab as ProfileTab) ? (tab as ProfileTab) : "overview";
 }
 
-function parsePage(value: string | string[] | undefined) {
-  const raw = firstValue(value)?.trim();
-  if (!raw || !/^[1-9]\d*$/.test(raw)) {
-    return 1;
-  }
-  const page = Number(raw);
-  return Number.isSafeInteger(page) && page > 0 ? page : 1;
-}
-
-function parseYear(value: string | string[] | undefined) {
-  const raw = firstValue(value)?.trim();
-  if (!raw || !/^\d{4}$/.test(raw)) {
-    return undefined;
-  }
-  const year = Number(raw);
-  return year >= 1900 && year <= 2200 ? year : undefined;
-}
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 function JournalCard({ item }: { item: JournalItem }) {
   const poster = tmdbImage(item.posterPath, "w342");
-  const href = item.movieId
-    ? normalizeMediaType(item.mediaType) === "tv"
-      ? `/tv/${item.movieId}`
-      : `/movie/${item.movieId}`
-    : null;
+  const href = item.movieId ? mediaHref(item.mediaType, item.movieId) : null;
   const content = (
     <>
       <div className="relative aspect-2/3 bg-neutral-900">
@@ -203,7 +169,6 @@ function WatchlistGrid({ items }: { items: WatchlistMovie[] }) {
         <MovieCard
           key={mediaKey(movie.mediaType, movie.movieId)}
           index={index}
-          safeImage
           movie={{
             id: movie.movieId,
             title: movie.title,
@@ -298,28 +263,26 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   const relationships = await relationshipPromise;
   return (
-    <div className="pb-20 pt-6 sm:pt-8">
-      <PageContainer width="frame">
-        <ProfileHeader
-          name={identity.name || sessionName || "KinOrbia user"}
-          username={identity.username}
-          bio={identity.bio}
-          image={identity.image || sessionImage}
-          createdAt={identity.createdAt}
-          followers={relationships.followers}
-          following={relationships.following}
-        >
-          {identity.username && <Link href={`/u/${encodeURIComponent(identity.username)}`} className="kin-focus inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:border-gold/30 hover:text-white"><ExternalLink className="h-4 w-4" />Public profile</Link>}
-          <ProfileActions user={{ name: identity.name || sessionName || "KinOrbia user", bio: identity.bio || "", username: identity.username }} />
-          <a href="/api/user/export" className="kin-focus inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:border-gold/30 hover:text-white"><Download className="h-4 w-4" />Export data</a>
-        </ProfileHeader>
+    <RouteShell spacing="extended" width="frame">
+      <ProfileHeader
+        name={identity.name || sessionName || "KinOrbia user"}
+        username={identity.username}
+        bio={identity.bio}
+        image={identity.image || sessionImage}
+        createdAt={identity.createdAt}
+        followers={relationships.followers}
+        following={relationships.following}
+      >
+        {identity.username && <Link href={`/u/${encodeURIComponent(identity.username)}`} className="kin-focus inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:border-gold/30 hover:text-white"><ExternalLink className="h-4 w-4" />Public profile</Link>}
+        <ProfileActions user={{ name: identity.name || sessionName || "KinOrbia user", bio: identity.bio || "", username: identity.username }} />
+        <a href="/api/user/export" className="kin-focus inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:border-gold/30 hover:text-white"><Download className="h-4 w-4" />Export data</a>
+      </ProfileHeader>
 
-        <div className="sticky top-20 z-30 -mx-4 mt-5 border-y border-white/10 bg-neutral-950/95 px-4 py-2 backdrop-blur-xl sm:mx-0 sm:px-0">
-          <ProfileTabs current={tab} year={selectedYear} />
-        </div>
+      <div className="sticky top-20 z-30 -mx-4 mt-5 border-y border-white/10 bg-neutral-950/95 px-4 py-2 backdrop-blur-xl sm:mx-0 sm:px-0">
+        <ProfileTabs current={tab} year={selectedYear} />
+      </div>
 
-        <div className="mt-8">{panel}</div>
-      </PageContainer>
-    </div>
+      <div className="mt-8">{panel}</div>
+    </RouteShell>
   );
 }

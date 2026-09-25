@@ -97,7 +97,7 @@ export default function AccessibleDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`shell-overlay-panel relative max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-overlay border border-rule bg-canvas p-6 shadow-2xl focus:outline-none ${className}`}
+        className={`shell-panel-enter relative max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-overlay border border-rule bg-canvas p-6 shadow-2xl focus:outline-none ${className}`}
       >
         {children}
       </div>

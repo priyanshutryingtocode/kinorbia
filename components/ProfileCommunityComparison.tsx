@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, Minus, Users } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { buildCommunityComparison } from "@/lib/community";
-import { tmdbImage } from "@/lib/media";
+import { mediaHref, tmdbImage } from "@/lib/media";
 import type { FavoriteMovie } from "@/types";
 
 type ProfileCommunityComparisonProps = {
@@ -53,7 +53,7 @@ export default async function ProfileCommunityComparison({
     <section aria-labelledby="community-heading" className="py-8">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="profile-overline text-gold/80">Shared taste</p>
+          <p className="kin-overline text-gold/80">Shared taste</p>
           <h3 id="community-heading" className="flex items-center gap-2 font-display text-2xl font-medium text-white">
             <Users className="h-5 w-5 text-gold" aria-hidden="true" />
             You vs the community
@@ -66,14 +66,14 @@ export default async function ProfileCommunityComparison({
 
       <div className="grid grid-cols-2 divide-x divide-white/10 border-y border-white/10">
         <div className="py-4 pr-4 sm:pr-6">
-          <p className="profile-overline text-neutral-400">You</p>
+          <p className="kin-overline text-neutral-400">You</p>
           <p className="mt-1 font-display text-2xl font-medium leading-none text-gold">
             {community.userComparableAvg.toFixed(1)}
           </p>
           <p className="mt-1 text-xs text-neutral-400">Comparable average</p>
         </div>
         <div className="py-4 pl-4 sm:pl-6">
-          <p className="profile-overline text-neutral-400">Community</p>
+          <p className="kin-overline text-neutral-400">Community</p>
           <p className="mt-1 font-display text-2xl font-medium leading-none text-white">{overallCommunityAvg}</p>
           <p className="mt-1 text-xs text-neutral-400">Average title rating</p>
         </div>
@@ -114,7 +114,7 @@ export default async function ProfileCommunityComparison({
                       )}
                       <div className="min-w-0">
                         <Link
-                          href={item.mediaType === "tv" ? `/tv/${item.movieId}` : `/movie/${item.movieId}`}
+                          href={mediaHref(item.mediaType, item.movieId)}
                           className="kin-focus block truncate rounded-sm font-semibold text-white transition hover:text-gold"
                         >
                           {item.title}

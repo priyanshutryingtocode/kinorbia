@@ -1,11 +1,10 @@
-import { redirect } from "next/navigation";
 import { BookOpen, CalendarDays } from "lucide-react";
 import type { Metadata } from "next";
-import { auth } from "@/auth";
+import { requireUserEmail } from "@/lib/actions";
 import ActionForm from "@/components/ActionForm";
 import EmptyState from "@/components/EmptyState";
 import FormPanel from "@/components/FormPanel";
-import PageContainer from "@/components/PageContainer";
+import RouteShell from "@/components/RouteShell";
 import PageHeader from "@/components/PageHeader";
 import SectionHeader from "@/components/SectionHeader";
 import SubmitButton from "@/components/SubmitButton";
@@ -120,18 +119,19 @@ function JournalEntryRow({ entry }: { entry: JournalItem }) {
 }
 
 export default async function JournalPage() {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
+  const email = await requireUserEmail();
 
   await dbConnect();
-  const user = await User.findOne({ email: session.user.email });
-  const favorites = dedupeFavorites((user?.favorites || []) as FavoriteMovie[]);
-  const rawEntries = await JournalEntry.find({ userEmail: session.user.email })
-    .sort({ watchedAt: -1, createdAt: -1 })
-    .limit(40)
-    .lean<RawJournalEntry[]>();
+  const [user, rawEntries] = await Promise.all([
+    User.findOne({ email })
+      .select("favorites")
+      .lean<{ favorites?: FavoriteMovie[] } | null>(),
+    JournalEntry.find({ userEmail: email })
+      .sort({ watchedAt: -1, createdAt: -1 })
+      .limit(40)
+      .lean<RawJournalEntry[]>(),
+  ]);
+  const favorites = dedupeFavorites(user?.favorites || []);
   const entries = rawEntries.map(serializeJournalEntry);
 
   const favoriteMovieId = "journal-favorite-movie";
@@ -140,111 +140,109 @@ export default async function JournalPage() {
   const noteId = "journal-note";
 
   return (
-    <div className="bg-canvas pb-16 pt-6 sm:pt-8">
-      <PageContainer width="page">
-        <PageHeader
-          eyebrow="Personal"
-          title="Watch Journal"
-          description="Log what you watched, when you watched it, and the small notes that are easy to forget later."
-        />
+    <RouteShell spacing="standard" width="page">
+      <PageHeader
+        eyebrow="Personal"
+        title="Watch Journal"
+        description="Log what you watched, when you watched it, and the small notes that are easy to forget later."
+      />
 
-        <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-          <FormPanel
-            id="log-watch"
-            eyebrow="New entry"
-            title="Log a watch"
-            description="Choose a favorite or add a title manually."
-            className="lg:sticky lg:top-24"
-          >
-            <ActionForm action={createJournalEntry} successMessage="Journal entry added." resetOnSuccess className="kin-form-stack">
-              {favorites.length > 0 && (
-                <div className="kin-field">
-                  <label htmlFor={favoriteMovieId} className="kin-label">
-                    Pick from favorites
-                  </label>
-                  <select id={favoriteMovieId} name="favoriteMovieId" defaultValue="" className="kin-input">
-                    <option value="">Manual movie title</option>
-                    {favorites.map((movie) => (
-                      <option key={mediaKey(movie.mediaType, movie.movieId)} value={mediaKey(movie.mediaType, movie.movieId)}>
-                        {movie.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
+      <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+        <FormPanel
+          id="log-watch"
+          eyebrow="New entry"
+          title="Log a watch"
+          description="Choose a favorite or add a title manually."
+          className="lg:sticky lg:top-24"
+        >
+          <ActionForm action={createJournalEntry} successMessage="Journal entry added." resetOnSuccess className="kin-form-stack">
+            {favorites.length > 0 && (
               <div className="kin-field">
-                <label htmlFor={movieTitleId} className="kin-label">
-                  Movie title
+                <label htmlFor={favoriteMovieId} className="kin-label">
+                  Pick from favorites
                 </label>
-                <input
-                  id={movieTitleId}
-                  name="movieTitle"
-                  maxLength={200}
-                  placeholder="For manual journal entries"
-                  className="kin-input"
-                />
-              </div>
-
-              <div className="kin-field">
-                <label htmlFor={watchedAtId} className="kin-label">
-                  Watched
-                </label>
-                <input
-                  id={watchedAtId}
-                  name="watchedAt"
-                  type="date"
-                  required
-                  defaultValue={todayInputValue()}
-                  className="kin-input"
-                />
-              </div>
-
-              <div className="kin-field">
-                <label htmlFor={noteId} className="kin-label">
-                  Note
-                </label>
-                <textarea
-                  id={noteId}
-                  name="note"
-                  maxLength={1000}
-                  rows={5}
-                  placeholder="A scene, mood, or thought to remember."
-                  className="kin-input resize-y"
-                />
-              </div>
-
-              <SubmitButton pendingLabel="Adding..." variant="primary" className="w-full">
-                Add to journal
-              </SubmitButton>
-            </ActionForm>
-          </FormPanel>
-
-          <section aria-labelledby="journal-entries-heading">
-            <SectionHeader
-              id="journal-entries"
-              eyebrow="Watch log"
-              title="Recent entries"
-              description={entries.length > 0 ? `${entries.length} logged ${entries.length === 1 ? "watch" : "watches"}` : "Your watch history, one entry at a time"}
-            />
-            <div className="mt-5">
-              {entries.length > 0 ? (
-                <div className="kin-editorial-list">
-                  {entries.map((entry) => (
-                    <JournalEntryRow key={entry._id} entry={entry} />
+                <select id={favoriteMovieId} name="favoriteMovieId" defaultValue="" className="kin-input">
+                  <option value="">Manual movie title</option>
+                  {favorites.map((movie) => (
+                    <option key={mediaKey(movie.mediaType, movie.movieId)} value={mediaKey(movie.mediaType, movie.movieId)}>
+                      {movie.title}
+                    </option>
                   ))}
-                </div>
-              ) : (
-                <EmptyState
-                  compact
-                  title="Your journal is empty"
-                  description="Log your first watch to start building your watch history."
-                />
-              )}
+                </select>
+              </div>
+            )}
+
+            <div className="kin-field">
+              <label htmlFor={movieTitleId} className="kin-label">
+                Movie title
+              </label>
+              <input
+                id={movieTitleId}
+                name="movieTitle"
+                maxLength={200}
+                placeholder="For manual journal entries"
+                className="kin-input"
+              />
             </div>
-          </section>
-        </div>
-      </PageContainer>
-    </div>
+
+            <div className="kin-field">
+              <label htmlFor={watchedAtId} className="kin-label">
+                Watched
+              </label>
+              <input
+                id={watchedAtId}
+                name="watchedAt"
+                type="date"
+                required
+                defaultValue={todayInputValue()}
+                className="kin-input"
+              />
+            </div>
+
+            <div className="kin-field">
+              <label htmlFor={noteId} className="kin-label">
+                Note
+              </label>
+              <textarea
+                id={noteId}
+                name="note"
+                maxLength={1000}
+                rows={5}
+                placeholder="A scene, mood, or thought to remember."
+                className="kin-input resize-y"
+              />
+            </div>
+
+            <SubmitButton pendingLabel="Adding..." variant="primary" className="w-full">
+              Add to journal
+            </SubmitButton>
+          </ActionForm>
+        </FormPanel>
+
+        <section aria-labelledby="journal-entries-heading">
+          <SectionHeader
+            id="journal-entries"
+            eyebrow="Watch log"
+            title="Recent entries"
+            description={entries.length > 0 ? `${entries.length} logged ${entries.length === 1 ? "watch" : "watches"}` : "Your watch history, one entry at a time"}
+          />
+          <div className="mt-5">
+            {entries.length > 0 ? (
+              <div className="kin-editorial-list">
+                {entries.map((entry) => (
+                  <JournalEntryRow key={entry._id} entry={entry} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                compact
+                title="Your journal is empty"
+                description="Log your first watch to start building your watch history."
+              />
+            )}
+          </div>
+        </section>
+      </div>
+    </RouteShell>
   );
 }

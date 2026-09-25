@@ -3,6 +3,14 @@ export type ActionState = {
   message?: string;
 };
 
+export function withState(
+  state: ActionState,
+  status: ActionState["status"],
+  message: string
+): ActionState {
+  return { ...state, status, message };
+}
+
 export function resolveActionArgs(
   stateOrFormData: ActionState | FormData,
   formData?: FormData

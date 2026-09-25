@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import HeaderBlock from "@/components/HeaderBlock";
 
 type PageHeaderProps = {
   eyebrow?: string;
@@ -9,6 +10,8 @@ type PageHeaderProps = {
   className?: string;
 };
 
+const headings = { 1: "h1", 2: "h2", 3: "h3" } as const;
+
 export default function PageHeader({
   eyebrow,
   title,
@@ -17,22 +20,20 @@ export default function PageHeader({
   headingLevel = 1,
   className = "",
 }: PageHeaderProps) {
-  const Heading = headingLevel === 1 ? "h1" : headingLevel === 2 ? "h2" : "h3";
-
   return (
     <header className={`border-t border-rule pt-5 ${className}`}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          {eyebrow && <p className="kin-overline mb-2 text-highlight/80">{eyebrow}</p>}
-          <Heading className="font-display text-3xl font-medium leading-editorial text-content sm:text-4xl">
-            {title}
-          </Heading>
-          {description && (
-            <div className="mt-2.5 max-w-2xl text-sm leading-6 text-content-muted">{description}</div>
-          )}
-        </div>
-        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
-      </div>
+      <HeaderBlock
+        eyebrow={eyebrow}
+        title={title}
+        titleTag={headings[headingLevel]}
+        description={description}
+        actions={actions}
+        rowClassName="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+        textClassName="min-w-0"
+        eyebrowClassName="kin-overline mb-2 text-highlight/80"
+        titleClassName="font-display text-3xl font-medium leading-editorial text-content sm:text-4xl"
+        descriptionClassName="mt-2.5 max-w-2xl text-sm leading-6 text-content-muted"
+      />
     </header>
   );
 }

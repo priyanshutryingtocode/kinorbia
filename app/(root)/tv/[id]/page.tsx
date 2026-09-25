@@ -57,13 +57,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TvPage({ params }: Props) {
   const { id } = await params;
-  const [tv, credits, videos] = await Promise.all([
+  const [tv, credits, videos, session] = await Promise.all([
     getTvDetails(id),
     getCredits(id),
     getTvVideos(id),
+    auth(),
   ]);
   const trailer = pickMainTrailer(videos?.results);
-  const session = await auth();
 
   let isFavorite = false;
   let isWatched = false;

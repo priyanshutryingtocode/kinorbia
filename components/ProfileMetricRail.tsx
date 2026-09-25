@@ -44,7 +44,7 @@ export default function ProfileMetricRail({
       {metrics.map(({ label, value, detail, href, emphasis = "neutral" }) => {
         const content = (
           <>
-            <p className="profile-overline text-neutral-400">{label}</p>
+            <p className="kin-overline text-neutral-400">{label}</p>
             <p className={`mt-1.5 break-words font-display text-2xl font-medium leading-none sm:text-3xl ${valueColors[emphasis]}`}>
               {value}
             </p>

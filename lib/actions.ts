@@ -19,3 +19,15 @@ export function getString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
 }
+
+// Page-level guard: redirects anonymous visitors to login and returns the
+// caller's normalized email. Use only on routes that are always private — the
+// public activity feed and public profiles need a nullable variant instead.
+export async function requireUserEmail() {
+  const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
+  return session.user.email.toLowerCase();
+}

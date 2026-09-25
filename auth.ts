@@ -2,7 +2,7 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import dbConnect from "@/lib/dbConnect";
+import dbConnect, { isDuplicateKeyError } from "@/lib/dbConnect";
 import User from "@/models/User";
 import { ensureUserIdentity, slugifyUsername } from "@/lib/userIdentity";
 
@@ -20,15 +20,6 @@ type AppToken = {
   iat?: number;
   sessionExpired?: boolean;
 };
-
-function isDuplicateKeyError(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: number }).code === 11000
-  );
-}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,

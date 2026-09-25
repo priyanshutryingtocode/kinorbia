@@ -8,5 +8,3 @@ export function getRedis(): Redis {
   }
   return redis;
 }
-
-export default getRedis;

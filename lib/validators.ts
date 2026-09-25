@@ -37,15 +37,8 @@ const addToListSchema = z.object({
   movie: movieRefSchema,
 });
 
-const assistantMessageSchema = z.object({
-  role: z.enum(["user", "assistant"]),
-  content: z.string().trim().max(2000),
-});
-
 export const assistantPromptSchema = z.object({
   message: z.string().trim().min(1).max(2000),
-  history: z.array(assistantMessageSchema).max(30).optional(),
-  threadId: z.string().trim().max(120).optional(),
 });
 
 async function parseJson<T extends z.ZodType>(

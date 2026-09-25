@@ -4,7 +4,7 @@ import { useRef } from "react";
 import Link from "next/link";
 import { Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
-import { normalizeMediaType, tmdbImage } from "@/lib/media";
+import { mediaHref, normalizeMediaType, tmdbImage } from "@/lib/media";
 
 export interface CarouselMovie {
   id: number;
@@ -62,7 +62,7 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
         {movies.map((movie) => (
 <Link 
             key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`} 
-            href={movie.mediaType === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`}
+            href={mediaHref(movie.mediaType, movie.id)}
              className="kin-focus group/card relative w-32 shrink-0 snap-start overflow-hidden rounded-sheet border border-rule bg-canvas transition-all duration-300 hover:-translate-y-1 hover:border-rule-strong hover:shadow-card-hover sm:w-36 md:w-44"
             aria-label={movie.title}
           >

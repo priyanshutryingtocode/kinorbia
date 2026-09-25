@@ -2,7 +2,7 @@ import Link from "next/link";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
-import { mediaMatch, mediaEquals } from "@/lib/media";
+import { mediaEquals, mediaHref, mediaMatch } from "@/lib/media";
 import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
 import { renderRichText } from "@/lib/renderRichText";
 import type { MediaType } from "@/types";
@@ -55,7 +55,7 @@ export default async function MovieReviewsAndLists({
     return null;
   }
 
-  const reviewPath = mediaType === "tv" ? `/tv/${movieId}` : `/movie/${movieId}`;
+  const reviewPath = mediaHref(mediaType, movieId);
 
   return (
     <section className="mt-14 grid gap-6 border-t border-white/10 pt-8 lg:grid-cols-2">

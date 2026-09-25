@@ -1,6 +1,6 @@
 import type { FavoriteMovie, MediaType } from "@/types";
 import { genreName } from "@/lib/genres";
-import { normalizeMediaType } from "@/lib/media";
+import { mediaHref, normalizeMediaType } from "@/lib/media";
 
 export type MonthlyPoint = {
   key: string;
@@ -37,10 +37,6 @@ export type InsightsData = {
   bestStreak: number;
   ratingDistribution: StarBucket[];
   topRated: TopRatedItem[];
-  movieCount: number;
-  showCount: number;
-  movieEntryCount?: number;
-  showEntryCount?: number;
   genreBreakdown: GenreBreakdown[];
   bestMonthLabel: string | null;
   topGenre: string | null;
@@ -206,8 +202,6 @@ export function buildInsights(
   const watchedKeys = new Set<string>();
   let movieCount = 0;
   let showCount = 0;
-  let movieEntryCount = 0;
-  let showEntryCount = 0;
 
   for (const entry of filteredJournal) {
     const date = new Date(entry.watchedAt);
@@ -216,12 +210,6 @@ export function buildInsights(
     dayStrs.push(utcDayStr(date));
 
     const mediaType = normalizeMediaType(entry.mediaType);
-    if (mediaType === "tv") {
-      showEntryCount += 1;
-    } else {
-      movieEntryCount += 1;
-    }
-
     const watchedKey = journalKey(entry, manualOccurrences);
     if (!watchedKeys.has(watchedKey)) {
       watchedKeys.add(watchedKey);
@@ -278,7 +266,7 @@ export function buildInsights(
       rating: favorite.personalRating as number,
       mediaType: (normalizeMediaType(favorite.mediaType)) as MediaType,
       movieId: favorite.movieId,
-      href: (normalizeMediaType(favorite.mediaType)) === "tv" ? `/tv/${favorite.movieId}` : `/movie/${favorite.movieId}`,
+      href: mediaHref(favorite.mediaType, favorite.movieId),
     }))
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 5);
@@ -309,10 +297,6 @@ export function buildInsights(
     bestStreak: best,
     ratingDistribution,
     topRated,
-    movieCount,
-    showCount,
-    movieEntryCount,
-    showEntryCount,
     genreBreakdown,
     bestMonthLabel,
     topGenre: genreBreakdown[0]?.name || null,

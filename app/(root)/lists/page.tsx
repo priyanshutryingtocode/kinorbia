@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ChevronDown, Film, Plus } from "lucide-react";
-import { auth } from "@/auth";
+import { requireUserEmail } from "@/lib/actions";
 import ActionForm from "@/components/ActionForm";
 import EmptyState from "@/components/EmptyState";
 import FormPanel from "@/components/FormPanel";
 import MoviePicker from "@/components/MoviePicker";
-import PageContainer from "@/components/PageContainer";
+import RouteShell from "@/components/RouteShell";
 import PageHeader from "@/components/PageHeader";
 import SectionHeader from "@/components/SectionHeader";
 import SocialActionButton from "@/components/SocialActionButton";
@@ -16,7 +15,7 @@ import TmdbPosterImage from "@/components/TmdbPosterImage";
 import VisibilityBadge from "@/components/VisibilityBadge";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import dbConnect from "@/lib/dbConnect";
-import { mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
+import { formatDate, mediaHref, mediaKey, tmdbImage } from "@/lib/media";
 import { serializeFavorites, serializeList, type RawFavoriteMovie, type RawMovieList } from "@/lib/serialize";
 import MovieList from "@/models/MovieList";
 import User from "@/models/User";
@@ -28,18 +27,9 @@ export const metadata: Metadata = {
   description: "Create and organize custom lists for movies and shows.",
 };
 
-function formatListDate(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 function PosterPreview({ movie }: { movie: ListMovie }) {
   const poster = tmdbImage(movie.posterPath, "w185");
-  const href = normalizeMediaType(movie.mediaType) === "tv" ? `/tv/${movie.movieId}` : `/movie/${movie.movieId}`;
+  const href = mediaHref(movie.mediaType, movie.movieId);
 
   return (
     <Link
@@ -94,7 +84,7 @@ function ListRow({
           </Link>
         </h3>
         <p className="mt-1.5 text-xs text-content-subtle">
-          By {list.userName} · {formatListDate(list.createdAt)}
+          By {list.userName} · {formatDate(list.createdAt)}
         </p>
         {list.description && (
           <p className="mt-3 line-clamp-2 text-sm leading-6 text-content-muted">
@@ -243,11 +233,7 @@ function ListRow({
 }
 
 export default async function ListsPage() {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
-  const currentUserEmail = session.user.email.toLowerCase();
+  const currentUserEmail = await requireUserEmail();
 
   await dbConnect();
 
@@ -270,120 +256,118 @@ export default async function ListsPage() {
   const favorites = serializeFavorites(user?.favorites);
 
   return (
-    <div className="pb-20 pt-6 sm:pt-8">
-      <PageContainer width="page">
-        <PageHeader
-          eyebrow="Collections"
-          title="Community Lists"
-          description="Build themed shelves from your favorites, from comfort watches to sharp thrillers and date-night picks."
-        />
+    <RouteShell spacing="extended" width="page">
+      <PageHeader
+        eyebrow="Collections"
+        title="Community Lists"
+        description="Build themed shelves from your favorites, from comfort watches to sharp thrillers and date-night picks."
+      />
 
-        <div className="mt-7 grid items-start gap-8 xl:grid-cols-[22rem_minmax(0,1fr)]">
-          <FormPanel
-            id="create-list"
-            eyebrow="New collection"
-            title="Create a list"
-            description="Choose from your favorites and set who can see it."
-          >
-            {favorites.length > 0 ? (
-              <ActionForm
-                action={createMovieList}
-                className="kin-form-stack"
-                successMessage="List created."
-                resetOnSuccess
-              >
-                <div className="kin-field">
-                  <label htmlFor="create-list-title" className="kin-label">
-                    List title
-                  </label>
-                  <input
-                    id="create-list-title"
-                    name="title"
-                    required
-                    maxLength={80}
-                    placeholder="Friday night thrillers"
-                    className="kin-input"
-                  />
-                </div>
-                <div className="kin-field">
-                  <label htmlFor="create-list-description" className="kin-label">
-                    Description
-                  </label>
-                  <textarea
-                    id="create-list-description"
-                    name="description"
-                    maxLength={300}
-                    rows={3}
-                    placeholder="A short note about the vibe."
-                    className="kin-input resize-y"
-                  />
-                </div>
-                <MoviePicker
-                  name="movieIds"
-                  favorites={favorites}
-                  max={MAX_LIST_MOVIES}
-                  label="Select titles"
+      <div className="mt-7 grid items-start gap-8 xl:grid-cols-[22rem_minmax(0,1fr)]">
+        <FormPanel
+          id="create-list"
+          eyebrow="New collection"
+          title="Create a list"
+          description="Choose from your favorites and set who can see it."
+        >
+          {favorites.length > 0 ? (
+            <ActionForm
+              action={createMovieList}
+              className="kin-form-stack"
+              successMessage="List created."
+              resetOnSuccess
+            >
+              <div className="kin-field">
+                <label htmlFor="create-list-title" className="kin-label">
+                  List title
+                </label>
+                <input
+                  id="create-list-title"
+                  name="title"
+                  required
+                  maxLength={80}
+                  placeholder="Friday night thrillers"
+                  className="kin-input"
                 />
-                <fieldset>
-                  <legend className="kin-label mb-1.5">Visibility</legend>
-                  <div className="kin-choice-group">
-                    <label className="kin-choice">
-                      <input type="radio" name="visibility" value="public" defaultChecked />
-                      Public
-                    </label>
-                    <label className="kin-choice">
-                      <input type="radio" name="visibility" value="private" />
-                      Private
-                    </label>
-                  </div>
-                </fieldset>
-                <SubmitButton pendingLabel="Creating..." className="w-full sm:w-auto">
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  Create list
-                </SubmitButton>
-              </ActionForm>
-            ) : (
-              <EmptyState
-                compact
-                title="No favorites yet"
-                description="Add movies and shows to your favorites before creating a list."
-              >
-                <Link href="/" className="kin-focus rounded-sm text-sm font-semibold text-highlight hover:text-highlight/80">
-                  Browse titles
-                </Link>
-              </EmptyState>
-            )}
-          </FormPanel>
-
-          <section aria-labelledby="lists-results-heading">
-            <SectionHeader
-              id="lists-results"
-              eyebrow="Latest collections"
-              title="Lists"
-              description="Newest public lists and your private collections."
-            />
-            {lists.length > 0 ? (
-              <div className="kin-editorial-list mt-1">
-                {lists.map((list) => (
-                  <ListRow
-                    key={list._id}
-                    list={list}
-                    favorites={favorites}
-                    currentUserEmail={currentUserEmail}
-                  />
-                ))}
               </div>
-            ) : (
-              <EmptyState
-                compact
-                className="mt-4"
-                title="No lists yet"
-                description="Create the first collection from your favorites."
+              <div className="kin-field">
+                <label htmlFor="create-list-description" className="kin-label">
+                  Description
+                </label>
+                <textarea
+                  id="create-list-description"
+                  name="description"
+                  maxLength={300}
+                  rows={3}
+                  placeholder="A short note about the vibe."
+                  className="kin-input resize-y"
+                />
+              </div>
+              <MoviePicker
+                name="movieIds"
+                favorites={favorites}
+                max={MAX_LIST_MOVIES}
+                label="Select titles"
               />
-            )}
-          </section>
-        </div>
-      </PageContainer>
-    </div>
+              <fieldset>
+                <legend className="kin-label mb-1.5">Visibility</legend>
+                <div className="kin-choice-group">
+                  <label className="kin-choice">
+                    <input type="radio" name="visibility" value="public" defaultChecked />
+                    Public
+                  </label>
+                  <label className="kin-choice">
+                    <input type="radio" name="visibility" value="private" />
+                    Private
+                  </label>
+                </div>
+              </fieldset>
+              <SubmitButton pendingLabel="Creating..." className="w-full sm:w-auto">
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Create list
+              </SubmitButton>
+            </ActionForm>
+          ) : (
+            <EmptyState
+              compact
+              title="No favorites yet"
+              description="Add movies and shows to your favorites before creating a list."
+            >
+              <Link href="/" className="kin-focus rounded-sm text-sm font-semibold text-highlight hover:text-highlight/80">
+                Browse titles
+              </Link>
+            </EmptyState>
+          )}
+        </FormPanel>
+
+        <section aria-labelledby="lists-results-heading">
+          <SectionHeader
+            id="lists-results"
+            eyebrow="Latest collections"
+            title="Lists"
+            description="Newest public lists and your private collections."
+          />
+          {lists.length > 0 ? (
+            <div className="kin-editorial-list mt-1">
+              {lists.map((list) => (
+                <ListRow
+                  key={list._id}
+                  list={list}
+                  favorites={favorites}
+                  currentUserEmail={currentUserEmail}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              compact
+              className="mt-4"
+              title="No lists yet"
+              description="Create the first collection from your favorites."
+            />
+          )}
+        </section>
+      </div>
+    </RouteShell>
   );
 }
