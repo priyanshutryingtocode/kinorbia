@@ -4,7 +4,6 @@ import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Bot, Film, Loader2, Send, Sparkles, X } from "lucide-react";
 import type { MovieSummary } from "@/types";
-import AssistantMovieActions from "./AssistantMovieActions";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
 import { mediaHref, normalizeMediaType, tmdbImage } from "@/lib/media";
 
@@ -92,29 +91,6 @@ export default function MovieAssistant() {
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
-  // One shared lists snapshot per assistant open, instead of every movie
-  // card firing its own /api/user/lists request.
-  const [lists, setLists] = useState<{ id: string; title: string }[]>([]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    let active = true;
-    fetch("/api/user/lists")
-      .then(async (res) => {
-        if (!res.ok) return;
-        const data = await res.json();
-        if (active) setLists(data.lists || []);
-      })
-      .catch(() => {});
-
-    return () => {
-      active = false;
-      setLists([]);
-    };
-  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -241,27 +217,22 @@ export default function MovieAssistant() {
                 {message.movies && message.movies.length > 0 && (
                   <div className="mt-3 grid grid-cols-1 gap-2 text-left">
                     {message.movies.map((movie) => (
-                      <div
+                      <Link
                         key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`}
-                        className="rounded-control border border-rule bg-black/25 p-2 transition hover:border-accent/50 hover:bg-white/8"
+                        href={mediaHref(movie.mediaType, movie.id)}
+                        onClick={() => closeAssistant(false)}
+                        className="kin-focus flex gap-3 rounded-control border border-rule bg-black/25 p-2 transition hover:border-accent/50 hover:bg-white/8"
                       >
-                        <Link
-                          href={mediaHref(movie.mediaType, movie.id)}
-                          onClick={() => closeAssistant(false)}
-                          className="flex gap-3"
-                        >
-                          <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-md bg-neutral-900">
-                            <AssistantPoster movie={movie} />
-                          </div>
-                          <div className="min-w-0 py-1">
-                            <p className="truncate text-sm font-bold text-white">{movie.title}</p>
-                            <p className="mt-1 text-xs text-neutral-500">
-                              {movieYear(movie)} - TMDB {movie.vote_average?.toFixed?.(1) || "N/A"}
-                            </p>
-                          </div>
-                        </Link>
-                        <AssistantMovieActions movie={movie} lists={lists} />
-                      </div>
+                        <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-md bg-neutral-900">
+                          <AssistantPoster movie={movie} />
+                        </div>
+                        <div className="min-w-0 py-1">
+                          <p className="truncate text-sm font-bold text-white">{movie.title}</p>
+                          <p className="mt-1 text-xs text-neutral-500">
+                            {movieYear(movie)} - TMDB {movie.vote_average?.toFixed?.(1) || "N/A"}
+                          </p>
+                        </div>
+                      </Link>
                     ))}
                   </div>
                 )}
