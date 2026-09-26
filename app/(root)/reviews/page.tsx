@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { MessageSquare } from "lucide-react";
 import type { Metadata } from "next";
-import { auth } from "@/auth";
+import { requireUserEmail } from "@/lib/actions";
 import ActionForm from "@/components/ActionForm";
 import EmptyState from "@/components/EmptyState";
 import FormPanel from "@/components/FormPanel";
@@ -26,11 +25,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ReviewsPage() {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
-  }
-  const currentUserEmail = session.user.email;
+  const currentUserEmail = await requireUserEmail();
 
   await dbConnect();
 

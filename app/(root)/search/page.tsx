@@ -19,7 +19,7 @@ import type { MovieSummary } from "@/types";
 import { mediaHref, normalizeMediaType, tmdbImage } from "@/lib/media";
 
 type SearchResponse = {
-  results?: MovieSummary[];
+  results: MovieSummary[];
 };
 
 async function searchContent({
@@ -65,26 +65,19 @@ async function searchContent({
   return { results: data?.results || [] };
 }
 
+type SearchParams = {
+  q?: string;
+  year?: string;
+  minRating?: string;
+  genre?: string;
+  runtime?: string;
+  language?: string;
+  sort?: string;
+  type?: string;
+};
+
 type SearchPageProps = {
-  searchParams: Promise<{
-    q?: string;
-    year?: string;
-    minRating?: string;
-    genre?: string;
-    runtime?: string;
-    language?: string;
-    sort?: string;
-    type?: string;
-  }> | {
-    q?: string;
-    year?: string;
-    minRating?: string;
-    genre?: string;
-    runtime?: string;
-    language?: string;
-    sort?: string;
-    type?: string;
-  };
+  searchParams: Promise<SearchParams> | SearchParams;
 };
 
 export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
@@ -110,6 +103,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const selectedLanguage = typeof language === "string" ? language : "";
   const selectedSort = typeof sort === "string" ? sort : "";
   const mediaType = type === "tv" ? "tv" : "movie";
+  const isTv = mediaType === "tv";
+  const hasNoFilters =
+    !query && !releaseYear && !selectedGenre && !minimumRating && !maxRuntime && !selectedLanguage;
 
   const buildTypeHref = (nextType: "movie" | "tv") => {
     const params = new URLSearchParams();
@@ -134,7 +130,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     sort: selectedSort,
     type: mediaType,
   });
-  const movies = (data.results || []).filter((movie) => {
+  const movies = data.results.filter((movie) => {
     const matchesRating = !minimumRating || movie.vote_average >= minimumRating;
     const matchesGenre = !query || !selectedGenre || movie.genre_ids?.includes(Number(selectedGenre));
     const matchesLanguage = !query || !selectedLanguage || movie.original_language === selectedLanguage;
@@ -145,9 +141,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     <RouteShell spacing="standard" width="page">
       <PageHeader
         eyebrow="Search"
-        title={`Find a ${mediaType === "tv" ? "Show" : "Movie"}`}
+        title={`Find a ${isTv ? "Show" : "Movie"}`}
         description={
-          mediaType === "tv"
+          isTv
             ? "Search by title or use filters to discover TV shows by genre, rating, language, and first air year."
             : "Search by title or use filters to discover movies by genre, rating, runtime, language, and release year."
         }
@@ -194,7 +190,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="kin-field">
               <label htmlFor="search-year" className="kin-label">
-                {mediaType === "tv" ? "First air year" : "Release year"}
+                {isTv ? "First air year" : "Release year"}
               </label>
               <input
                 id="search-year"
@@ -227,7 +223,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             <div className="kin-field">
               <label htmlFor="search-genre" className="kin-label">Genre</label>
               <select id="search-genre" name="genre" defaultValue={selectedGenre} className="kin-input kin-filter-control">
-                {mediaType === "tv" ? (
+                {isTv ? (
                   <>
                     <option value="">Any genre</option>
                     <option value="10759">Action & Adventure</option>
@@ -284,7 +280,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               <select id="search-sort" name="sort" defaultValue={selectedSort} className="kin-input kin-filter-control">
                 <option value="popularity.desc">Most popular</option>
                 <option value="vote_average.desc">Highest rated</option>
-                <option value={mediaType === "tv" ? "first_air_date.desc" : "primary_release_date.desc"}>Newest</option>
+                <option value={isTv ? "first_air_date.desc" : "primary_release_date.desc"}>Newest</option>
                 {mediaType === "movie" && <option value="revenue.desc">Box office</option>}
               </select>
             </div>
@@ -292,20 +288,20 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </fieldset>
       </SearchTrackerForm>
 
-      {!query && !releaseYear && !selectedGenre && !minimumRating && !maxRuntime && !selectedLanguage ? (
+      {hasNoFilters ? (
         <EmptyState
           compact
           headingLevel={2}
           className="mt-8"
           title="Start discovering"
-          description={`Type a ${mediaType === "tv" ? "show" : "movie"} title or choose filters to begin.`}
+          description={`Type a ${isTv ? "show" : "movie"} title or choose filters to begin.`}
         />
       ) : movies.length === 0 ? (
         <EmptyState
           compact
           headingLevel={2}
           className="mt-8"
-          title={`No ${mediaType === "tv" ? "shows" : "movies"} found`}
+          title={`No ${isTv ? "shows" : "movies"} found`}
           description={
             query
               ? `We couldn't find any results for "${query}". Try a different title or adjust your filters.`

@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
 import type { MediaType } from "@/types";
 
 const FILTER_GENRES: Record<MediaType, { id: string; name: string }[]> = {
@@ -41,18 +40,15 @@ export default function GenreFilter({ mediaType }: { mediaType: MediaType }) {
   const currentGenre = searchParams.get("genre") || "";
   const genres = FILTER_GENRES[mediaType];
 
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value) {
-        params.set(name, value);
-      } else {
-        params.delete(name);
-      }
-      return params.toString();
-    },
-    [searchParams]
-  );
+  const createQueryString = (name: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(name, value);
+    } else {
+      params.delete(name);
+    }
+    return params.toString();
+  };
 
   return (
     <div className="mb-10">

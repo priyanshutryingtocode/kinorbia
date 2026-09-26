@@ -15,7 +15,7 @@ import ProfileMetricRail from "@/components/ProfileMetricRail";
 import ProfilePanel from "@/components/ProfilePanel";
 import SpoilerText from "@/components/SpoilerText";
 import { mediaHref, mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
-import { dedupeFavorites } from "@/lib/reviewRatings";
+import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
 import type { FavoriteMovie, MediaType } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -105,9 +105,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
 
   const allFavorites = dedupeFavorites(user.favorites || []);
   const favorites = allFavorites.slice(0, 6);
-  const ratingMap = new Map(
-    allFavorites.map((favorite) => [mediaKey(favorite.mediaType, favorite.movieId), favorite.personalRating || 0])
-  );
+  const ratingMap = buildRatingMap(allFavorites);
   const isFollowing = Boolean(currentUser?.following?.some((email) => email.toLowerCase() === targetEmail));
 
   return (
@@ -166,28 +164,32 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         >
           {favorites.length ? (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-6">
-              {favorites.map((movie) => (
-                <Link
-                  key={mediaKey(movie.mediaType, movie.movieId)}
-                  href={mediaHref(movie.mediaType, movie.movieId)}
-                  className="kin-focus group relative block aspect-2/3 overflow-hidden rounded-sm border border-white/10 bg-neutral-950 transition-colors hover:border-gold/40"
-                  aria-label={`${movie.title} (${normalizeMediaType(movie.mediaType) === "tv" ? "TV show" : "movie"})`}
-                >
-                  {tmdbImage(movie.posterPath, "w342") ? (
-                    <TmdbPosterImage
-                      src={tmdbImage(movie.posterPath, "w342") as string}
-                      alt=""
-                      fill
-                      sizes="(min-width: 768px) 16vw, 30vw"
-                      className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-neutral-700">
-                      <UserIcon className="h-8 w-8" />
-                    </div>
-                  )}
-                </Link>
-              ))}
+              {favorites.map((movie) => {
+                const poster = tmdbImage(movie.posterPath, "w342");
+
+                return (
+                  <Link
+                    key={mediaKey(movie.mediaType, movie.movieId)}
+                    href={mediaHref(movie.mediaType, movie.movieId)}
+                    className="kin-focus group relative block aspect-2/3 overflow-hidden rounded-sm border border-white/10 bg-neutral-950 transition-colors hover:border-gold/40"
+                    aria-label={`${movie.title} (${normalizeMediaType(movie.mediaType) === "tv" ? "TV show" : "movie"})`}
+                  >
+                    {poster ? (
+                      <TmdbPosterImage
+                        src={poster}
+                        alt=""
+                        fill
+                        sizes="(min-width: 768px) 16vw, 30vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-neutral-700">
+                        <UserIcon className="h-8 w-8" />
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <EmptyState compact title="No favorites yet" description="This member has not added any public favorites." />

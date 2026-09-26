@@ -11,6 +11,11 @@ type SocialActionButtonProps = {
   path: string;
 };
 
+const COUNT_NOUNS = {
+  like: ["like", "likes"],
+  save: ["save", "saves"],
+} as const;
+
 export default function SocialActionButton({
   type,
   id,
@@ -20,9 +25,9 @@ export default function SocialActionButton({
   path,
 }: SocialActionButtonProps) {
   const Icon = action === "like" ? Heart : Bookmark;
-  const target = type === "review" ? "review" : "list";
   const verb = action === "like" ? "Like" : "Save";
-  const countLabel = count > 0 ? `, ${count} ${action === "like" ? (count === 1 ? "like" : "likes") : count === 1 ? "save" : "saves"}` : "";
+  const [singular, plural] = COUNT_NOUNS[action];
+  const countLabel = count > 0 ? `, ${count} ${count === 1 ? singular : plural}` : "";
 
   return (
     <form action={toggleSocialAction}>
@@ -33,7 +38,7 @@ export default function SocialActionButton({
       <SubmitButton
         pendingLabel="..."
         variant="quiet"
-        aria-label={`${verb} this ${target}${countLabel}`}
+        aria-label={`${verb} this ${type}${countLabel}`}
         aria-pressed={active}
         className={`min-h-8 gap-1.5 rounded-control border px-2.5 py-1.5 text-xs ${
           active

@@ -4,6 +4,7 @@ import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
 import Review from "@/models/Review";
 import MovieList from "@/models/MovieList";
+import dbConnect from "@/lib/dbConnect";
 import { buildWatchStreaks } from "@/lib/insights";
 import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
 import {
@@ -17,6 +18,7 @@ import {
   type RawReview,
 } from "@/lib/serialize";
 import type { FavoriteMovie, MediaType, WatchlistMovie } from "@/types";
+import { mediaEquals, normalizeMediaType } from "@/lib/media";
 
 export const PROFILE_PAGE_SIZES = {
   favorites: 20,
@@ -72,6 +74,52 @@ export type InsightsSource = {
   favorites: FavoriteMovie[];
   journal: JournalHistoryRecord[];
 };
+
+export type PersonalMediaStatus = {
+  isFavorite: boolean;
+  personalRating: number;
+  isWatchlisted: boolean;
+  isWatched: boolean;
+};
+
+// Shared by the movie and TV detail pages. `mediaEquals` reproduces each
+// page's own journal filter exactly (`{ $in: ["movie", null] }` / `"tv"`),
+// so the two routes can no longer drift apart.
+export async function getPersonalMediaStatus(
+  email: string | null | undefined,
+  id: string,
+  mediaType: MediaType
+): Promise<PersonalMediaStatus> {
+  if (!email) {
+    return { isFavorite: false, personalRating: 0, isWatchlisted: false, isWatched: false };
+  }
+
+  await dbConnect();
+  const user = await User.findOne({ email }).lean<{
+    favorites?: FavoriteMovie[];
+    watchlist?: FavoriteMovie[];
+  } | null>();
+
+  const matches = (item: FavoriteMovie) =>
+    item.movieId === id && normalizeMediaType(item.mediaType) === mediaType;
+
+  const favorite = user?.favorites?.find(matches);
+
+  const journalEntry = await JournalEntry.findOne({
+    userEmail: email,
+    movieId: id,
+    mediaType: mediaEquals(mediaType),
+  })
+    .select("_id")
+    .lean<{ _id?: unknown } | null>();
+
+  return {
+    isFavorite: Boolean(favorite),
+    personalRating: favorite?.personalRating || 0,
+    isWatchlisted: Boolean(user?.watchlist?.some(matches)),
+    isWatched: Boolean(journalEntry),
+  };
+}
 
 function uniqueMediaItems(field: "favorites" | "watchlist") {
   return {
@@ -300,17 +348,21 @@ export async function getProfileOverview(email: string): Promise<ProfileOverview
   };
 }
 
+function loadUserFavorites(email: string): Promise<FavoriteMovie[]> {
+  return User.findOne({ email })
+    .select("favorites")
+    .lean<{ favorites?: RawFavoriteMovie[] } | null>()
+    .then((user) => dedupeFavorites(serializeFavorites(user?.favorites)));
+}
+
 export async function getInsightsSource(email: string): Promise<InsightsSource> {
-  const [user, journal] = await Promise.all([
-    User.findOne({ email }).select("favorites").lean<{ favorites?: RawFavoriteMovie[] } | null>(),
+  const [favorites, journal] = await Promise.all([
+    loadUserFavorites(email),
     JournalEntry.find({ userEmail: email })
       .select("_id movieTitle posterPath watchedAt mediaType movieId")
       .lean<JournalHistoryRecord[]>(),
   ]);
-  return {
-    favorites: dedupeFavorites(serializeFavorites(user?.favorites || [])),
-    journal,
-  };
+  return { favorites, journal };
 }
 
 export async function getFavoritePage(email: string, requestedPage: number): Promise<ProfilePage<FavoriteMovie>> {
@@ -322,17 +374,15 @@ export async function getWatchlistPage(email: string, requestedPage: number): Pr
 }
 
 export async function getReviewPage(email: string, requestedPage: number) {
-  const [page, user] = await Promise.all([
+  const [page, favorites] = await Promise.all([
     paginate<RawReview>(Review, { userEmail: email }, { createdAt: -1, _id: -1 }, requestedPage, PROFILE_PAGE_SIZES.reviews),
-    User.findOne({ email }).select("favorites").lean<{ favorites?: RawFavoriteMovie[] } | null>(),
+    loadUserFavorites(email),
   ]);
-  const favorites = dedupeFavorites(serializeFavorites(user?.favorites || []));
+  const { rows, ...bounds } = page;
   return {
-    items: page.rows.map(serializeReview),
+    items: rows.map(serializeReview),
     ratingMap: buildRatingMap(favorites),
-    page: page.page,
-    totalPages: page.totalPages,
-    total: page.total,
+    ...bounds,
   };
 }
 

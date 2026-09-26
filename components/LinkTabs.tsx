@@ -23,10 +23,7 @@ export default function LinkTabs({ items, activeItem, ariaLabel, className = "" 
       <div className="flex w-max min-w-full items-stretch border-b border-rule">
         {items.map((item) => {
           const key = item.key ?? item.href;
-          const active =
-            activeItem === key ||
-            activeItem === item.href ||
-            (typeof item.label === "string" && activeItem === item.label);
+          const active = activeItem === key;
 
           return (
             <Link

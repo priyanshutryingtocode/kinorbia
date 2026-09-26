@@ -11,6 +11,7 @@ import { requireUser, getString } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import { normalizeMediaType, mediaKey } from "@/lib/media";
+import { dedupeFavorites } from "@/lib/reviewRatings";
 import type { FavoriteMovie, ListMovie } from "@/types";
 
 function toListMovie(movie: FavoriteMovie): ListMovie {
@@ -34,17 +35,6 @@ function parseMovieRef(value: string) {
     mediaType: normalizeMediaType(value.slice(0, separator)),
     movieId: value.slice(separator + 1),
   };
-}
-
-function uniqueFavorites(favorites: FavoriteMovie[]) {
-  const unique = new Map<string, FavoriteMovie>();
-  favorites.forEach((movie) => {
-    const key = mediaKey(movie.mediaType, movie.movieId);
-    if (!unique.has(key)) {
-      unique.set(key, movie);
-    }
-  });
-  return Array.from(unique.values());
 }
 
 export async function createMovieList(
@@ -82,7 +72,7 @@ export async function createMovieList(
     const user = await User.findOne({ email }).lean<{
       favorites?: FavoriteMovie[];
     } | null>();
-    const favorites = uniqueFavorites((user?.favorites || []) as FavoriteMovie[]);
+    const favorites = dedupeFavorites(user?.favorites || []);
     const selectedMovies = favorites
       .filter((movie) => selectedKeys.has(mediaKey(movie.mediaType, movie.movieId)))
       .map(toListMovie);
@@ -158,7 +148,7 @@ export async function updateMovieList(
       return { status: "error", message: "This list could not be found." };
     }
 
-    const favorites = uniqueFavorites((user?.favorites || []) as FavoriteMovie[]);
+    const favorites = dedupeFavorites(user?.favorites || []);
     const favoriteKeys = new Set(
       favorites.map((movie) => mediaKey(movie.mediaType, movie.movieId))
     );

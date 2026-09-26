@@ -1,7 +1,4 @@
 import { auth } from "@/auth";
-import dbConnect from "@/lib/dbConnect";
-import User from "@/models/User";
-import JournalEntry from "@/models/JournalEntry";
 import FavoriteButton from "@/components/FavouriteButton";
 import WatchedButton from "@/components/WatchedButton";
 import WatchlistButton from "@/components/WatchlistButton";
@@ -11,14 +8,15 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Calendar, Clock, Film, Star } from "lucide-react";
-import type { FavoriteMovie, TmdbMovieCredits, TmdbMovieDetails } from "@/types";
+import type { TmdbMovieCredits, TmdbMovieDetails } from "@/types";
 import type { Metadata } from "next";
 import SimilarMedia from "@/components/SimilarMedia";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import TrailerButton from "@/components/TrailerButton";
 import PageContainer from "@/components/PageContainer";
 import { getMovieWithStatus, getMovieCredits, getMovieVideos, pickMainTrailer } from "@/lib/tmdb";
-import { normalizeMediaType, tmdbImage } from "@/lib/media";
+import { tmdbImage } from "@/lib/media";
+import { getPersonalMediaStatus } from "@/lib/profileData";
 
 async function getMovieDetails(id: string): Promise<TmdbMovieDetails> {
   const { movie, notFound: missing } = await getMovieWithStatus(id);
@@ -66,40 +64,11 @@ export default async function MoviePage({ params }: Props) {
   ]);
   const trailer = pickMainTrailer(videos?.results);
 
-  let isFavorite = false;
-  let isWatched = false;
-  let isWatchlisted = false;
-  let personalRating = 0;
-  
-  if (session?.user?.email) {
-    await dbConnect();
-    const user = await User.findOne({ email: session.user.email }).lean<{
-      favorites?: FavoriteMovie[];
-      watchlist?: FavoriteMovie[];
-    } | null>();
-
-if (user?.favorites) {
-      const favorite = user.favorites.find(
-        (fav) => fav.movieId === id.toString() && (normalizeMediaType(fav.mediaType)) === "movie"
-      );
-      isFavorite = Boolean(favorite);
-      personalRating = favorite?.personalRating || 0;
-    }
-
-    isWatchlisted = Boolean(
-      user?.watchlist?.some(
-        (item) => item.movieId === id.toString() && (normalizeMediaType(item.mediaType)) === "movie"
-      )
-    );
-
-    const journalEntry = await JournalEntry.findOne({
-      userEmail: session.user.email,
-      movieId: id.toString(),
-      mediaType: { $in: ["movie", null] },
-    }).select("_id").lean<{ _id?: unknown } | null>();
-
-    isWatched = Boolean(journalEntry);
-  }
+  const { isFavorite, personalRating, isWatchlisted, isWatched } = await getPersonalMediaStatus(
+    session?.user?.email,
+    id,
+    "movie"
+  );
 
   const releaseYear = movie.release_date ? movie.release_date.split("-")[0] : "TBA";
   const runtime = typeof movie.runtime === "number" ? movie.runtime : 0;
