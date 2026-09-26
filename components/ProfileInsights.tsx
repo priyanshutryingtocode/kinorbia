@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
 import Link from "next/link";
-import { BarChart3, Clapperboard, Film, Star, TrendingUp } from "lucide-react";
+import { BarChart3, Clapperboard, Film, Star, TrendingUp, type LucideIcon } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import ProfileCommunityComparison from "@/components/ProfileCommunityComparison";
 import ProfileMetricRail from "@/components/ProfileMetricRail";
@@ -16,6 +16,33 @@ type ProfileInsightsProps = {
   favorites: FavoriteMovie[];
   userEmail: string;
 };
+
+const EYEBROW_CLASS = "kin-overline text-gold/80";
+const HEADING_CLASS = "mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white";
+
+function InsightHeading({
+  id,
+  eyebrow,
+  title,
+  icon: Icon,
+  iconClassName,
+}: {
+  id: string;
+  eyebrow: string;
+  title: string;
+  icon: LucideIcon;
+  iconClassName: string;
+}) {
+  return (
+    <>
+      <p className={EYEBROW_CLASS}>{eyebrow}</p>
+      <h3 id={id} className={HEADING_CLASS}>
+        <Icon className={iconClassName} aria-hidden="true" />
+        {title}
+      </h3>
+    </>
+  );
+}
 
 function yearHref(year?: number) {
   if (!year) {
@@ -344,11 +371,13 @@ export default function ProfileInsights({
             <section className="py-8" aria-labelledby="watch-activity-heading">
               <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="kin-overline text-gold/80">Watch rhythm</p>
-                  <h3 id="watch-activity-heading" className="mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white">
-                    <BarChart3 className="h-5 w-5 text-red-300" aria-hidden="true" />
-                    Monthly activity
-                  </h3>
+                  <InsightHeading
+                    id="watch-activity-heading"
+                    eyebrow="Watch rhythm"
+                    title="Monthly activity"
+                    icon={BarChart3}
+                    iconClassName="h-5 w-5 text-red-300"
+                  />
                 </div>
                 {insights.bestMonthLabel && (
                   <p className="text-xs text-neutral-400">
@@ -361,22 +390,26 @@ export default function ProfileInsights({
 
             <div className="grid xl:grid-cols-2 xl:divide-x xl:divide-white/10">
               <section className="border-b border-white/10 py-8 xl:border-b-0 xl:pr-8" aria-labelledby="rating-distribution-heading">
-                <p className="kin-overline text-gold/80">Favorite ratings</p>
-                <h3 id="rating-distribution-heading" className="mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white">
-                  <Star className="h-5 w-5 text-gold" aria-hidden="true" />
-                  Rating distribution
-                </h3>
+                <InsightHeading
+                  id="rating-distribution-heading"
+                  eyebrow="Favorite ratings"
+                  title="Rating distribution"
+                  icon={Star}
+                  iconClassName="h-5 w-5 text-gold"
+                />
                 <div className="mt-6">
                   <RatingBars data={insights} />
                 </div>
               </section>
 
               <section className="py-8 xl:pl-8" aria-labelledby="media-mix-heading">
-                <p className="kin-overline text-gold/80">Your library</p>
-                <h3 id="media-mix-heading" className="mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white">
-                  <Clapperboard className="h-5 w-5 text-red-300" aria-hidden="true" />
-                  Movies vs shows
-                </h3>
+                <InsightHeading
+                  id="media-mix-heading"
+                  eyebrow="Your library"
+                  title="Movies vs shows"
+                  icon={Clapperboard}
+                  iconClassName="h-5 w-5 text-red-300"
+                />
                 <div className="mt-6">
                   <MediaSplit data={insights} />
                 </div>
@@ -387,11 +420,13 @@ export default function ProfileInsights({
               <section className="py-8" aria-labelledby="favorite-genres-heading">
                 <div className="mb-5 flex items-end justify-between gap-4">
                   <div>
-                    <p className="kin-overline text-gold/80">Taste profile</p>
-                    <h3 id="favorite-genres-heading" className="mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white">
-                      <Film className="h-5 w-5 text-gold" aria-hidden="true" />
-                      Favorite genres
-                    </h3>
+                    <InsightHeading
+                      id="favorite-genres-heading"
+                      eyebrow="Taste profile"
+                      title="Favorite genres"
+                      icon={Film}
+                      iconClassName="h-5 w-5 text-gold"
+                    />
                   </div>
                   {insights.topGenre && (
                     <p className="text-xs text-neutral-400">
@@ -415,11 +450,13 @@ export default function ProfileInsights({
 
             {insights.topRated.length > 0 && (
               <section className="py-8" aria-labelledby="top-rated-heading">
-                <p className="kin-overline text-gold/80">Personal picks</p>
-                <h3 id="top-rated-heading" className="mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white">
-                  <TrendingUp className="h-5 w-5 text-gold" aria-hidden="true" />
-                  Top rated
-                </h3>
+                <InsightHeading
+                  id="top-rated-heading"
+                  eyebrow="Personal picks"
+                  title="Top rated"
+                  icon={TrendingUp}
+                  iconClassName="h-5 w-5 text-gold"
+                />
                 <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
                   {insights.topRated.map((item) => (
                     <Link

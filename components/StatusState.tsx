@@ -68,7 +68,7 @@ const VARIANTS: Record<Variant, VariantConfig> = {
   },
 };
 
-type StatusStateProps = {
+export type StatusStateProps = {
   variant: Variant;
   title?: string;
   description?: string;

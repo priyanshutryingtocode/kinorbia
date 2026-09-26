@@ -4,11 +4,10 @@ import { revalidatePath } from "next/cache";
 import { resolveActionArgs, withState, type ActionState } from "@/lib/actionState";
 import dbConnect from "@/lib/dbConnect";
 import JournalEntry from "@/models/JournalEntry";
-import User from "@/models/User";
 import { requireUser, getString } from "@/lib/actions";
+import { findFavoriteByMediaKey } from "@/lib/reviewRatings";
 import { isObjectId } from "@/lib/objectId";
 import { normalizeMediaType } from "@/lib/media";
-import type { FavoriteMovie } from "@/types";
 
 const MAX_NOTE_LENGTH = 1000;
 const MAX_TITLE_LENGTH = 200;
@@ -56,17 +55,7 @@ export async function createJournalEntry(stateOrFormData: ActionState | FormData
   try {
     await dbConnect();
     if (favoriteMovieId) {
-      const [favMediaType, ...favIdParts] = favoriteMovieId.split(":");
-      const favId = favIdParts.join(":");
-      const user = await User.findOne({ email })
-        .select("favorites")
-        .lean<{ favorites?: FavoriteMovie[] } | null>();
-      const favorites = (user?.favorites || []) as FavoriteMovie[];
-      const favorite = favorites.find(
-        (movie) =>
-          movie.movieId === favId &&
-          normalizeMediaType(favMediaType) === normalizeMediaType(movie.mediaType)
-      );
+      const favorite = await findFavoriteByMediaKey(email, favoriteMovieId);
 
       if (favorite) {
         movieId = favorite.movieId;

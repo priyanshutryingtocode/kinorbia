@@ -6,11 +6,10 @@ import dbConnect from "@/lib/dbConnect";
 import Review from "@/models/Review";
 import Comment from "@/models/Comment";
 import Notification from "@/models/Notification";
-import User from "@/models/User";
-import { requireUser, getString } from "@/lib/actions";
+import { requireUser, getString, parseVisibility } from "@/lib/actions";
+import { findFavoriteByMediaKey } from "@/lib/reviewRatings";
 import { isObjectId } from "@/lib/objectId";
 import { normalizeMediaType } from "@/lib/media";
-import type { FavoriteMovie } from "@/types";
 
 const MAX_REVIEW_LENGTH = 1200;
 
@@ -25,7 +24,7 @@ export async function createReview(stateOrFormData: ActionState | FormData, form
 
   const favoriteMovieId = getString(resolvedFormData, "favoriteMovieId");
   const body = getString(resolvedFormData, "body");
-  const visibility = getString(resolvedFormData, "visibility") === "private" ? "private" : "public";
+  const visibility = parseVisibility(resolvedFormData);
   const spoiler = isTruthyCheckbox(getString(resolvedFormData, "spoiler"));
 
   if (!favoriteMovieId) {
@@ -41,17 +40,7 @@ export async function createReview(stateOrFormData: ActionState | FormData, form
   try {
     await dbConnect();
 
-    const [favMediaType, ...favIdParts] = favoriteMovieId.split(":");
-    const favId = favIdParts.join(":");
-    const user = await User.findOne({ email }).lean<{
-      favorites?: FavoriteMovie[];
-    } | null>();
-    const favorites = (user?.favorites || []) as FavoriteMovie[];
-    const favorite = favorites.find(
-      (movie) =>
-        movie.movieId === favId &&
-        normalizeMediaType(favMediaType) === normalizeMediaType(movie.mediaType)
-    );
+    const favorite = await findFavoriteByMediaKey(email, favoriteMovieId);
 
     if (!favorite || !favorite.personalRating || favorite.personalRating <= 0) {
       return withState(state, "error", "Choose one of your rated movies before publishing.");
@@ -83,7 +72,7 @@ export async function updateReview(stateOrFormData: ActionState | FormData, form
 
   const reviewId = getString(resolvedFormData, "reviewId");
   const body = getString(resolvedFormData, "body");
-  const visibility = getString(resolvedFormData, "visibility") === "private" ? "private" : "public";
+  const visibility = parseVisibility(resolvedFormData);
   const spoiler = isTruthyCheckbox(getString(resolvedFormData, "spoiler"));
 
   if (!reviewId || !isObjectId(reviewId)) {

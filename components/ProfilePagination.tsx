@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PagerEdge from "@/components/PagerEdge";
 
 type ProfilePaginationProps = {
   tab: string;
@@ -61,21 +62,12 @@ export default function ProfilePagination({
         Showing {first}–{last} of {total}
       </p>
       <div className="flex items-center justify-center gap-0.5 sm:gap-1" role="group" aria-label="Pagination pages">
-        {page > 1 ? (
-          <Link
-            href={profileHref(tab, page - 1, year)}
-            className={previousClass}
-            aria-label="Previous page"
-          >
-            <span aria-hidden="true">←</span>
-            <span className="hidden sm:inline">Previous</span>
-          </Link>
-        ) : (
-          <span className={previousDisabledClass} aria-disabled="true">
-            <span aria-hidden="true">←</span>
-            <span className="sr-only sm:not-sr-only">Previous</span>
-          </span>
-        )}
+        <PagerEdge
+          direction="previous"
+          href={page > 1 ? profileHref(tab, page - 1, year) : undefined}
+          className={previousClass}
+          disabledClassName={previousDisabledClass}
+        />
         {pages.map((pageNumber) => {
           const active = pageNumber === page;
           return (
@@ -94,21 +86,12 @@ export default function ProfilePagination({
             </Link>
           );
         })}
-        {page < totalPages ? (
-          <Link
-            href={profileHref(tab, page + 1, year)}
-            className={previousClass}
-            aria-label="Next page"
-          >
-            <span className="hidden sm:inline">Next</span>
-            <span aria-hidden="true">→</span>
-          </Link>
-        ) : (
-          <span className={previousDisabledClass} aria-disabled="true">
-            <span className="sr-only sm:not-sr-only">Next</span>
-            <span aria-hidden="true">→</span>
-          </span>
-        )}
+        <PagerEdge
+          direction="next"
+          href={page < totalPages ? profileHref(tab, page + 1, year) : undefined}
+          className={previousClass}
+          disabledClassName={previousDisabledClass}
+        />
       </div>
     </nav>
   );

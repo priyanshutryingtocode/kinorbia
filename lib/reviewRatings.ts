@@ -1,7 +1,7 @@
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import type { FavoriteMovie, MediaType } from "@/types";
-import { mediaKey } from "@/lib/media";
+import { mediaKey, normalizeMediaType } from "@/lib/media";
 
 export type ReviewForRating = {
   userEmail: string;
@@ -42,6 +42,28 @@ export function lookupRating(
   review: ReviewForRating
 ): number {
   return maps.get(review.userEmail)?.get(mediaKey(review.mediaType, review.movieId)) || 0;
+}
+
+// Resolves the `mediaKey` string produced by a favorites <select> back to the
+// stored favorite. Both halves are normalized so a key written with different
+// casing (e.g. "Movie:123") still matches, which is why this does not simply
+// compare mediaKey(movie.mediaType, movie.movieId) to the raw value.
+export async function findFavoriteByMediaKey(
+  email: string,
+  favoriteMediaKey: string
+): Promise<FavoriteMovie | undefined> {
+  const [favMediaType, ...favIdParts] = favoriteMediaKey.split(":");
+  const favId = favIdParts.join(":");
+
+  const user = await User.findOne({ email })
+    .select("favorites")
+    .lean<{ favorites?: FavoriteMovie[] } | null>();
+
+  return (user?.favorites || []).find(
+    (movie) =>
+      movie.movieId === favId &&
+      normalizeMediaType(favMediaType) === normalizeMediaType(movie.mediaType)
+  );
 }
 
 export async function buildReviewerRatingMaps(

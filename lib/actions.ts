@@ -20,6 +20,10 @@ export function getString(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+export function parseVisibility(formData: FormData): "public" | "private" {
+  return getString(formData, "visibility") === "private" ? "private" : "public";
+}
+
 // Page-level guard: redirects anonymous visitors to login and returns the
 // caller's normalized email. Use only on routes that are always private — the
 // public activity feed and public profiles need a nullable variant instead.

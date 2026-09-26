@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import EmptyState from "./EmptyState";
+import PagerEdge from "./PagerEdge";
 import PersonCard, { type Person } from "./PersonCard";
 
 const PEOPLE_PER_PAGE = 24;
@@ -137,21 +138,12 @@ export default function PeopleList({
           className="mt-6 flex items-center justify-between border-t border-white/10 pt-3"
           aria-label="People pagination"
         >
-          {hasPrevious ? (
-            <Link
-              href={pageHref(path, query, page - 1)}
-              className={paginationClasses}
-              aria-label="Previous page"
-            >
-              <span aria-hidden="true">←</span>
-              <span className="hidden sm:inline">Previous</span>
-            </Link>
-          ) : (
-            <span className={disabledPaginationClasses} aria-disabled="true">
-              <span aria-hidden="true">←</span>
-              <span className="sr-only sm:not-sr-only">Previous</span>
-            </span>
-          )}
+          <PagerEdge
+            direction="previous"
+            href={hasPrevious ? pageHref(path, query, page - 1) : undefined}
+            className={paginationClasses}
+            disabledClassName={disabledPaginationClasses}
+          />
           <span
             className="text-xs text-neutral-400"
             aria-live="polite"
@@ -159,21 +151,12 @@ export default function PeopleList({
           >
             Page {page} of {totalPages}
           </span>
-          {hasNext ? (
-            <Link
-              href={pageHref(path, query, page + 1)}
-              className={paginationClasses}
-              aria-label="Next page"
-            >
-              <span className="hidden sm:inline">Next</span>
-              <span aria-hidden="true">→</span>
-            </Link>
-          ) : (
-            <span className={disabledPaginationClasses} aria-disabled="true">
-              <span className="sr-only sm:not-sr-only">Next</span>
-              <span aria-hidden="true">→</span>
-            </span>
-          )}
+          <PagerEdge
+            direction="next"
+            href={hasNext ? pageHref(path, query, page + 1) : undefined}
+            className={paginationClasses}
+            disabledClassName={disabledPaginationClasses}
+          />
         </nav>
       )}
     </div>

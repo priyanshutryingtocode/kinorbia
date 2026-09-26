@@ -7,12 +7,38 @@ import User from "@/models/User";
 import MovieList from "@/models/MovieList";
 import Comment from "@/models/Comment";
 import Notification from "@/models/Notification";
-import { requireUser, getString } from "@/lib/actions";
+import { requireUser, getString, parseVisibility } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import { normalizeMediaType, mediaKey } from "@/lib/media";
 import { dedupeFavorites } from "@/lib/reviewRatings";
 import type { FavoriteMovie, ListMovie } from "@/types";
+
+function selectedKeysFrom(formData: FormData) {
+  return new Set(
+    formData
+      .getAll("movieIds")
+      .filter((value): value is string => typeof value === "string" && value.length > 0)
+      .map((value) => {
+        const ref = parseMovieRef(value);
+        return ref ? mediaKey(ref.mediaType, ref.movieId) : null;
+      })
+      .filter((value): value is string => value !== null)
+  );
+}
+
+function validateListFields(title: string, description: string): string | null {
+  if (!title) {
+    return "Add a title for the list.";
+  }
+  if (title.length > 80) {
+    return "List titles must be 80 characters or fewer.";
+  }
+  if (description.length > 300) {
+    return "Descriptions must be 300 characters or fewer.";
+  }
+  return null;
+}
 
 function toListMovie(movie: FavoriteMovie): ListMovie {
   return {
@@ -45,26 +71,12 @@ export async function createMovieList(
   const { email, name } = await requireUser();
   const title = getString(resolvedFormData, "title");
   const description = getString(resolvedFormData, "description");
-  const visibility = getString(resolvedFormData, "visibility") === "private" ? "private" : "public";
-  const selectedKeys = new Set(
-    resolvedFormData
-      .getAll("movieIds")
-      .filter((value): value is string => typeof value === "string" && value.length > 0)
-      .map((value) => {
-        const ref = parseMovieRef(value);
-        return ref ? mediaKey(ref.mediaType, ref.movieId) : null;
-      })
-      .filter((value): value is string => value !== null)
-  );
+  const visibility = parseVisibility(resolvedFormData);
+  const selectedKeys = selectedKeysFrom(resolvedFormData);
 
-  if (!title) {
-    return { status: "error", message: "Add a title for the list." };
-  }
-  if (title.length > 80) {
-    return { status: "error", message: "List titles must be 80 characters or fewer." };
-  }
-  if (description.length > 300) {
-    return { status: "error", message: "Descriptions must be 300 characters or fewer." };
+  const fieldError = validateListFields(title, description);
+  if (fieldError) {
+    return { status: "error", message: fieldError };
   }
 
   try {
@@ -110,29 +122,15 @@ export async function updateMovieList(
   const listId = getString(resolvedFormData, "listId");
   const title = getString(resolvedFormData, "title");
   const description = getString(resolvedFormData, "description");
-  const visibility = getString(resolvedFormData, "visibility") === "private" ? "private" : "public";
-  const selectedKeys = new Set(
-    resolvedFormData
-      .getAll("movieIds")
-      .filter((value): value is string => typeof value === "string" && value.length > 0)
-      .map((value) => {
-        const ref = parseMovieRef(value);
-        return ref ? mediaKey(ref.mediaType, ref.movieId) : null;
-      })
-      .filter((value): value is string => value !== null)
-  );
+  const visibility = parseVisibility(resolvedFormData);
+  const selectedKeys = selectedKeysFrom(resolvedFormData);
 
   if (!listId || !isObjectId(listId)) {
     return { status: "error", message: "This list could not be found." };
   }
-  if (!title) {
-    return { status: "error", message: "Add a title for the list." };
-  }
-  if (title.length > 80) {
-    return { status: "error", message: "List titles must be 80 characters or fewer." };
-  }
-  if (description.length > 300) {
-    return { status: "error", message: "Descriptions must be 300 characters or fewer." };
+  const fieldError = validateListFields(title, description);
+  if (fieldError) {
+    return { status: "error", message: fieldError };
   }
 
   try {

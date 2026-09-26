@@ -151,27 +151,68 @@ function discoverQuery(genre: string | undefined, page: number) {
   return `${genreParam ? `with_genres=${genreParam}&` : ""}language=en-US&page=${safePage(page)}`;
 }
 
+// --- Media list endpoints ---
+// Movies and TV share every path shape; the only differences are the path
+// segment and, for TV, normalizing the result into MovieSummary.
+
+const asSummaries = (data: ResultList<RawTvResult> | null) => ({
+  results: data?.results?.map(normalizeTvResult) || [],
+});
+
+function fetchNormalizedList(mediaType: MediaPath, path: string, revalidate: number) {
+  if (mediaType === "tv") {
+    return tmdbFetch<ResultList<RawTvResult>>(path, revalidate).then(asSummaries);
+  }
+
+  return tmdbFetch<ResultList<MovieSummary>>(path, revalidate);
+}
+
+function discoverByGenre(mediaType: MediaPath, genre: string | undefined, page: number) {
+  return fetchNormalizedList(
+    mediaType,
+    `/discover/${mediaType}?${discoverQuery(genre, page)}`,
+    300
+  );
+}
+
+function discoverWithParams(mediaType: MediaPath, extraParams: string, page: number) {
+  const params = extraParams.replace(/^&/, "");
+  return fetchNormalizedList(
+    mediaType,
+    `/discover/${mediaType}?${params ? `${params}&` : ""}language=en-US&page=${page}`,
+    300
+  );
+}
+
+function searchByQuery(mediaType: MediaPath, query: string, extraParams: string) {
+  return fetchNormalizedList(
+    mediaType,
+    `/search/${mediaType}?query=${encodeURIComponent(query)}${extraParams}`,
+    3600
+  );
+}
+
+function recommendations(mediaType: MediaPath, id: string) {
+  return fetchNormalizedList(
+    mediaType,
+    `/${mediaType}/${safeId(id)}/recommendations?language=en-US&page=1`,
+    3600
+  );
+}
+
 // --- Movies ---
 
 export const getPopularMovies = (page = 1) =>
   fetchList("movie", `popular?language=en-US&page=${safePage(page)}`, 300);
 
 export const getDiscoverMovies = (page = 1, genre?: string) =>
-  tmdbFetch<ResultList<MovieSummary>>(`/discover/movie?${discoverQuery(genre, page)}`, 300);
+  discoverByGenre("movie", genre, page);
 
-export const discoverMovies = (extraParams = "", page = 1) => {
-  const params = extraParams.replace(/^&/, "");
-  return tmdbFetch<ResultList<MovieSummary>>(
-    `/discover/movie?${params ? `${params}&` : ""}language=en-US&page=${page}`,
-    300
-  );
-};
+export const discoverMovies = (extraParams = "", page = 1) =>
+  discoverWithParams("movie", extraParams, page);
 
 export const searchMovies = (query: string, extraParams = "") =>
-  tmdbFetch<ResultList<MovieSummary>>(
-    `/search/movie?query=${encodeURIComponent(query)}${extraParams}`,
-    3600
-  );
+  searchByQuery("movie", query, extraParams);
 
 export async function getMovieWithStatus(id: string): Promise<{
   movie: TmdbMovieDetails | null;
@@ -187,36 +228,19 @@ export const getMovieCredits = (id: string) =>
 export const getMovieVideos = (id: string) =>
   fetchSubResource<{ results?: TmdbVideo[] } | null>("movie", id, "videos");
 
-export const getRecommendationMovies = (id: string) =>
-  tmdbFetch<ResultList<MovieSummary>>(`/movie/${safeId(id)}/recommendations?language=en-US&page=1`, 3600);
+export const getRecommendationMovies = (id: string) => recommendations("movie", id);
 
 // --- TV ---
 
 export const getPopularTv = (page = 1) =>
   fetchList("tv", `popular?language=en-US&page=${safePage(page)}`, 300);
 
-export const getDiscoverTv = (page = 1, genre?: string) =>
-  tmdbFetch<ResultList<RawTvResult>>(`/discover/tv?${discoverQuery(genre, page)}`, 300).then((data) => ({
-    results: data?.results?.map(normalizeTvResult) || [],
-  }));
+export const getDiscoverTv = (page = 1, genre?: string) => discoverByGenre("tv", genre, page);
 
-export const discoverTv = (extraParams = "", page = 1) => {
-  const params = extraParams.replace(/^&/, "");
-  return tmdbFetch<ResultList<RawTvResult>>(
-    `/discover/tv?${params ? `${params}&` : ""}language=en-US&page=${page}`,
-    300
-  ).then((data) => ({
-    results: data?.results?.map(normalizeTvResult) || [],
-  }));
-};
+export const discoverTv = (extraParams = "", page = 1) =>
+  discoverWithParams("tv", extraParams, page);
 
-export const searchTv = (query: string, extraParams = "") =>
-  tmdbFetch<ResultList<RawTvResult>>(
-    `/search/tv?query=${encodeURIComponent(query)}${extraParams}`,
-    3600
-  ).then((data) => ({
-    results: data?.results?.map(normalizeTvResult) || [],
-  }));
+export const searchTv = (query: string, extraParams = "") => searchByQuery("tv", query, extraParams);
 
 export async function getTvWithStatus(id: string): Promise<{
   tv: TmdbTvDetails | null;
@@ -232,12 +256,7 @@ export const getTvCredits = (id: string) =>
 export const getTvVideos = (id: string) =>
   fetchSubResource<{ results?: TmdbVideo[] } | null>("tv", id, "videos");
 
-export const getTvRecommendations = (id: string) =>
-  tmdbFetch<ResultList<RawTvResult>>(`/tv/${safeId(id)}/recommendations?language=en-US&page=1`, 3600).then(
-    (data) => ({
-      results: data?.results?.map(normalizeTvResult) || [],
-    })
-  );
+export const getTvRecommendations = (id: string) => recommendations("tv", id);
 
 // Prefer the newest official YouTube trailer, falling back through any
 // trailer, teaser, clip, and finally whatever exists.

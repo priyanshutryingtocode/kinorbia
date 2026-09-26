@@ -1,15 +1,5 @@
-import StatusState from "@/components/StatusState";
+import StatusState, { type StatusStateProps } from "@/components/StatusState";
 
-export default function ProfileNotFoundState({
-  title,
-  description,
-  href,
-  action,
-}: {
-  title?: string;
-  description?: string;
-  href?: string;
-  action?: string;
-}) {
-  return <StatusState variant="profileNotFound" title={title} description={description} href={href} action={action} />;
+export default function ProfileNotFoundState(props: Omit<StatusStateProps, "variant" | "onRetry">) {
+  return <StatusState variant="profileNotFound" {...props} />;
 }

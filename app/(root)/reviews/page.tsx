@@ -10,6 +10,7 @@ import PageHeader from "@/components/PageHeader";
 import ReviewCard from "@/components/ReviewCard";
 import SectionHeader from "@/components/SectionHeader";
 import SubmitButton from "@/components/SubmitButton";
+import VisibilityField from "@/components/VisibilityField";
 import dbConnect from "@/lib/dbConnect";
 import { buildReviewerRatingMaps, dedupeFavorites, lookupRating } from "@/lib/reviewRatings";
 import Review from "@/models/Review";
@@ -109,19 +110,7 @@ export default async function ReviewsPage() {
                 />
               </div>
 
-              <fieldset className="kin-field">
-                <legend className="kin-label">Visibility</legend>
-                <div className="kin-choice-group">
-                  <label className="kin-choice">
-                    <input type="radio" name="visibility" value="public" defaultChecked />
-                    Public
-                  </label>
-                  <label className="kin-choice">
-                    <input type="radio" name="visibility" value="private" />
-                    Private
-                  </label>
-                </div>
-              </fieldset>
+              <VisibilityField legendClassName="kin-label" fieldsetClassName="kin-field" />
 
               <label className="kin-choice">
                 <input type="checkbox" name="spoiler" />

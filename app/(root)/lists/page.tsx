@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import FormPanel from "@/components/FormPanel";
 import MoviePicker from "@/components/MoviePicker";
 import RouteShell from "@/components/RouteShell";
+import VisibilityField from "@/components/VisibilityField";
 import PageHeader from "@/components/PageHeader";
 import SectionHeader from "@/components/SectionHeader";
 import SocialActionButton from "@/components/SocialActionButton";
@@ -162,29 +163,7 @@ function ListRow({
                   <p className="text-xs leading-5 text-content-subtle">
                     Titles no longer in your favorites remain selected and are preserved on save.
                   </p>
-                  <fieldset>
-                    <legend className="kin-label mb-1.5">Visibility</legend>
-                    <div className="kin-choice-group">
-                      <label className="kin-choice">
-                        <input
-                          type="radio"
-                          name="visibility"
-                          value="public"
-                          defaultChecked={list.visibility === "public"}
-                        />
-                        Public
-                      </label>
-                      <label className="kin-choice">
-                        <input
-                          type="radio"
-                          name="visibility"
-                          value="private"
-                          defaultChecked={list.visibility === "private"}
-                        />
-                        Private
-                      </label>
-                    </div>
-                  </fieldset>
+                  <VisibilityField legendClassName="kin-label mb-1.5" visibility={list.visibility} />
                   <SubmitButton pendingLabel="Saving..." variant="secondary">
                     Save list
                   </SubmitButton>
@@ -309,19 +288,7 @@ export default async function ListsPage() {
                 max={MAX_LIST_MOVIES}
                 label="Select titles"
               />
-              <fieldset>
-                <legend className="kin-label mb-1.5">Visibility</legend>
-                <div className="kin-choice-group">
-                  <label className="kin-choice">
-                    <input type="radio" name="visibility" value="public" defaultChecked />
-                    Public
-                  </label>
-                  <label className="kin-choice">
-                    <input type="radio" name="visibility" value="private" />
-                    Private
-                  </label>
-                </div>
-              </fieldset>
+              <VisibilityField legendClassName="kin-label mb-1.5" />
               <SubmitButton pendingLabel="Creating..." className="w-full sm:w-auto">
                 <Plus className="h-4 w-4" aria-hidden="true" />
                 Create list
