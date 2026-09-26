@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isValidObjectId } from "mongoose";
 import dbConnect from "@/lib/dbConnect";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
 import { requireUser, getString } from "@/lib/actions";
+import { isObjectId } from "@/lib/objectId";
 
 type FollowTarget = {
   _id: { toString: () => string };
@@ -38,10 +38,7 @@ export async function toggleFollow(formData: FormData) {
   const operation = getString(formData, "operation") === "unfollow" ? "unfollow" : "follow";
   const submittedPath = getString(formData, "path");
 
-  if (
-    !/^[a-f0-9]{24}$/i.test(targetUserId) ||
-    !isValidObjectId(targetUserId)
-  ) {
+  if (!isObjectId(targetUserId)) {
     return;
   }
 

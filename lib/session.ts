@@ -38,6 +38,6 @@ export function withAuthedUser(
         return NextResponse.json({ message: `Error ${options.errorLabel}` }, { status: 500 });
       }
     },
-    { windowMs: options.windowMs, limit: options.limit }
+    options
   );
 }

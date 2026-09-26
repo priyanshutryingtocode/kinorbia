@@ -68,7 +68,7 @@ function ListPoster({ movie }: { movie: ListMovie }) {
 export default async function ListDetailPage({ params }: ListDetailPageProps) {
   const currentUserEmail = await requireUserEmail();
 
-  const { id } = await Promise.resolve(params);
+  const { id } = await params;
   if (!isObjectId(id)) {
     notFound();
   }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
-import { mediaEquals, mediaHref, mediaMatch } from "@/lib/media";
+import { mediaEquals, mediaHref } from "@/lib/media";
 import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
 import { renderRichText } from "@/lib/renderRichText";
 import type { MediaType } from "@/types";
@@ -18,7 +18,7 @@ export default async function MovieReviewsAndLists({
 }) {
   await dbConnect();
   const [publicReviews, publicLists] = await Promise.all([
-    Review.find({ movieId, ...mediaMatch(mediaType), visibility: "public" })
+    Review.find({ movieId, mediaType: mediaEquals(mediaType), visibility: "public" })
       .sort({ createdAt: -1 })
       .limit(4)
       .lean<{

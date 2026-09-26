@@ -155,10 +155,10 @@ export default async function TvPage({ params }: Props) {
           </div>
 
           <div className="min-w-0">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-gold">
+            <p className="mb-3 text-xs font-bold uppercase tracking-overline text-gold">
               {releaseYear} <span className="mx-2 text-white/20">—</span> Series
             </p>
-            <h1 className="font-display max-w-3xl text-4xl font-bold leading-[0.95] text-white sm:text-5xl">
+            <h1 className="font-display max-w-3xl text-4xl font-bold leading-editorial text-white sm:text-5xl">
               {tv.name}
             </h1>
             {tv.tagline && (

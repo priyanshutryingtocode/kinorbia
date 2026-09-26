@@ -88,7 +88,7 @@ type SearchPageProps = {
 };
 
 export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
-  const { q, type } = await Promise.resolve(searchParams);
+  const { q, type } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
   const mediaType = type === "tv" ? "Shows" : "Movies";
 
@@ -101,7 +101,7 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const { q, year, minRating, genre, runtime, language, sort, type } = await Promise.resolve(searchParams);
+  const { q, year, minRating, genre, runtime, language, sort, type } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
   const releaseYear = typeof year === "string" ? year.trim() : "";
   const minimumRating = typeof minRating === "string" ? Number(minRating) : 0;

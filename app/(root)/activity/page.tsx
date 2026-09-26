@@ -29,7 +29,7 @@ type ActivityPageProps = {
 };
 
 export default async function ActivityPage({ searchParams }: ActivityPageProps) {
-  const { feed } = await Promise.resolve(searchParams);
+  const { feed } = await searchParams;
   const isFollowingFeed = feed === "following";
 
   const session = await auth();

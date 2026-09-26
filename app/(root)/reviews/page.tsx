@@ -50,7 +50,7 @@ export default async function ReviewsPage() {
   const user = await User.findOne({ email: currentUserEmail }).lean<{
     favorites?: FavoriteMovie[];
   } | null>();
-  const favorites = dedupeFavorites((user?.favorites || []) as FavoriteMovie[]);
+  const favorites = dedupeFavorites(user?.favorites || []);
   const ratedFavorites = favorites.filter((movie) => (movie.personalRating || 0) > 0);
 
   const favoriteMovieId = "review-favorite-movie";

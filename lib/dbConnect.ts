@@ -6,8 +6,6 @@ if (!mongoUri) {
   throw new Error("Please define MONGODB_URI or MONGO_MONGODB_URI inside .env.local.");
 }
 
-const MONGODB_URI = mongoUri;
-
 export function isDuplicateKeyError(error: unknown) {
   return (
     typeof error === "object" &&
@@ -43,9 +41,9 @@ async function dbConnect() {
       serverSelectionTimeoutMS: 5000,
     };
 
-    cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
+    // The module-level guard above throws before this runs, so the
+    // non-null assertion holds for the same reason `cached!` does.
+    cached!.promise = mongoose.connect(mongoUri!, opts);
   }
 
   try {

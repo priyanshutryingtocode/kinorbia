@@ -62,7 +62,7 @@ export default function MoviePicker({
   const currentPage = Math.min(page, totalPages);
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const visibleMovies = results.slice(pageStart, pageStart + PAGE_SIZE);
-  const selectionLimit = Number.isFinite(max) ? Math.max(0, Math.floor(max)) : MAX_LIST_MOVIES;
+  const selectionLimit = Math.max(0, Math.floor(max));
   const atLimit = selected.size >= selectionLimit;
   const notice =
     selected.size > selectionLimit

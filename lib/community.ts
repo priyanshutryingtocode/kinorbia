@@ -17,10 +17,8 @@ export type CommunityComparisonItem = {
 export type CommunityComparison = {
   overallCommunityAvg: number | null;
   userComparableAvg: number;
-  rated: number;
-  comparableCount?: number;
-  sampleSize?: number;
-  communityRatingCount?: number;
+  comparableCount: number;
+  communityRatingCount: number;
   items: CommunityComparisonItem[];
 };
 
@@ -122,9 +120,7 @@ export async function buildCommunityComparison(
   return {
     overallCommunityAvg,
     userComparableAvg,
-    rated: comparableCount,
     comparableCount,
-    sampleSize: comparableCount,
     communityRatingCount,
     items,
   };

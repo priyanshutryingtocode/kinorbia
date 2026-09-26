@@ -50,7 +50,7 @@ export async function rateLimit(
 }
 
 export function withRateLimit(
-  handler: (req: Request, args: { ip: string }) => Promise<Response>,
+  handler: (req: Request) => Promise<Response>,
   options: LimitOptions
 ) {
   return async function rateLimited(req: Request) {
@@ -60,7 +60,7 @@ export function withRateLimit(
       return tooManyRequests(options.windowMs);
     }
 
-    return handler(req, { ip });
+    return handler(req);
   };
 }
 

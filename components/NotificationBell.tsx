@@ -66,7 +66,6 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
         setUnread(data.unreadCount ?? 0);
       }
     } catch {
-      return;
     }
   }, []);
 
@@ -80,7 +79,6 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
         setUnread(data.unreadCount ?? 0);
       }
     } catch {
-      return;
     } finally {
       setLoading(false);
     }
@@ -146,7 +144,6 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
       setItems((current) => current.map((item) => ({ ...item, read: true })));
       router.refresh();
     } catch {
-      return;
     } finally {
       setMarking(false);
     }

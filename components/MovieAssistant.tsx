@@ -229,7 +229,7 @@ export default function MovieAssistant() {
                         <div className="min-w-0 py-1">
                           <p className="truncate text-sm font-bold text-white">{movie.title}</p>
                           <p className="mt-1 text-xs text-neutral-500">
-                            {movieYear(movie)} - TMDB {movie.vote_average?.toFixed?.(1) || "N/A"}
+                            {movieYear(movie)} - TMDB {movie.vote_average.toFixed(1)}
                           </p>
                         </div>
                       </Link>

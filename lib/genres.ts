@@ -41,6 +41,6 @@ const TV_GENRES: Record<number, string> = {
   37: "Western",
 };
 
-export function genreName(id: number, mediaType: MediaType = "movie") {
+export function genreName(id: number, mediaType: MediaType) {
   return mediaType === "tv" ? TV_GENRES[id] : MOVIE_GENRES[id];
 }

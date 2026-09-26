@@ -10,7 +10,7 @@ export function slugifyUsername(value: string) {
   return slug || "kinorbia-user";
 }
 
-export async function ensureUserIdentity(email: string, name = "KinOrbia user") {
+export async function ensureUserIdentity(email: string, name: string) {
   const normalizedEmail = email.toLowerCase().trim();
   const user = await User.findOne({ email: normalizedEmail });
 

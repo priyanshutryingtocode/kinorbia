@@ -4,10 +4,9 @@ type Visibility = "public" | "private";
 
 export type VisibilityBadgeProps = {
   visibility: Visibility;
-  className?: string;
 };
 
-export default function VisibilityBadge({ visibility, className = "" }: VisibilityBadgeProps) {
+export default function VisibilityBadge({ visibility }: VisibilityBadgeProps) {
   const Icon = visibility === "public" ? Globe2 : LockKeyhole;
 
   return (
@@ -17,7 +16,7 @@ export default function VisibilityBadge({ visibility, className = "" }: Visibili
         visibility === "public"
           ? "border-highlight/25 bg-highlight-soft text-highlight"
           : "border-rule-strong bg-surface-raised text-content-muted"
-      } ${className}`}
+      }`}
     >
       <Icon className="h-3 w-3" aria-hidden="true" />
       {visibility}

@@ -61,7 +61,7 @@ export function parseBody<T extends z.ZodType>(req: Request, schema: T): Promise
 
 function normalizeMovieRef(raw: unknown): unknown {
   if (raw && typeof raw === "object" && !("movieTitle" in raw) && "title" in raw) {
-    return { ...(raw as Record<string, unknown>), movieTitle: (raw as Record<string, unknown>).title };
+    return { ...raw, movieTitle: raw.title };
   }
   return raw;
 }

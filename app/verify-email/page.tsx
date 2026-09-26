@@ -10,7 +10,7 @@ type VerifyEmailPageProps = {
 export const dynamic = "force-dynamic";
 
 export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageProps) {
-  const { token } = await Promise.resolve(searchParams);
+  const { token } = await searchParams;
 
   let status: "success" | "invalid" | "already" = "invalid";
 

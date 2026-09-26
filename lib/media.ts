@@ -51,14 +51,6 @@ export function tmdbImage(path: string | null | undefined, size: string) {
   return relative ? `https://image.tmdb.org/t/p/${size}/${relative}` : null;
 }
 
-export function mediaMatch(mediaType: MediaType) {
-  if (mediaType === "tv") {
-    return { mediaType: "tv" };
-  }
-
-  return { mediaType: { $in: ["movie", null] } };
-}
-
 export function mediaEquals(mediaType: MediaType) {
   if (mediaType === "tv") {
     return "tv";

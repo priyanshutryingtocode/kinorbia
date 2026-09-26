@@ -48,7 +48,6 @@ type JournalLike = {
   movieTitle: string;
   posterPath?: string | null;
   movieId?: string;
-  id?: string | number;
   _id?: string | number | { toString(): string };
 };
 
@@ -73,8 +72,8 @@ function journalKey(entry: JournalLike, manualOccurrences: Map<string, number>) 
     return `${mediaType}:${movieId}`;
   }
 
-  const entryId = entry.id ?? entry._id;
-  if (entryId !== undefined && entryId !== null && String(entryId) !== "") {
+  const entryId = entry._id;
+  if (entryId !== undefined && String(entryId) !== "") {
     return `${mediaType}:entry:${String(entryId)}`;
   }
 
@@ -98,33 +97,23 @@ function dayNumber(day: string) {
 function computeStreaks(dayStrs: string[], now = new Date()) {
   const today = dayNumber(utcDayStr(now));
   const days = [...new Set(dayStrs)]
-    .filter((day) => Number.isFinite(dayNumber(day)) && dayNumber(day) <= today)
-    .sort();
+    .map(dayNumber)
+    .filter((day) => Number.isFinite(day) && day <= today)
+    .sort((a, b) => a - b);
 
   let best = 0;
   let run = 0;
   let prev: number | null = null;
 
+  // Days are unique and ascending, so `run` after the loop is already the
+  // length of the trailing consecutive chain and `prev` its last day.
   for (const day of days) {
-    const n = dayNumber(day);
-    run = prev !== null && n - prev === 1 ? run + 1 : 1;
+    run = prev !== null && day - prev === 1 ? run + 1 : 1;
     best = Math.max(best, run);
-    prev = n;
+    prev = day;
   }
 
-  let current = 0;
-  if (days.length > 0) {
-    const last = dayNumber(days[days.length - 1]);
-    if (today - last <= 1) {
-      for (let i = days.length - 1; i >= 0; i--) {
-        if (i === days.length - 1 || dayNumber(days[i]) === dayNumber(days[i + 1]) - 1) {
-          current += 1;
-        } else {
-          break;
-        }
-      }
-    }
-  }
+  const current = prev !== null && today - prev <= 1 ? run : 0;
 
   return { current, best };
 }
@@ -187,12 +176,16 @@ export function buildInsights(
     ? journal.filter((entry) => new Date(entry.watchedAt).getUTCFullYear() === year)
     : journal;
 
-  const filteredFavorites = year !== undefined
-    ? favorites.filter((favorite) => {
-        const addedAt = favorite.addedAt ? new Date(favorite.addedAt).getTime() : NaN;
-        return !Number.isNaN(addedAt) && new Date(addedAt).getUTCFullYear() === year;
-      })
-    : favorites;
+  const filteredFavorites =
+    year !== undefined
+      ? favorites.filter((favorite) => {
+          if (!favorite.addedAt) {
+            return false;
+          }
+          const addedAt = new Date(favorite.addedAt);
+          return !Number.isNaN(addedAt.getTime()) && addedAt.getUTCFullYear() === year;
+        })
+      : favorites;
 
   const monthKeys = monthKeysFor(now, year);
 
@@ -227,14 +220,10 @@ export function buildInsights(
     count: monthCounts.get(key) || 0,
   }));
 
-  let bestMonthLabel: string | null = null;
-  let bestMonthCount = 0;
-  for (const point of monthly) {
-    if (point.count > bestMonthCount) {
-      bestMonthCount = point.count;
-      bestMonthLabel = point.label;
-    }
-  }
+  const { label: bestMonthLabel } = monthly.reduce(
+    (best, point) => (point.count > best.count ? { label: point.label, count: point.count } : best),
+    { label: null as string | null, count: 0 }
+  );
 
   const { current, best } = computeStreaks(dayStrs, now);
 
@@ -252,19 +241,20 @@ export function buildInsights(
   }));
 
   const ratedFavorites = filteredFavorites.filter(
-    (favorite) => favorite.personalRating && favorite.personalRating > 0
+    (favorite): favorite is typeof favorite & { personalRating: number } =>
+      favorite.personalRating !== undefined && favorite.personalRating > 0
   );
 
   const ratedCount = ratedFavorites.length;
-  const ratingSum = ratedFavorites.reduce((sum, favorite) => sum + (favorite.personalRating || 0), 0);
+  const ratingSum = ratedFavorites.reduce((sum, favorite) => sum + favorite.personalRating, 0);
   const averageRating = ratedCount ? ratingSum / ratedCount / 2 : 0;
 
   const topRated: TopRatedItem[] = ratedFavorites
     .map((favorite) => ({
       title: favorite.title,
       posterPath: favorite.posterPath || null,
-      rating: favorite.personalRating as number,
-      mediaType: (normalizeMediaType(favorite.mediaType)) as MediaType,
+      rating: favorite.personalRating,
+      mediaType: normalizeMediaType(favorite.mediaType),
       movieId: favorite.movieId,
       href: mediaHref(favorite.mediaType, favorite.movieId),
     }))
