@@ -22,6 +22,10 @@ export const POST = withRateLimit(
       await dbConnect();
       const user = await User.findOne({ email: body.email }).select("email provider");
 
+      // No `emailVerified` check here on purpose. Sign-in no longer requires a
+      // confirmed address, and redeeming a reset link proves inbox control, so
+      // this path both recovers the account and marks it verified. An
+      // unverified user asking for help is the common case, not an edge case.
       if (user?.provider === "credentials") {
         const resetToken = generateToken();
         const resetTokenHash = hashToken(resetToken);

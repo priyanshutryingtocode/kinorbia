@@ -1,4 +1,4 @@
-import NextAuth, { CredentialsSignin } from "next-auth";
+import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -7,11 +7,6 @@ import User from "@/models/User";
 import { ensureUserIdentity, slugifyUsername } from "@/lib/userIdentity";
 
 const DUMMY_BCRYPT_HASH = "$2b$12$vPZWNgvZy3FQD3F6MCWEmO1q.F9dWYWrRNZTaG5.AF93nQm2yDJU6";
-
-class EmailNotVerifiedError extends CredentialsSignin 
-{
-  code = "EMAIL_NOT_VERIFIED";
-}
 
 type AppToken = {
   name?: string | null;
@@ -51,10 +46,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user?.password || !passwordMatches) {
           return null;
-        }
-
-        if (!user.emailVerified) {
-          throw new EmailNotVerifiedError();
         }
 
         return {

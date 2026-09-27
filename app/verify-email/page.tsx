@@ -1,55 +1,54 @@
 import Link from "next/link";
-import dbConnect from "@/lib/dbConnect";
-import User from "@/models/User";
-import { hashToken } from "@/lib/token";
+import { redirect } from "next/navigation";
+import { CheckCircle2, MailWarning } from "lucide-react";
 
 type VerifyEmailPageProps = {
-  searchParams: Promise<{ token?: string }> | { token?: string };
+  searchParams: Promise<{ status?: string; token?: string }> | { status?: string; token?: string };
 };
 
+// The status is supplied by a redirect from /api/verify-email, so the shell must
+// render per request rather than being baked at build time.
 export const dynamic = "force-dynamic";
 
+const COPY = {
+  success: {
+    icon: CheckCircle2,
+    iconClass: "text-emerald-400",
+    title: "Email verified",
+    body: "You can now post public reviews, lists, and comments.",
+  },
+  already: {
+    icon: CheckCircle2,
+    iconClass: "text-emerald-400",
+    title: "Email already verified",
+    body: "This address is already confirmed. Nothing else to do.",
+  },
+  invalid: {
+    icon: MailWarning,
+    iconClass: "text-amber-400",
+    title: "This link is no longer valid",
+    body: "Verification links expire after an hour and work only once. Request a fresh one from your profile.",
+  },
+} as const;
+
 export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageProps) {
-  const { token } = await searchParams;
+  const { status, token } = await searchParams;
 
-  let status: "success" | "invalid" | "already" = "invalid";
-
-  if (typeof token === "string" && token.length > 0) {
-    await dbConnect();
-    const tokenHash = hashToken(token);
-    const user = await User.findOne({ "verifyToken.token": tokenHash });
-
-    if (user?.emailVerified) {
-      await User.updateOne({ _id: user._id }, { $unset: { verifyToken: 1 } });
-      status = "already";
-    } else if (user && user.verifyToken?.expiresAt && user.verifyToken.expiresAt > new Date()) {
-      await User.updateOne(
-        { _id: user._id },
-        {
-          $set: { emailVerified: new Date() },
-          $unset: { verifyToken: 1 },
-        }
-      );
-      status = "success";
-    }
+  // Links sent before redemption moved into a route handler point straight at
+  // this path with a `token`. Hand those to the handler so outstanding links
+  // still redeem instead of reporting themselves invalid.
+  if (!status && token) {
+    redirect(`/api/verify-email?token=${encodeURIComponent(token)}`);
   }
+
+  const copy = status && status in COPY ? COPY[status as keyof typeof COPY] : COPY.invalid;
+  const Icon = copy.icon;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-neutral-950 p-6 text-center text-white">
-      <h1 className="text-3xl font-bold">
-        {status === "success"
-          ? "Email verified"
-          : status === "already"
-            ? "Email already verified"
-            : "Invalid or expired link"}
-      </h1>
-      <p className="mt-4 max-w-md text-neutral-400">
-        {status === "success"
-          ? "Thanks for confirming your email address."
-          : status === "already"
-            ? "Your email was already confirmed."
-            : "This verification link is invalid or has expired. Try signing up again to receive a new link."}
-      </p>
+      <Icon className={`h-10 w-10 ${copy.iconClass}`} />
+      <h1 className="mt-4 text-3xl font-bold">{copy.title}</h1>
+      <p className="mt-4 max-w-md text-neutral-400">{copy.body}</p>
       <Link
         href="/"
         className="mt-8 rounded-full bg-red-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-red-500"

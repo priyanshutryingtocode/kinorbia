@@ -8,6 +8,7 @@ import Comment from "@/models/Comment";
 import Notification from "@/models/Notification";
 import { requireUser, getString, parseVisibility } from "@/lib/actions";
 import { findFavoriteByMediaKey } from "@/lib/reviewRatings";
+import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
 import { isObjectId } from "@/lib/objectId";
 import { normalizeMediaType } from "@/lib/media";
 
@@ -39,6 +40,10 @@ export async function createReview(stateOrFormData: ActionState | FormData, form
 
   try {
     await dbConnect();
+
+    if (visibility === "public" && !(await isEmailVerified(email))) {
+      return withState(state, "error", VERIFICATION_REQUIRED_MESSAGE);
+    }
 
     const favorite = await findFavoriteByMediaKey(email, favoriteMovieId);
 
@@ -87,6 +92,13 @@ export async function updateReview(stateOrFormData: ActionState | FormData, form
 
   try {
     await dbConnect();
+
+    // Flipping a private review to public is the moment it becomes visible, so
+    // that is where the check belongs rather than on create alone.
+    if (visibility === "public" && !(await isEmailVerified(email))) {
+      return withState(state, "error", VERIFICATION_REQUIRED_MESSAGE);
+    }
+
     const updateResult = await Review.updateOne(
       { _id: reviewId, userEmail: email },
       {

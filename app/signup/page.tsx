@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { Film, Mail, Lock, User as UserIcon, Chrome, Loader2, MailCheck } from "lucide-react";
+import { Film, Mail, Lock, User as UserIcon, Chrome, Loader2, CheckCircle2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 
 export default function SignUpPage() {
@@ -61,11 +61,11 @@ export default function SignUpPage() {
           <div className="w-full max-w-70 space-y-4">
             {registered ? (
               <div className="space-y-4">
-                <MailCheck className="w-10 h-10 mx-auto text-green-400" />
-                <h2 className="text-xl font-bold text-white">Check your inbox</h2>
+                <CheckCircle2 className="w-10 h-10 mx-auto text-green-400" />
+                <h2 className="text-xl font-bold text-white">Account created</h2>
                 <p className="text-sm text-neutral-300">
-                  We sent a verification link to <span className="font-semibold text-white">{email}</span>.
-                  Verify your email to activate your account, then sign in.
+                  You can sign in now with <span className="font-semibold text-white">{email}</span>.
+                  Verifying your email is optional, and only needed to post publicly.
                 </p>
                 <Link
                   href="/login"

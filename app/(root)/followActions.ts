@@ -6,6 +6,9 @@ import Notification from "@/models/Notification";
 import User from "@/models/User";
 import { requireUser, getString } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
+import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
+
+export type FollowState = { error?: string } | undefined;
 
 type FollowTarget = {
   _id: { toString: () => string };
@@ -32,7 +35,7 @@ function addUserPaths(paths: Set<string>, username?: string | null) {
   paths.add(`/u/${username}/following`);
 }
 
-export async function toggleFollow(formData: FormData) {
+export async function toggleFollow(_prevState: FollowState, formData: FormData): Promise<FollowState> {
   const { email, name } = await requireUser();
   const targetUserId = getString(formData, "targetUserId");
   const operation = getString(formData, "operation") === "unfollow" ? "unfollow" : "follow";
@@ -40,6 +43,13 @@ export async function toggleFollow(formData: FormData) {
 
   if (!isObjectId(targetUserId)) {
     return;
+  }
+
+  // A follow puts your name in someone else's public follower list, so it is
+  // gated like any other public appearance. Unfollow is never gated: a user
+  // must always be able to withdraw.
+  if (operation === "follow" && !(await isEmailVerified(email))) {
+    return { error: VERIFICATION_REQUIRED_MESSAGE };
   }
 
   await dbConnect();

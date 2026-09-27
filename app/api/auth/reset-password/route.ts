@@ -41,6 +41,10 @@ export const POST = withRateLimit(
         {
           $set: {
             password: hashedPassword,
+            // Redeeming a reset link is itself proof of inbox control, so it
+            // doubles as verification. Keeps `emailVerified` from needing a
+            // second round trip for a user who arrives here unverified.
+            emailVerified: user.emailVerified ?? new Date(),
             // Invalidate every JWT session issued before this moment.
             sessionsInvalidBefore: new Date(),
           },

@@ -5,14 +5,11 @@ import bcrypt from "bcryptjs";
 import { slugifyUsername } from "@/lib/userIdentity";
 import { registerSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
-import { generateToken, hashToken, TOKEN_TTL_MS } from "@/lib/token";
-import { sendEmail, buildLink } from "@/lib/email";
 
 // Identical body for every outcome so the endpoint cannot be used to
 // enumerate registered emails.
 const GENERIC_RESPONSE = {
-  message:
-    "Registration received. If this email is new, check your inbox for a verification link.",
+  message: "Registration received. If this email is new, you can sign in now.",
 };
 
 export const POST = withRateLimit(
@@ -47,10 +44,6 @@ export const POST = withRateLimit(
         suffix += 1;
       }
 
-      const verifyToken = generateToken();
-      const verifyTokenHash = hashToken(verifyToken);
-      const verifyTokenExpiresAt = new Date(Date.now() + TOKEN_TTL_MS);
-
       try {
         await User.create({
           name: body.name,
@@ -58,10 +51,6 @@ export const POST = withRateLimit(
           password: hashedPassword,
           provider: "credentials",
           username,
-          verifyToken: {
-            token: verifyTokenHash,
-            expiresAt: verifyTokenExpiresAt,
-          },
         });
       } catch (error) {
         // Lost a unique-index race (email or username taken concurrently):
@@ -70,21 +59,6 @@ export const POST = withRateLimit(
           return NextResponse.json(GENERIC_RESPONSE, { status: 202 });
         }
         throw error;
-      }
-
-      try {
-        await sendEmail({
-          to: body.email,
-          subject: "Verify your KinOrbia email",
-          html: [
-            "<h2>Welcome to KinOrbia</h2>",
-            "<p>Confirm your email address to keep your account secure.</p>",
-            `<p><a href="${buildLink(`/verify-email?token=${verifyToken}`)}">Verify email</a></p>`,
-            "<p>If you did not create this account, you can ignore this email.</p>",
-          ].join("\n"),
-        });
-      } catch (error) {
-        console.error("Failed to send verification email:", error);
       }
 
       return NextResponse.json(GENERIC_RESPONSE, { status: 202 });

@@ -12,6 +12,7 @@ import { isObjectId } from "@/lib/objectId";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import { normalizeMediaType, mediaKey } from "@/lib/media";
 import { dedupeFavorites } from "@/lib/reviewRatings";
+import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
 import type { FavoriteMovie, ListMovie } from "@/types";
 
 function selectedKeysFrom(formData: FormData) {
@@ -81,6 +82,11 @@ export async function createMovieList(
 
   try {
     await dbConnect();
+
+    if (visibility === "public" && !(await isEmailVerified(email))) {
+      return { status: "error", message: VERIFICATION_REQUIRED_MESSAGE };
+    }
+
     const user = await User.findOne({ email }).lean<{
       favorites?: FavoriteMovie[];
     } | null>();
@@ -135,6 +141,12 @@ export async function updateMovieList(
 
   try {
     await dbConnect();
+
+    // Publishing a previously private list is the moment it becomes visible.
+    if (visibility === "public" && !(await isEmailVerified(email))) {
+      return { status: "error", message: VERIFICATION_REQUIRED_MESSAGE };
+    }
+
     const [user, existing] = await Promise.all([
       User.findOne({ email }).lean<{ favorites?: FavoriteMovie[] } | null>(),
       MovieList.findOne({ _id: listId, userEmail: email })

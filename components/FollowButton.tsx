@@ -1,6 +1,7 @@
 "use client";
 
-import { toggleFollow } from "@/app/(root)/followActions";
+import { useActionState } from "react";
+import { toggleFollow, type FollowState } from "@/app/(root)/followActions";
 import SubmitButton from "./SubmitButton";
 
 type FollowButtonProps = {
@@ -16,10 +17,11 @@ export default function FollowButton({
   isFollowing,
   path,
 }: FollowButtonProps) {
+  const [state, formAction] = useActionState<FollowState, FormData>(toggleFollow, undefined);
   const action = isFollowing ? "Unfollow" : "Follow";
 
   return (
-    <form action={toggleFollow}>
+    <form action={formAction} className="flex flex-col items-end gap-1.5">
       <input type="hidden" name="targetUserId" value={targetUserId} />
       <input type="hidden" name="operation" value={isFollowing ? "unfollow" : "follow"} />
       <input type="hidden" name="path" value={path} />
@@ -34,6 +36,11 @@ export default function FollowButton({
       >
         {isFollowing ? "Following" : "Follow"}
       </SubmitButton>
+      {state?.error && (
+        <p className="kin-focus max-w-56 text-right text-[11px] leading-4 text-amber-300/90">
+          {state.error}
+        </p>
+      )}
     </form>
   );
 }

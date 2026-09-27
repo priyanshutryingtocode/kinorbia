@@ -31,6 +31,8 @@ import ProfileMetricRail from "@/components/ProfileMetricRail";
 import ProfilePagination from "@/components/ProfilePagination";
 import ProfilePanel from "@/components/ProfilePanel";
 import ProfileTabs, { type ProfileTab } from "@/components/ProfileTabs";
+import ProfileVerifyBanner from "@/components/ProfileVerifyBanner";
+import { isEmailVerified } from "@/lib/verification";
 import ReviewCard from "@/components/ReviewCard";
 import type { JournalItem, MovieListItem, ReviewItem, WatchlistMovie } from "@/types";
 
@@ -109,11 +111,20 @@ function CompactList({ list }: { list: MovieListItem }) {
   );
 }
 
-function OverviewPanel({ data }: { data: Awaited<ReturnType<typeof getProfileOverview>> }) {
+function OverviewPanel({
+  data,
+  emailVerified,
+}: {
+  data: Awaited<ReturnType<typeof getProfileOverview>>;
+  emailVerified: boolean;
+}) {
   return (
     <div className="space-y-8">
       <section id="overview" aria-labelledby="overview-heading">
         <h2 id="overview-heading" className="sr-only">Profile overview</h2>
+        <div className="mb-6">
+          <ProfileVerifyBanner verified={emailVerified} />
+        </div>
         <ProfileMetricRail
           ariaLabel="Profile summary"
           metrics={[
@@ -208,7 +219,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   let selectedYear: number | undefined;
 
   if (tab === "overview") {
-    panel = <OverviewPanel data={await getProfileOverview(email)} />;
+    const [overview, emailVerified] = await Promise.all([
+      getProfileOverview(email),
+      isEmailVerified(email),
+    ]);
+    panel = <OverviewPanel data={overview} emailVerified={emailVerified} />;
   } else if (tab === "insights") {
     const source = await getInsightsSource(email);
     const years = yearsFromJournal(source.journal);
