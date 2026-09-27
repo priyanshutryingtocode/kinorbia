@@ -15,12 +15,6 @@ export const rateMovieSchema = movieRefSchema.extend({
   rating: z.coerce.number().min(1).max(10),
 });
 
-export const rateFavoriteSchema = z.object({
-  movieId: z.union([z.string(), z.number()]).transform(String),
-  rating: z.coerce.number().min(1).max(10),
-  mediaType: z.enum(["movie", "tv"]).optional().default("movie"),
-});
-
 export const updateProfileSchema = z.object({
   name: z.string().trim().min(1).max(60),
   bio: z.string().trim().max(160).optional().default(""),

@@ -81,8 +81,6 @@ export type TmdbTvDetails = {
   genres?: { id: number; name: string }[];
   networks?: { id: number; name: string }[];
   number_of_seasons?: number;
-  number_of_episodes?: number;
-  status?: string;
 };
 
 export type TmdbTvCredits = {
@@ -125,7 +123,6 @@ export type JournalItem = {
   movieTitle: string;
   posterPath?: string | null;
   watchedAt: string;
-  note?: string;
   createdAt: string;
   movieId?: string;
   mediaType?: MediaType;

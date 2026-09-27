@@ -2,28 +2,63 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import MovieCard, { type MovieProp } from "@/components/MovieCard";
-import type { FavoriteMovie } from "@/types";
 import { getRecommendationMovies, getTvRecommendations } from "@/lib/tmdb";
+import type { MediaType } from "@/types";
 
-async function fetchRecommendations(movie: FavoriteMovie): Promise<MovieProp[]> {
-  if (movie.mediaType === "tv") {
-    const data = await getTvRecommendations(movie.movieId);
-    return data?.results || [];
-  }
-  const data = await getRecommendationMovies(movie.movieId);
-  return data?.results || [];
+type SourceFavorite = { movieId: string; title: string };
+
+// The newest favorite *of one media type*, resolved in the database.
+//
+// `$slice: -1` on its own takes the newest entry regardless of type, which is
+// how the movies page used to end up recommending shows. Filtering after a
+// fixed-width slice does not work either: a user with 100 movie favorites and
+// one old show would have no show in the last 20, so the shows panel would
+// never appear. Filter the array first, then take its last element.
+async function latestFavoriteOfType(email: string, mediaType: MediaType) {
+  const [row] = await User.aggregate<{ favorites?: SourceFavorite[] }>([
+    { $match: { email } },
+    {
+      $project: {
+        favorites: {
+          $slice: [
+            {
+              $filter: {
+                input: { $ifNull: ["$favorites", []] },
+                as: "favorite",
+                // The subdocument defaults mediaType to "movie", so this should
+                // always match; $ifNull keeps a favorite that predates the
+                // field from being silently dropped on the movie side.
+                cond: { $eq: [{ $ifNull: ["$$favorite.mediaType", "movie"] }, mediaType] },
+              },
+            },
+            -1,
+          ],
+        },
+      },
+    },
+  ]);
+
+  return row?.favorites?.at(0) ?? null;
 }
 
-export default async function Recommendations() {
+export default async function Recommendations({ mediaType }: { mediaType: MediaType }) {
   const session = await auth();
   if (!session?.user?.email) return null;
 
   await dbConnect();
-  const user = await User.findOne({ email: session.user.email }).lean<{ favorites?: FavoriteMovie[] } | null>();
-  const favorite = user?.favorites?.at(-1);
+  const favorite = await latestFavoriteOfType(session.user.email, mediaType);
+  // No favorite of this type: hide the panel rather than fall back to something
+  // unrelated to the viewer.
   if (!favorite) return null;
 
-  const recommendations = (await fetchRecommendations(favorite)).slice(0, 5);
+  // The page's media type picks the endpoint, so a show never seeds the movies
+  // panel or the reverse.
+  const data =
+    mediaType === "tv"
+      ? await getTvRecommendations(favorite.movieId)
+      : await getRecommendationMovies(favorite.movieId);
+
+  const recommendations: MovieProp[] = (data?.results || []).slice(0, 5);
   if (recommendations.length === 0) return null;
 
   return (

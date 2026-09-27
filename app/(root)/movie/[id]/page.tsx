@@ -170,7 +170,7 @@ export default async function MoviePage({ params }: Props) {
                 <WatchedButton movie={summary} initialIsWatched={isWatched} />
                 <WatchlistButton movie={summary} initialIsWatchlisted={isWatchlisted} />
                 <div className="mt-3 w-full sm:mt-0 sm:w-auto sm:flex-1 sm:min-w-0">
-                  <MovieRatingControl movie={summary} initialRating={personalRating} />
+                  <MovieRatingControl movie={summary} initialRating={personalRating} isWatched={isWatched} />
                 </div>
               </div>
             </div>

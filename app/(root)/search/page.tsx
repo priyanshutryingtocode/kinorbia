@@ -15,6 +15,7 @@ import {
   searchTv as searchTmdbTv,
   discoverTv,
 } from "@/lib/tmdb";
+import { CURATED_GENRES, curatedGenreName } from "@/lib/genres";
 import type { MovieSummary } from "@/types";
 import { mediaHref, normalizeMediaType, tmdbImage } from "@/lib/media";
 
@@ -223,31 +224,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             <div className="kin-field">
               <label htmlFor="search-genre" className="kin-label">Genre</label>
               <select id="search-genre" name="genre" defaultValue={selectedGenre} className="kin-input kin-filter-control">
-                {isTv ? (
-                  <>
-                    <option value="">Any genre</option>
-                    <option value="10759">Action & Adventure</option>
-                    <option value="16">Animation</option>
-                    <option value="35">Comedy</option>
-                    <option value="80">Crime</option>
-                    <option value="99">Documentary</option>
-                    <option value="18">Drama</option>
-                    <option value="10751">Family</option>
-                    <option value="9648">Mystery</option>
-                    <option value="10765">Sci-Fi & Fantasy</option>
-                    <option value="10768">War & Politics</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="">Any genre</option>
-                    <option value="28">Action</option>
-                    <option value="35">Comedy</option>
-                    <option value="18">Drama</option>
-                    <option value="27">Horror</option>
-                    <option value="878">Sci-Fi</option>
-                    <option value="53">Thriller</option>
-                  </>
-                )}
+                {/* Same curated list as the browse filter, with names resolved
+                    from lib/genres so the two cannot disagree. */}
+                <option value="">Any genre</option>
+                {CURATED_GENRES[isTv ? "tv" : "movie"].map((id) => (
+                  <option key={id} value={id}>
+                    {curatedGenreName(id, isTv ? "tv" : "movie")}
+                  </option>
+                ))}
               </select>
             </div>
 

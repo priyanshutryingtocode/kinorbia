@@ -29,10 +29,6 @@ const JournalEntrySchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
-  note: {
-    type: String,
-    maxLength: 1000,
-  },
 }, { timestamps: true });
 
 // One "watched" entry per (user, TMDB id, media type). Manual entries have no

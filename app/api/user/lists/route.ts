@@ -69,9 +69,11 @@ export const POST = withAuthedUser(
     );
 
     if (result.matchedCount === 0) {
+      // One field per title, because all this needs is a count -- previously it
+      // transferred every field of up to 500 entries to read an integer.
       const list = await MovieList.findOne({ _id: body.listId, userEmail: email })
-        .select("movies")
-        .lean<{ movies?: unknown[] } | null>();
+        .select("movies.movieId")
+        .lean<{ movies?: { movieId: string }[] } | null>();
       if (!list) {
         return NextResponse.json({ message: "List not found" }, { status: 404 });
       }

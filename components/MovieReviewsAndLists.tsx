@@ -18,7 +18,12 @@ export default async function MovieReviewsAndLists({
 }) {
   await dbConnect();
   const [publicReviews, publicLists] = await Promise.all([
+    // Projected, because this component renders on every film detail page and a
+    // Review carries unbounded likedBy/savedBy arrays that nothing here reads.
+    // `createdAt` is used only for the sort, which the database applies, so it
+    // does not need to travel back.
     Review.find({ movieId, mediaType: mediaEquals(mediaType), visibility: "public" })
+      .select("_id userEmail userName movieId mediaType body spoiler")
       .sort({ createdAt: -1 })
       .limit(4)
       .lean<{
@@ -29,9 +34,11 @@ export default async function MovieReviewsAndLists({
         mediaType?: MediaType;
         body: string;
         spoiler?: boolean;
-        createdAt: Date;
       }[]>(),
+    // `movies` narrows to the three fields needed for the entry count and the
+    // first poster, so a 500-title list does not transfer in full.
     MovieList.find({ "movies.movieId": movieId, "movies.mediaType": mediaEquals(mediaType), visibility: "public" })
+      .select("_id userName title description movies.movieId movies.title movies.posterPath")
       .sort({ createdAt: -1 })
       .limit(4)
       .lean<{
@@ -39,7 +46,7 @@ export default async function MovieReviewsAndLists({
         userName: string;
         title: string;
         description?: string;
-        movies: unknown[];
+        movies: { movieId: string; title: string; posterPath?: string | null }[];
       }[]>(),
   ]);
 

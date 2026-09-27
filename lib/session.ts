@@ -12,10 +12,6 @@ export async function getSessionUser(): Promise<{ email: string | null; name: st
   };
 }
 
-export async function getSessionEmail(): Promise<string | null> {
-  return (await getSessionUser()).email;
-}
-
 // Wraps an authenticated API handler: resolves the session user (401 when
 // signed out), connects to the database, funnels thrown errors into a
 // consistent 500 response, and applies the given rate limit.

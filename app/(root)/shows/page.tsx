@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import RouteShell from "@/components/RouteShell";
 import MovieCard, { MovieProp } from "@/components/MovieCard";
 import LoadMore from "@/components/LoadMore";
 import GenreFilter from "@/components/GenreFilter";
 import EmptyState from "@/components/EmptyState";
 import RetryButton from "@/components/RetryButton";
+import RecommendationsSkeleton from "@/components/RecommendationsSkeleton";
+import Recommendations from "../Recommendations";
 import { fetchTvShows } from "../../actions";
 import type { Metadata } from "next";
 
@@ -23,6 +26,15 @@ export default async function Shows({ searchParams }: Props) {
 
   return (
     <RouteShell spacing="immersive" width="page">
+      {/* Mirrors the movies page: a personalized row above the browse results,
+          hidden while a genre filter is active and streamed so the TMDB call
+          never blocks the shell. */}
+      {!genre && (
+        <Suspense fallback={<RecommendationsSkeleton />}>
+          <Recommendations mediaType="tv" />
+        </Suspense>
+      )}
+
       <div className="mb-8 max-w-3xl">
         <p className="mb-3 text-xs font-bold uppercase tracking-overline text-gold">
           KinOrbia Picks

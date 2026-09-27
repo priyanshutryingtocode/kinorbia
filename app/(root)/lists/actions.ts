@@ -13,7 +13,7 @@ import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import { normalizeMediaType, mediaKey } from "@/lib/media";
 import { dedupeFavorites } from "@/lib/reviewRatings";
 import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
-import type { FavoriteMovie, ListMovie } from "@/types";
+import type { ListMovie } from "@/types";
 
 function selectedKeysFrom(formData: FormData) {
   return new Set(
@@ -41,7 +41,16 @@ function validateListFields(title: string, description: string): string | null {
   return null;
 }
 
-function toListMovie(movie: FavoriteMovie): ListMovie {
+// Reads only the six fields it copies, so it accepts the projected shape the
+// callers pass in rather than requiring a whole FavoriteMovie.
+function toListMovie(movie: {
+  movieId: string;
+  mediaType?: string;
+  title: string;
+  posterPath: string | null;
+  voteAverage: number;
+  releaseDate?: string;
+}): ListMovie {
   return {
     movieId: movie.movieId,
     mediaType: normalizeMediaType(movie.mediaType),
@@ -87,9 +96,22 @@ export async function createMovieList(
       return { status: "error", message: VERIFICATION_REQUIRED_MESSAGE };
     }
 
-    const user = await User.findOne({ email }).lean<{
-      favorites?: FavoriteMovie[];
-    } | null>();
+    // `toListMovie` reads six fields per favorite; `watchlist` is never touched
+    // here but was previously transferred in full.
+    const user = await User.findOne({ email })
+      .select(
+        "favorites.movieId favorites.mediaType favorites.title favorites.posterPath favorites.voteAverage favorites.releaseDate"
+      )
+      .lean<{
+        favorites?: {
+          movieId: string;
+          mediaType?: string;
+          title: string;
+          posterPath: string | null;
+          voteAverage: number;
+          releaseDate?: string;
+        }[];
+      } | null>();
     const favorites = dedupeFavorites(user?.favorites || []);
     const selectedMovies = favorites
       .filter((movie) => selectedKeys.has(mediaKey(movie.mediaType, movie.movieId)))
@@ -148,7 +170,20 @@ export async function updateMovieList(
     }
 
     const [user, existing] = await Promise.all([
-      User.findOne({ email }).lean<{ favorites?: FavoriteMovie[] } | null>(),
+      User.findOne({ email })
+        .select(
+          "favorites.movieId favorites.mediaType favorites.title favorites.posterPath favorites.voteAverage favorites.releaseDate"
+        )
+        .lean<{
+          favorites?: {
+            movieId: string;
+            mediaType?: string;
+            title: string;
+            posterPath: string | null;
+            voteAverage: number;
+            releaseDate?: string;
+          }[];
+        } | null>(),
       MovieList.findOne({ _id: listId, userEmail: email })
         .select("movies")
         .lean<{ movies?: ListMovie[] } | null>(),

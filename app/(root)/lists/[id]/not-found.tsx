@@ -1,8 +1,8 @@
-import RouteNotFoundState from "@/components/RouteNotFoundState";
+import StatusState from "@/components/StatusState";
 
 export default function NotFound() {
   return (
-    <RouteNotFoundState
+    <StatusState variant="routeNotFound"
       title="List not found"
       description="This list may have been removed, or you may not have access to it."
       href="/lists"

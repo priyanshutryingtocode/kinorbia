@@ -5,7 +5,6 @@ import { useState, useTransition } from "react";
 import type { ActionState } from "@/lib/actionState";
 import { FormPendingProvider } from "./FormPendingContext";
 
-export type { ActionState } from "@/lib/actionState";
 
 export type Action = (stateOrFormData: ActionState | FormData, formData?: FormData) => Promise<ActionState>;
 

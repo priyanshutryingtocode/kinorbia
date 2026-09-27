@@ -124,16 +124,6 @@ const LIST_DESCRIPTIONS = [
   "Grab the remote, clear your schedule.",
 ];
 
-const JOURNAL_NOTES = [
-  "Watched with friends — great time.",
-  "Needed this one tonight.",
-  "Still thinking about the ending.",
-  "Rewatch, hits different the second time.",
-  "First watch, absolutely loved it.",
-  "Solid, would rewatch.",
-  "",
-  "",
-];
 
 const RATING_PATTERN = [9, 8, 10, 7, 6, 8, 7, 9, 5, 8, 6, 7, 10, 8];
 
@@ -268,23 +258,19 @@ function buildWatchlist(userConfig, moviePool, tvPool) {
   }));
 }
 
-function buildJournal(userConfig, favorites) {
+function buildJournal(favorites) {
   const watched = favorites.filter((favorite) => favorite.personalRating > 0);
   const unrated = favorites.filter((favorite) => !favorite.personalRating);
 
   const ordered = [...watched, ...unrated].slice(0, DAY_OFFSETS.length);
 
-  return ordered.map((favorite, i) => {
-    const noteIndex = (i + userConfig.reviewOffset) % JOURNAL_NOTES.length;
-    return {
-      movieId: favorite.movieId,
-      mediaType: favorite.mediaType || "movie",
-      movieTitle: favorite.title,
-      posterPath: favorite.posterPath,
-      watchedAt: daysAgo(DAY_OFFSETS[i]),
-      note: JOURNAL_NOTES[noteIndex],
-    };
-  });
+  return ordered.map((favorite, i) => ({
+    movieId: favorite.movieId,
+    mediaType: favorite.mediaType || "movie",
+    movieTitle: favorite.title,
+    posterPath: favorite.posterPath,
+    watchedAt: daysAgo(DAY_OFFSETS[i]),
+  }));
 }
 
 function buildReviews(userConfig, favorites) {
@@ -438,7 +424,7 @@ try {
   for (const config of DEMO_USERS) {
     const favorites = buildFavorites(config, moviePool, tvPool);
     const watchlist = buildWatchlist(config, moviePool, tvPool);
-    const journal = buildJournal(config, favorites);
+    const journal = buildJournal(favorites);
     const reviews = buildReviews(config, favorites);
     const lists = buildLists(config, favorites);
 

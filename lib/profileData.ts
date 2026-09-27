@@ -19,13 +19,13 @@ import {
 } from "@/lib/serialize";
 import type { FavoriteMovie, MediaType, WatchlistMovie } from "@/types";
 import { mediaEquals, normalizeMediaType } from "@/lib/media";
+import { pageBounds } from "@/lib/pagination";
 
 export const PROFILE_PAGE_SIZES = {
   favorites: 20,
   watchlist: 20,
   reviews: 9,
   lists: 9,
-  journal: 10,
 } as const;
 
 type JournalHistoryRecord = {
@@ -53,7 +53,6 @@ export type ProfileOverviewData = {
   watchlistCount: number;
   reviewCount: number;
   listCount: number;
-  watchLogCount: number;
   uniqueWatchedCount: number;
   averageRating: number;
   ratedCount: number;
@@ -63,7 +62,10 @@ export type ProfileOverviewData = {
   recentLists: ReturnType<typeof serializeList>[];
 };
 
-export type ProfilePage<T> = {
+// Not exported: the only same-named import candidate is the profile page's own
+// default-exported component, which makes a text search for `ProfilePage` lie
+// about whether this type is used.
+type ProfilePage<T> = {
   items: T[];
   total: number;
   page: number;
@@ -95,12 +97,22 @@ export async function getPersonalMediaStatus(
   }
 
   await dbConnect();
-  const user = await User.findOne({ email }).lean<{
-    favorites?: FavoriteMovie[];
-    watchlist?: FavoriteMovie[];
-  } | null>();
 
-  const matches = (item: FavoriteMovie) =>
+  // Only three fields per favorite and two per watchlist entry are needed, and
+  // this runs on every film detail page view. The dotted projection keeps the
+  // other five sub-fields of each entry out of the response, so the type is
+  // narrowed to match what actually comes back rather than claiming to be a
+  // full FavoriteMovie.
+  const user = await User.findOne({ email })
+    .select(
+      "favorites.movieId favorites.mediaType favorites.personalRating watchlist.movieId watchlist.mediaType"
+    )
+    .lean<{
+      favorites?: { movieId: string; mediaType?: string; personalRating?: number }[];
+      watchlist?: { movieId: string; mediaType?: string }[];
+    } | null>();
+
+  const matches = (item: { movieId?: string; mediaType?: string }) =>
     item.movieId === id && normalizeMediaType(item.mediaType) === mediaType;
 
   const favorite = user?.favorites?.find(matches);
@@ -160,18 +172,11 @@ function uniqueMediaItems(field: "favorites" | "watchlist") {
   };
 }
 
-function pageBounds(total: number, requestedPage: number, pageSize: number) {
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  return {
-    page: Math.min(Math.max(1, requestedPage), totalPages),
-    totalPages,
-  };
-}
-
 type SortSpec = Record<string, 1 | -1>;
 
 type PageableQuery<TRaw> = {
   sort(sort: SortSpec): PageableQuery<TRaw>;
+  select(fields: string): PageableQuery<TRaw>;
   skip(skip: number): PageableQuery<TRaw>;
   limit(limit: number): PageableQuery<TRaw>;
   lean(): Promise<TRaw[]>;
@@ -189,10 +194,19 @@ async function paginate<TRaw>(
   filter: Record<string, unknown>,
   sort: SortSpec,
   requestedPage: number,
-  pageSize: number
+  pageSize: number,
+  // Optional so a caller that renders a summary card can leave the unbounded
+  // likedBy/savedBy arrays behind instead of shipping them with every row.
+  projection?: string
 ): Promise<{ rows: TRaw[]; page: number; totalPages: number; total: number }> {
-  const fetchPage = (page: number) =>
-    model.find(filter).sort(sort).skip((page - 1) * pageSize).limit(pageSize).lean();
+  const fetchPage = (page: number) => {
+    const query = model.find(filter);
+    return (projection ? query.select(projection) : query)
+      .sort(sort)
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .lean();
+  };
 
   const [total, initialRows] = await Promise.all([
     model.countDocuments(filter),
@@ -260,7 +274,6 @@ export async function getProfileOverview(email: string): Promise<ProfileOverview
   const [
     summaryRows,
     uniqueWatchedRows,
-    watchLogCount,
     reviewCount,
     listCount,
     rawJournal,
@@ -312,7 +325,6 @@ export async function getProfileOverview(email: string): Promise<ProfileOverview
       },
       { $count: "count" },
     ]),
-    JournalEntry.countDocuments({ userEmail: email }),
     Review.countDocuments({ userEmail: email }),
     MovieList.countDocuments({ userEmail: email }),
     JournalEntry.find({ userEmail: email })
@@ -324,7 +336,13 @@ export async function getProfileOverview(email: string): Promise<ProfileOverview
       .sort({ createdAt: -1, _id: -1 })
       .limit(4)
       .lean<RawReview[]>(),
+    // The consumer only counts `movies`, so each of a list's (up to 500)
+    // entries is narrowed to its id rather than shipping all six fields. The
+    // document-level fields are left intact because `serializeList` reads them.
     MovieList.find({ userEmail: email })
+      .select(
+        "_id userEmail userName title description visibility likedBy savedBy createdAt movies.movieId"
+      )
       .sort({ createdAt: -1, _id: -1 })
       .limit(4)
       .lean<RawMovieList[]>(),
@@ -337,7 +355,6 @@ export async function getProfileOverview(email: string): Promise<ProfileOverview
     watchlistCount: summary?.watchlistCount || 0,
     reviewCount,
     listCount,
-    watchLogCount,
     uniqueWatchedCount: uniqueWatchedRows[0]?.count || 0,
     averageRating: summary?.averageRating || 0,
     ratedCount: summary?.ratedCount || 0,
@@ -392,18 +409,10 @@ export async function getListPage(email: string, requestedPage: number): Promise
     { userEmail: email },
     { createdAt: -1, _id: -1 },
     requestedPage,
-    PROFILE_PAGE_SIZES.lists
+    PROFILE_PAGE_SIZES.lists,
+    // CompactList shows the title, description, and the number of titles, so the
+    // rest of each entry -- and the two unbounded social arrays -- stay put.
+    "_id title description movies.movieId"
   );
   return { items: rows.map(serializeList), ...bounds };
-}
-
-export async function getJournalPage(email: string, requestedPage: number): Promise<ProfilePage<ReturnType<typeof serializeJournalEntry>>> {
-  const { rows, ...bounds } = await paginate<RawJournalEntry>(
-    JournalEntry,
-    { userEmail: email },
-    { watchedAt: -1, createdAt: -1, _id: -1 },
-    requestedPage,
-    PROFILE_PAGE_SIZES.journal
-  );
-  return { items: rows.map(serializeJournalEntry), ...bounds };
 }

@@ -52,26 +52,36 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
     : {};
 
   const [reviews, lists] = await Promise.all([
-    Review.find({ visibility: "public", ...scope }).sort({ createdAt: -1 }).limit(12).lean<{
-      _id: { toString: () => string };
-      userName: string;
-      userEmail: string;
-      movieTitle: string;
-      posterPath?: string;
-      movieId?: string;
-      mediaType?: MediaType;
-      body: string;
-      spoiler?: boolean;
-      createdAt: Date;
-    }[]>(),
-    MovieList.find({ visibility: "public", ...scope }).sort({ createdAt: -1 }).limit(8).lean<{
-      _id: { toString: () => string };
-      userName: string;
-      title: string;
-      description?: string;
-      movies: { posterPath?: string; title: string; movieId: string }[];
-      createdAt: Date;
-    }[]>(),
+    // Projected because the feed renders neither the unbounded likedBy/savedBy
+    // arrays nor the full `movies` array -- only the first poster of each list.
+    Review.find({ visibility: "public", ...scope })
+      .select("_id userName userEmail movieTitle posterPath movieId mediaType body spoiler createdAt")
+      .sort({ createdAt: -1 })
+      .limit(12)
+      .lean<{
+        _id: { toString: () => string };
+        userName: string;
+        userEmail: string;
+        movieTitle: string;
+        posterPath?: string;
+        movieId?: string;
+        mediaType?: MediaType;
+        body: string;
+        spoiler?: boolean;
+        createdAt: Date;
+      }[]>(),
+    MovieList.find({ visibility: "public", ...scope })
+      .select("_id userName title description createdAt movies.movieId movies.title movies.posterPath")
+      .sort({ createdAt: -1 })
+      .limit(8)
+      .lean<{
+        _id: { toString: () => string };
+        userName: string;
+        title: string;
+        description?: string;
+        movies: { posterPath?: string; title: string; movieId: string }[];
+        createdAt: Date;
+      }[]>(),
   ]);
 
   const ratingMaps = await buildReviewerRatingMaps(

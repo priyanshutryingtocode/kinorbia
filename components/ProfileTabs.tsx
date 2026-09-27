@@ -1,13 +1,12 @@
 import Link from "next/link";
 
-const PROFILE_TABS = [
+export const PROFILE_TABS = [
   { key: "overview", label: "Overview" },
   { key: "insights", label: "Insights" },
   { key: "favorites", label: "Favorites" },
   { key: "watchlist", label: "Watchlist" },
   { key: "reviews", label: "Reviews" },
   { key: "lists", label: "Lists" },
-  { key: "journal", label: "Journal" },
 ] as const;
 
 export type ProfileTab = (typeof PROFILE_TABS)[number]["key"];

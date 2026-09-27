@@ -18,7 +18,6 @@ import User from "@/models/User";
 import { createReview } from "./actions";
 import { serializeReview, type RawReview } from "@/lib/serialize";
 import { normalizeMediaType, mediaKey } from "@/lib/media";
-import type { FavoriteMovie } from "@/types";
 
 export const metadata: Metadata = {
   title: "Reviews",
@@ -43,9 +42,13 @@ export default async function ReviewsPage() {
   const reviews = rawReviews.map(serializeReview);
   const ratingMaps = await buildReviewerRatingMaps(reviews);
 
-  const user = await User.findOne({ email: currentUserEmail }).lean<{
-    favorites?: FavoriteMovie[];
-  } | null>();
+  // Populates a select of rated favorites, so it needs four fields per entry --
+  // and not the whole `watchlist` array, which this previously pulled along.
+  const user = await User.findOne({ email: currentUserEmail })
+    .select("favorites.movieId favorites.mediaType favorites.personalRating favorites.title")
+    .lean<{
+      favorites?: { movieId: string; mediaType?: string; personalRating?: number; title: string }[];
+    } | null>();
   const favorites = dedupeFavorites(user?.favorites || []);
   const ratedFavorites = favorites.filter((movie) => (movie.personalRating || 0) > 0);
 

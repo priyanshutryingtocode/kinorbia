@@ -2,35 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import type { MediaType } from "@/types";
-
-const FILTER_GENRES: Record<MediaType, { id: string; name: string }[]> = {
-  movie: [
-    { id: "", name: "All Movies" },
-    { id: "28", name: "Action" },
-    { id: "12", name: "Adventure" },
-    { id: "16", name: "Animation" },
-    { id: "35", name: "Comedy" },
-    { id: "80", name: "Crime" },
-    { id: "18", name: "Drama" },
-    { id: "14", name: "Fantasy" },
-    { id: "27", name: "Horror" },
-    { id: "878", name: "Sci-Fi" },
-    { id: "53", name: "Thriller" },
-  ],
-  tv: [
-    { id: "", name: "All Shows" },
-    { id: "10759", name: "Action & Adventure" },
-    { id: "16", name: "Animation" },
-    { id: "35", name: "Comedy" },
-    { id: "80", name: "Crime" },
-    { id: "99", name: "Documentary" },
-    { id: "18", name: "Drama" },
-    { id: "10751", name: "Family" },
-    { id: "9648", name: "Mystery" },
-    { id: "10765", name: "Sci-Fi & Fantasy" },
-    { id: "10768", name: "War & Politics" },
-  ],
-};
+import { CURATED_GENRES, curatedGenreName } from "@/lib/genres";
 
 const BASE_PATHS: Record<MediaType, string> = { movie: "/", tv: "/shows" };
 
@@ -38,7 +10,15 @@ export default function GenreFilter({ mediaType }: { mediaType: MediaType }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentGenre = searchParams.get("genre") || "";
-  const genres = FILTER_GENRES[mediaType];
+  // Names resolve through lib/genres, so they cannot drift from the ones the
+  // insights chart uses. The empty id is the "everything" entry.
+  const genres = [
+    { id: "", name: mediaType === "tv" ? "All Shows" : "All Movies" },
+    ...CURATED_GENRES[mediaType].map((id) => ({
+      id: String(id),
+      name: curatedGenreName(id, mediaType),
+    })),
+  ];
 
   const createQueryString = (name: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());

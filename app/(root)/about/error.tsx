@@ -1,7 +1,7 @@
 "use client";
 
-import RouteErrorState from "@/components/RouteErrorState";
+import StatusState from "@/components/StatusState";
 
 export default function AboutError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  return <RouteErrorState title="This page could not be loaded" onRetry={reset} />;
+  return <StatusState variant="routeError" title="This page could not be loaded" onRetry={reset} />;
 }

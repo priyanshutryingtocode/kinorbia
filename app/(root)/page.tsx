@@ -23,7 +23,7 @@ export default async function Home({ searchParams }: Props) {
 
       {!genre && (
         <Suspense fallback={<RecommendationsSkeleton />}>
-          <Recommendations />
+          <Recommendations mediaType="movie" />
         </Suspense>
       )}
 

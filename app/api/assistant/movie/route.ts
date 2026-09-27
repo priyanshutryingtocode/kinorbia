@@ -90,10 +90,17 @@ async function getUserContext(email?: string | null) {
   await dbConnect();
 
   const [user, watched] = await Promise.all([
-    User.findOne({ email }).lean<{ favorites?: FavoriteMovie[] } | null>(),
+    // Projections, not whole documents: favorites can hold 2,500 subdocs and
+    // this only needs the titles.
+    // Only the last 15 favorites reach the prompt, and only their title and
+    // rating are read, so this projects a slice rather than the whole array.
+    User.findOne({ email })
+      .select({ favorites: { $slice: -15 } })
+      .lean<{ favorites?: { title: string; personalRating?: number }[] } | null>(),
     JournalEntry.find({ userEmail: email })
-      .sort({ watchedAt: -1 })
+      .sort({ watchedAt: -1, _id: -1 })
       .limit(20)
+      .select("movieTitle")
       .lean<{ movieTitle: string }[]>(),
   ]);
 
@@ -214,11 +221,15 @@ async function getHistory(email?: string | null): Promise<AssistantMessage[]> {
   }
 
   await dbConnect();
-  const conv = await Conversation.findOne({ userEmail: email }).lean<{
-    messages?: { role: Role; content: string }[];
-  } | null>();
+  // Projected to the two fields the prompt uses, and to the last 8 messages,
+  // rather than transferring up to 24 messages each carrying a `movies` array.
+  const conv = await Conversation.findOne({ userEmail: email })
+    .select({ messages: { $slice: -8 } })
+    .lean<{ messages?: { role: Role; content: string }[] } | null>();
 
-  return (conv?.messages || []).slice(-8).map((message) => ({
+  // The projection above already limits this to the last 8, so there is no
+  // second slice here to disagree with it.
+  return (conv?.messages || []).map((message) => ({
     role: message.role,
     content: message.content,
   }));

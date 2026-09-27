@@ -1,5 +1,5 @@
-import ProfileNotFoundState from "@/components/ProfileNotFoundState";
+import StatusState from "@/components/StatusState";
 
 export default function NotFound() {
-  return <ProfileNotFoundState />;
+  return <StatusState variant="profileNotFound" />;
 }

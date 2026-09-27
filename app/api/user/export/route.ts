@@ -8,7 +8,12 @@ import { withAuthedUser } from "@/lib/session";
 export const GET = withAuthedUser(
   async (_req, { email }) => {
     const [user, journal, reviews, lists] = await Promise.all([
-      User.findOne({ email }).select("-password").lean(),
+      // Excluded rather than merely omitted from the response: the single-use
+      // verification and reset token hashes would otherwise cross the wire on
+      // every export.
+      User.findOne({ email })
+        .select("-password -verifyToken -resetToken")
+        .lean(),
       JournalEntry.find({ userEmail: email }).sort({ watchedAt: 1 }).lean(),
       Review.find({ userEmail: email }).sort({ createdAt: 1 }).lean(),
       MovieList.find({ userEmail: email }).sort({ createdAt: 1 }).lean(),

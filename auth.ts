@@ -4,7 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import dbConnect, { isDuplicateKeyError } from "@/lib/dbConnect";
 import User from "@/models/User";
-import { ensureUserIdentity, slugifyUsername } from "@/lib/userIdentity";
+import { ensureUserIdentity, slugifyUsername, usernameCandidates } from "@/lib/userIdentity";
 
 const DUMMY_BCRYPT_HASH = "$2b$12$vPZWNgvZy3FQD3F6MCWEmO1q.F9dWYWrRNZTaG5.AF93nQm2yDJU6";
 
@@ -37,7 +37,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         await dbConnect();
-        const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
+        // Projected rather than loading the whole document: this is the
+        // highest-traffic read in the app, and User embeds `favorites` and
+        // `watchlist` at up to 2,500 subdocuments each. `_id` comes back by
+        // default, so the select covers the five fields actually read below.
+        const user = await User.findOne({ email: email.toLowerCase() })
+          .select("+password name email image");
 
         const passwordMatches = await bcrypt.compare(
           password,
@@ -72,8 +77,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           if (!existingUser) {
             const baseUsername = slugifyUsername(name || normalizedEmail.split("@")[0]);
-            let username = baseUsername;
-            let suffix = 1;
+            // Same candidate sequence as the other two username sites; this one
+            // advances on a duplicate-key error rather than polling `exists`.
+            const candidates = usernameCandidates(baseUsername);
+            let username = candidates.next().value;
 
             for (;;) {
               try {
@@ -90,8 +97,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 if (!isDuplicateKeyError(error)) {
                   throw error;
                 }
-                username = `${baseUsername}-${suffix}`;
-                suffix += 1;
+                username = candidates.next().value;
               }
             }
           } else {

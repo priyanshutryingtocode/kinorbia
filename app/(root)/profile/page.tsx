@@ -12,7 +12,6 @@ import { firstValue, parsePage, parseYear } from "@/lib/searchParams";
 import {
   getFavoritePage,
   getInsightsSource,
-  getJournalPage,
   getListPage,
   getProfileIdentity,
   getProfileOverview,
@@ -30,7 +29,7 @@ import ProfileInsights from "@/components/ProfileInsights";
 import ProfileMetricRail from "@/components/ProfileMetricRail";
 import ProfilePagination from "@/components/ProfilePagination";
 import ProfilePanel from "@/components/ProfilePanel";
-import ProfileTabs, { type ProfileTab } from "@/components/ProfileTabs";
+import ProfileTabs, { PROFILE_TABS, type ProfileTab } from "@/components/ProfileTabs";
 import ProfileVerifyBanner from "@/components/ProfileVerifyBanner";
 import { isEmailVerified } from "@/lib/verification";
 import ReviewCard from "@/components/ReviewCard";
@@ -43,16 +42,6 @@ export const metadata: Metadata = {
   description: "Your favorites, watch history, watchlist, reviews, lists, journal, and insights.",
 };
 
-const PROFILE_TABS: ProfileTab[] = [
-  "overview",
-  "insights",
-  "favorites",
-  "watchlist",
-  "reviews",
-  "lists",
-  "journal",
-];
-
 type ProfileSearchParams = {
   tab?: string | string[];
   page?: string | string[];
@@ -61,7 +50,9 @@ type ProfileSearchParams = {
 
 function parseTab(value: string | string[] | undefined): ProfileTab {
   const tab = firstValue(value);
-  return PROFILE_TABS.includes(tab as ProfileTab) ? (tab as ProfileTab) : "overview";
+  return PROFILE_TABS.some((entry) => entry.key === tab)
+    ? (tab as ProfileTab)
+    : "overview";
 }
 
 function JournalCard({ item }: { item: JournalItem }) {
@@ -79,7 +70,6 @@ function JournalCard({ item }: { item: JournalItem }) {
       <div className="p-3">
         <h3 className="truncate text-sm font-semibold text-white">{item.movieTitle}</h3>
         <p className="mt-1 text-xs text-neutral-400">{formatDate(item.watchedAt)}</p>
-        {item.note && <p className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-400">{item.note}</p>}
       </div>
     </>
   );
@@ -141,7 +131,6 @@ function OverviewPanel({
         />
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-white/10 pb-4 text-xs text-neutral-400">
           {[
-            { label: "watch logs", value: data.watchLogCount, href: "/profile?tab=journal" },
             { label: "watchlist", value: data.watchlistCount, href: "/profile?tab=watchlist" },
             { label: "reviews", value: data.reviewCount, href: "/profile?tab=reviews" },
             { label: "lists", value: data.listCount, href: "/profile?tab=lists" },
@@ -153,7 +142,7 @@ function OverviewPanel({
         </div>
       </section>
 
-      <ProfilePanel id="recent" eyebrow="Last watched" title="Recent titles" action={{ href: "/profile?tab=journal", label: "View journal" }}>
+      <ProfilePanel id="recent" eyebrow="Last watched" title="Recent titles">
         {data.recentJournal.length ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{data.recentJournal.map((item) => <JournalCard key={item._id} item={item} />)}</div>
         ) : (
@@ -264,14 +253,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <ProfilePanel id="lists" eyebrow="Collections" title="Lists" description="Public and private collections built from movies and shows.">
         {result.total ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{result.items.map((list) => <CompactList key={list._id} list={list} />)}</div> : <EmptyState compact title="No lists yet" description="Create a list to collect recommendations." />}
         <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.lists} />
-      </ProfilePanel>
-    );
-  } else {
-    const result = await getJournalPage(email, requestedPage);
-    panel = (
-      <ProfilePanel id="journal" eyebrow="Watch log" title="Journal" description="Dates, notes, and the history behind your titles-watched metrics." action={{ href: "/journal", label: "Open journal" }}>
-        {result.total ? <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">{result.items.map((item) => <JournalCard key={item._id} item={item} />)}</div> : <EmptyState compact title="Your journal is empty" description="Log your first watch to begin your history." />}
-        <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.journal} />
       </ProfilePanel>
     );
   }

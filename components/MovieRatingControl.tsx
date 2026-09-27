@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Star } from "lucide-react";
+import { Eye, Loader2, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./ToastProvider";
 import { normalizeMediaType } from "@/lib/media";
@@ -17,9 +17,12 @@ type MovieRatingControlProps = {
     genre_ids?: number[];
   };
   initialRating: number;
+  // The server refuses a rating for a title with no watch log, so the control
+  // says why up front instead of letting the user discover it by saving.
+  isWatched: boolean;
 };
 
-export default function MovieRatingControl({ movie, initialRating }: MovieRatingControlProps) {
+export default function MovieRatingControl({ movie, initialRating, isWatched }: MovieRatingControlProps) {
   const [rating, setRating] = useState(initialRating);
   const [draftStars, setDraftStars] = useState(initialRating > 0 ? initialRating / 2 : 2.5);
   const [loading, setLoading] = useState(false);
@@ -59,15 +62,26 @@ export default function MovieRatingControl({ movie, initialRating }: MovieRating
         setDraftStars(nextStars);
         showToast(`Rated ${nextStars.toFixed(1)} stars.`, "success");
         router.refresh();
-      } else {
-        showToast("Could not save your rating.", "error");
+        return;
       }
+
+      const data = await res.json().catch(() => null);
+      showToast(data?.message || "Could not save your rating.", "error");
     } catch {
       showToast("Could not save your rating.", "error");
     } finally {
       setLoading(false);
     }
   };
+
+  if (!isWatched) {
+    return (
+      <p className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-400">
+        <Eye className="h-4 w-4 shrink-0" aria-hidden="true" />
+        Mark this as watched to rate it.
+      </p>
+    );
+  }
 
 return (
     <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:rounded-full sm:px-3 sm:py-2">

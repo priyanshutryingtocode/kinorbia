@@ -1,5 +1,18 @@
 import type { ElementType, ReactNode } from "react";
 
+// Shared by PageHeader, SectionHeader, and FormPanel, which each declared the
+// same 1->h1, 2->h2, ... map while already sharing this base component.
+export const HEADINGS = {
+  1: "h1",
+  2: "h2",
+  3: "h3",
+  4: "h4",
+  5: "h5",
+  6: "h6",
+} as const;
+
+export type HeadingLevel = keyof typeof HEADINGS;
+
 export type HeaderBlockProps = {
   eyebrow?: ReactNode;
   title?: ReactNode;

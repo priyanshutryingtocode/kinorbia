@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
+import { pageBounds } from "@/lib/pagination";
 import dbConnect from "@/lib/dbConnect";
 import { escapeRegExp, firstValue, parsePage } from "@/lib/searchParams";
 import User from "@/models/User";
@@ -97,8 +98,7 @@ export default async function PeopleFollowPage({
           .lean<ViewerUser | null>()
       : Promise.resolve(null),
   ]);
-  const totalPages = Math.max(1, Math.ceil(totalCount / PEOPLE_PER_PAGE));
-  const page = Math.min(requestedPage, totalPages);
+  const { page, totalPages } = pageBounds(totalCount, requestedPage, PEOPLE_PER_PAGE);
   const records = totalCount
     ? await User.find(peopleFilter)
         .select("_id email name username image")

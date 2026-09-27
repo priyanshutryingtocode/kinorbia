@@ -15,9 +15,13 @@ export const PUT = withAuthedUser(
       return badRequest("A valid name and bio are required.");
     }
 
+    // Projects just `name` and deliberately leaves `new` unset, so `result` is
+    // the document *before* the update -- which is the point: the fan-out below
+    // should only run when the name actually changed.
     const result = await User.findOneAndUpdate(
       { email },
-      { name: body.name, bio: body.bio }
+      { name: body.name, bio: body.bio },
+      { projection: { name: 1 } }
     );
 
     // Propagate the new display name to denormalized snapshots so old

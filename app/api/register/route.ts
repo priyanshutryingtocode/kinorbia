@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect, { isDuplicateKeyError } from "@/lib/dbConnect";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
-import { slugifyUsername } from "@/lib/userIdentity";
+import { slugifyUsername, usernameCandidates } from "@/lib/userIdentity";
 import { registerSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
 
@@ -37,11 +37,12 @@ export const POST = withRateLimit(
 
       const baseUsername = slugifyUsername(body.name || body.email.split("@")[0]);
       let username = baseUsername;
-      let suffix = 1;
 
-      while (await User.exists({ username })) {
-        username = `${baseUsername}-${suffix}`;
-        suffix += 1;
+      for (const candidate of usernameCandidates(baseUsername)) {
+        if (!(await User.exists({ username: candidate }))) {
+          username = candidate;
+          break;
+        }
       }
 
       try {

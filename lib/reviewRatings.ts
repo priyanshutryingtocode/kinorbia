@@ -9,9 +9,13 @@ export type ReviewForRating = {
   mediaType?: MediaType;
 };
 
-export function dedupeFavorites(favorites: FavoriteMovie[]): FavoriteMovie[] {
+// Generic over the two fields it reads, so a caller that has projected the rest
+// of each favorite away can still pass the result here without a cast.
+export function dedupeFavorites<T extends { movieId?: string; mediaType?: string }>(
+  favorites: T[]
+): T[] {
   const seen = new Set<string>();
-  const deduped: FavoriteMovie[] = [];
+  const deduped: T[] = [];
 
   for (const favorite of favorites) {
     const key = mediaKey(favorite.mediaType, favorite.movieId);

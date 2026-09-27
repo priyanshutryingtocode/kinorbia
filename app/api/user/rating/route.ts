@@ -3,12 +3,11 @@ import User from "@/models/User";
 import JournalEntry from "@/models/JournalEntry";
 import { withAuthedUser } from "@/lib/session";
 import { rateMovieSchema, parseMovieBody, badRequest } from "@/lib/validators";
-import { isDuplicateKeyError } from "@/lib/dbConnect";
 import { MAX_FAVORITES } from "@/lib/bounds";
 import { mediaEquals } from "@/lib/media";
 
 export const POST = withAuthedUser(
-  async (req, { email, name }) => {
+  async (req, { email }) => {
     const body = await parseMovieBody(req, rateMovieSchema);
     if (!body) {
       return badRequest("Movie and rating are required.");
@@ -17,6 +16,28 @@ export const POST = withAuthedUser(
     const normalizedMovieId = body.movieId;
     const clampedRating = body.rating;
     const normalizedMediaType = body.mediaType;
+
+    // A rating is a judgement about something you watched, so the diary gates
+    // it rather than being written as a side effect of it. This used to run
+    // the other way round: rating a title inserted a journal row stamped with
+    // the current time, which meant you could "watch" a film just by rating it
+    // and the row carried no note and no confirmation.
+    //
+    // The invariant is unchanged, only its direction. Every already-rated title
+    // has a diary row precisely because this handler used to create one, so no
+    // existing user is locked out by flipping the dependency.
+    const watched = await JournalEntry.exists({
+      userEmail: email,
+      movieId: normalizedMovieId,
+      mediaType: mediaEquals(normalizedMediaType),
+    });
+
+    if (!watched) {
+      return NextResponse.json(
+        { message: "Mark this as watched before rating it." },
+        { status: 409 }
+      );
+    }
 
     // Update metadata of an existing favorite in place. The positional
     // projection matches the exact (movieId, mediaType) pair.
@@ -78,38 +99,6 @@ export const POST = withAuthedUser(
       if (pushedFavorite.modifiedCount === 0) {
         return NextResponse.json({ message: "Favorites list is full." }, { status: 409 });
       }
-    }
-
-    // Mirror the rating onto the journal. Only overwrite stored fields the
-    // client actually sent; an absent posterPath must not erase the saved one.
-    const journalUpdate = () =>
-      JournalEntry.updateOne(
-        { userEmail: email, movieId: normalizedMovieId, mediaType: mediaEquals(normalizedMediaType) },
-        {
-          $set: {
-            movieTitle: body.movieTitle,
-            ...(body.posterPath ? { posterPath: body.posterPath } : {}),
-          },
-          $setOnInsert: {
-            userEmail: email,
-            userName: name || "KinOrbia user",
-            movieId: normalizedMovieId,
-            mediaType: normalizedMediaType,
-            watchedAt: new Date(),
-          },
-        },
-        { upsert: true }
-      );
-
-    try {
-      await journalUpdate();
-    } catch (error) {
-      // Concurrent upserts can race past the missing-document check once a
-      // unique index exists; retrying applies the update to the winner's doc.
-      if (!isDuplicateKeyError(error)) {
-        throw error;
-      }
-      await journalUpdate();
     }
 
     return NextResponse.json({ rating: clampedRating });

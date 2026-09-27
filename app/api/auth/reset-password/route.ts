@@ -22,10 +22,15 @@ export const POST = withRateLimit(
 
       await dbConnect();
       const tokenHash = hashToken(body.token);
+      // Projected because this route is unauthenticated: without it the query
+      // would hydrate the whole document, including both embedded arrays, to
+      // read one date.
       const user = await User.findOne({
         "resetToken.token": tokenHash,
         "resetToken.expiresAt": { $gt: new Date() },
-      });
+      })
+        .select("emailVerified")
+        .lean<{ _id?: unknown; emailVerified?: Date | null } | null>();
 
       if (!user) {
         return NextResponse.json(

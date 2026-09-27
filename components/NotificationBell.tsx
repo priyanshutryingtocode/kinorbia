@@ -84,10 +84,38 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
     }
   }, []);
 
+  // Badge polling. A hidden tab learns nothing from a poll -- nobody is looking
+  // at the bell -- and this endpoint costs two database round trips, so the
+  // interval is suspended while the document is hidden and one poll is fired on
+  // the way back in. The interval id lives in a ref so a rapid hide/show
+  // sequence cannot leave a second timer running.
+  const pollRef = useRef<number | null>(null);
+
   useEffect(() => {
-    void loadUnread();
-    const id = window.setInterval(() => void loadUnread(), 30000);
-    return () => window.clearInterval(id);
+    const sync = () => {
+      const isHidden = document.visibilityState === "hidden";
+
+      if (pollRef.current !== null) {
+        window.clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+
+      if (!isHidden) {
+        void loadUnread();
+        pollRef.current = window.setInterval(() => void loadUnread(), 30000);
+      }
+    };
+
+    sync();
+    document.addEventListener("visibilitychange", sync);
+
+    return () => {
+      document.removeEventListener("visibilitychange", sync);
+      if (pollRef.current !== null) {
+        window.clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
   }, [loadUnread]);
 
   useEffect(() => {

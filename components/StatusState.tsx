@@ -2,8 +2,6 @@ import Link from "next/link";
 import { AlertTriangle, FileQuestion, RotateCcw, UserX } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-type Variant = "routeError" | "profileError" | "routeNotFound" | "profileNotFound";
-
 type VariantConfig = {
   kind: "error" | "not-found";
   defaultTitle: string;
@@ -17,7 +15,7 @@ type VariantConfig = {
   action: string;
 };
 
-const VARIANTS: Record<Variant, VariantConfig> = {
+const VARIANTS = {
   routeError: {
     kind: "error",
     defaultTitle: "This page could not be loaded",
@@ -66,16 +64,31 @@ const VARIANTS: Record<Variant, VariantConfig> = {
     body: "text-neutral-400",
     action: "rounded-sm bg-red-600 transition-colors hover:bg-red-500",
   },
-};
+} satisfies Record<string, VariantConfig>;
 
-export type StatusStateProps = {
-  variant: Variant;
+// Derived rather than hand-written: the old local union was a second place to
+// remember a variant, and keeping them in sync is what forced the four one-line
+// wrapper components that existed only to name each variant.
+type Variant = keyof typeof VARIANTS;
+
+type StatusStateCommon = {
   title?: string;
   description?: string;
-  onRetry?: () => void;
-  href?: string;
-  action?: string;
 };
+
+// A discriminated union so the variant itself decides which extra props are
+// legal: an error state owns a retry button, a not-found state owns a link.
+// This used to be enforced by four wrapper components that each hardcoded the
+// right `Omit<...>`; expressing it in the props type keeps the same guarantee
+// without the extra files.
+type ErrorVariant = Extract<Variant, "routeError" | "profileError">;
+type NotFoundVariant = Exclude<Variant, ErrorVariant>;
+
+export type StatusStateProps = StatusStateCommon &
+  (
+    | { variant: ErrorVariant; onRetry?: () => void; href?: never; action?: never }
+    | { variant: NotFoundVariant; href?: string; action?: string; onRetry?: never }
+  );
 
 export default function StatusState({ variant, title, description, onRetry, href, action }: StatusStateProps) {
   const config = VARIANTS[variant];

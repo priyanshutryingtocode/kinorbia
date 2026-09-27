@@ -26,7 +26,6 @@ export default function Footer() {
             <li><Link href="/search" className="kin-focus inline-flex min-h-9 items-center rounded-control px-1 transition hover:text-red-300">Search Movies</Link></li>
             <li><Link href="/reviews" className="kin-focus inline-flex min-h-9 items-center rounded-control px-1 transition hover:text-red-300">Reviews</Link></li>
             <li><Link href="/lists" className="kin-focus inline-flex min-h-9 items-center rounded-control px-1 transition hover:text-red-300">Lists</Link></li>
-            <li><Link href="/journal" className="kin-focus inline-flex min-h-9 items-center rounded-control px-1 transition hover:text-red-300">Journal</Link></li>
           </ul>
         </nav>
 

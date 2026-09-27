@@ -1,16 +1,5 @@
 import type { ReactNode } from "react";
-import HeaderBlock from "@/components/HeaderBlock";
-
-type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
-
-const headings = {
-  1: "h1",
-  2: "h2",
-  3: "h3",
-  4: "h4",
-  5: "h5",
-  6: "h6",
-} as const;
+import HeaderBlock, { HEADINGS, type HeadingLevel } from "@/components/HeaderBlock";
 
 export type SectionHeaderProps = {
   eyebrow?: ReactNode;
@@ -40,7 +29,7 @@ export default function SectionHeader({
           eyebrow={eyebrow}
           title={title}
           titleId={headingId}
-          titleTag={headings[headingLevel]}
+          titleTag={HEADINGS[headingLevel]}
           description={description}
           actions={actions}
           rowClassName="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"

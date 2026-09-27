@@ -60,7 +60,6 @@ export function serializeJournalEntry(entry: RawJournalEntry): JournalItem {
     movieTitle: entry.movieTitle,
     posterPath: entry.posterPath,
     watchedAt: entry.watchedAt.toISOString(),
-    note: entry.note,
     createdAt: entry.createdAt.toISOString(),
     movieId: entry.movieId,
     mediaType: entry.mediaType || "movie",

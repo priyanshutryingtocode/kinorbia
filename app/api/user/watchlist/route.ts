@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import User from "@/models/User";
 import { withAuthedUser } from "@/lib/session";
 import { movieRefSchema, parseMovieBody, badRequest } from "@/lib/validators";
 import { MAX_WATCHLIST } from "@/lib/bounds";
-import { mediaEquals } from "@/lib/media";
+import { toggleEmbeddedMedia } from "@/lib/mediaListToggle";
 
 export const POST = withAuthedUser(
   async (req, { email }) => {
@@ -12,61 +11,31 @@ export const POST = withAuthedUser(
       return badRequest("A valid movie is required.");
     }
 
-    // Atomic add-first toggle: same guarded-update pattern as favorites so
-    // concurrent toggles can neither duplicate entries nor exceed the cap.
-    const added = await User.updateOne(
-      {
-        email,
-        watchlist: {
-          $not: {
-            $elemMatch: {
-              movieId: body.movieId,
-              mediaType: mediaEquals(body.mediaType),
-            },
-          },
-        },
-        $expr: { $lt: [{ $size: { $ifNull: ["$watchlist", []] } }, MAX_WATCHLIST] },
+    const result = await toggleEmbeddedMedia({
+      email,
+      field: "watchlist",
+      max: MAX_WATCHLIST,
+      movieId: body.movieId,
+      mediaType: body.mediaType,
+      // No genreIds here, unlike favorites: the watchlist entry schema has no
+      // such field, so pushing one would be ignored anyway.
+      entry: {
+        title: body.movieTitle,
+        posterPath: body.posterPath,
+        voteAverage: body.voteAverage,
+        releaseDate: body.releaseDate,
       },
-      {
-        $push: {
-          watchlist: {
-            movieId: body.movieId,
-            title: body.movieTitle,
-            posterPath: body.posterPath,
-            voteAverage: body.voteAverage,
-            releaseDate: body.releaseDate,
-            mediaType: body.mediaType,
-          },
-        },
-      }
-    );
+    });
 
-    if (added.modifiedCount > 0) {
+    if (result === "added") {
       return NextResponse.json({ isWatchlisted: true });
     }
 
-    const removed = await User.updateOne(
-      {
-        email,
-        "watchlist.movieId": body.movieId,
-        "watchlist.mediaType": mediaEquals(body.mediaType),
-      },
-      {
-        $pull: {
-          watchlist: {
-            movieId: body.movieId,
-            mediaType: mediaEquals(body.mediaType),
-          },
-        },
-      }
-    );
-
-    if (removed.modifiedCount > 0) {
+    if (result === "removed") {
       return NextResponse.json({ isWatchlisted: false });
     }
 
-    const userExists = await User.exists({ email });
-    if (!userExists) {
+    if (result === "missing") {
       return NextResponse.json({ message: "User not found." }, { status: 404 });
     }
 

@@ -51,4 +51,11 @@ const NotificationSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+// Serves both notification queries. The badge poll counts on {userEmail, read},
+// and the dropdown filters on the same pair then sorts by createdAt -- with only
+// a standalone userEmail index, `read` was matched by no index at all and the
+// sort could not use one either. Non-unique, so it builds over existing
+// documents without a dedupe pass.
+NotificationSchema.index({ userEmail: 1, read: 1, createdAt: -1 });
+
 export default mongoose.models?.Notification || mongoose.model("Notification", NotificationSchema);

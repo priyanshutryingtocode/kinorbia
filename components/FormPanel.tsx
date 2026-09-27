@@ -1,9 +1,5 @@
 import type { ReactNode } from "react";
-import HeaderBlock from "@/components/HeaderBlock";
-
-type HeadingLevel = 2 | 3 | 4;
-
-const headings = { 2: "h2", 3: "h3", 4: "h4" } as const;
+import HeaderBlock, { HEADINGS, type HeadingLevel } from "@/components/HeaderBlock";
 
 export type FormPanelProps = {
   eyebrow?: ReactNode;
@@ -36,7 +32,7 @@ export default function FormPanel({
             eyebrow={eyebrow}
             title={title}
             titleId={headingId}
-            titleTag={headings[headingLevel]}
+            titleTag={HEADINGS[headingLevel]}
             description={description}
             rowClassName=""
             eyebrowClassName="kin-overline mb-1.5 text-highlight/80"

@@ -17,7 +17,13 @@ export async function GET(req: Request) {
 
   if (token && token.length <= 256) {
     await dbConnect();
-    const user = await User.findOne({ "verifyToken.token": hashToken(token) });
+    const user = await User.findOne({ "verifyToken.token": hashToken(token) })
+      .select("emailVerified verifyToken.expiresAt")
+      .lean<{
+        _id?: unknown;
+        emailVerified?: Date | null;
+        verifyToken?: { expiresAt?: Date };
+      } | null>();
 
     if (user?.emailVerified) {
       // Reached when the address was proven by a password reset or Google
