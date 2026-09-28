@@ -18,7 +18,7 @@ type ProfileInsightsProps = {
 };
 
 const EYEBROW_CLASS = "kin-overline text-gold/80";
-const HEADING_CLASS = "mt-2 flex items-center gap-2 font-display text-2xl font-medium text-white";
+const HEADING_CLASS = "mt-2 flex items-center gap-2 font-display text-2xl font-medium text-content";
 
 function InsightHeading({
   id,
@@ -171,8 +171,8 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
           </defs>
         </svg>
       </div>
-      <details className="mt-4 border-t border-white/10 pt-3 text-xs text-neutral-400">
-        <summary className="kin-focus w-fit cursor-pointer rounded-sm hover:text-neutral-300">View data table</summary>
+      <details className="mt-4 border-t border-rule pt-3 text-xs text-content-muted">
+        <summary className="kin-focus w-fit cursor-pointer rounded-sm hover:text-content">View data table</summary>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-left">
             <caption className="sr-only">Monthly watch-log activity data</caption>
@@ -202,14 +202,14 @@ function RatingBars({ data }: { data: InsightsData }) {
   const max = Math.max(1, ...data.ratingDistribution.map((bucket) => bucket.count));
 
   if (rated === 0) {
-    return <p className="text-sm text-neutral-400">Rate favorites to build your rating distribution.</p>;
+    return <p className="text-sm text-content-muted">Rate favorites to build your rating distribution.</p>;
   }
 
   return (
     <div className="space-y-3">
       {data.ratingDistribution.map((bucket) => (
         <div key={bucket.stars} className="grid grid-cols-[3rem_1fr_2.5rem] items-center gap-3 text-sm">
-          <span className="text-neutral-400">{bucket.stars} star</span>
+          <span className="text-content-muted">{bucket.stars} star</span>
           <div
             className="h-1.5 overflow-hidden rounded-full bg-white/8"
             role="progressbar"
@@ -220,7 +220,7 @@ function RatingBars({ data }: { data: InsightsData }) {
           >
             <div className="h-full rounded-full bg-gold/80" style={{ width: `${(bucket.count / max) * 100}%` }} />
           </div>
-          <span className="text-right text-neutral-300">{bucket.count}</span>
+          <span className="text-right text-content">{bucket.count}</span>
         </div>
       ))}
     </div>
@@ -230,7 +230,7 @@ function RatingBars({ data }: { data: InsightsData }) {
 function MediaSplit({ data }: { data: InsightsData }) {
   const total = data.moviesWatched + data.showsWatched;
   if (total === 0) {
-    return <p className="text-sm text-neutral-400">Your watched-title mix appears here after your first journal entry.</p>;
+    return <p className="text-sm text-content-muted">Your watched-title mix appears here after your first journal entry.</p>;
   }
 
   const moviePercent = (data.moviesWatched / total) * 100;
@@ -242,16 +242,16 @@ function MediaSplit({ data }: { data: InsightsData }) {
         aria-label={`${data.moviesWatched} movies and ${data.showsWatched} shows`}
       >
         <div className="bg-gold" style={{ width: `${moviePercent}%` }} />
-        <div className="bg-red-500" style={{ width: `${100 - moviePercent}%` }} />
+        <div className="bg-accent-hover" style={{ width: `${100 - moviePercent}%` }} />
       </div>
-      <div className="mt-4 grid grid-cols-2 divide-x divide-white/10 border-y border-white/10">
+      <div className="mt-4 grid grid-cols-2 divide-x divide-rule border-y border-rule">
         <div className="py-3 pr-4 sm:pr-6">
           <p className="font-display text-2xl font-medium leading-none text-gold">{data.moviesWatched}</p>
-          <p className="mt-1 text-xs uppercase tracking-wider text-neutral-400">Movies · {Math.round(moviePercent)}%</p>
+          <p className="mt-1 text-xs uppercase tracking-wider text-content-muted">Movies · {Math.round(moviePercent)}%</p>
         </div>
         <div className="py-3 pl-4 sm:pl-6">
           <p className="font-display text-2xl font-medium leading-none text-red-200">{data.showsWatched}</p>
-          <p className="mt-1 text-xs uppercase tracking-wider text-neutral-400">Shows · {Math.round(100 - moviePercent)}%</p>
+          <p className="mt-1 text-xs uppercase tracking-wider text-content-muted">Shows · {Math.round(100 - moviePercent)}%</p>
         </div>
       </div>
     </div>
@@ -262,15 +262,15 @@ function CommunitySkeleton() {
   return (
     <section className="py-8" aria-busy="true">
       <span className="sr-only">Loading community comparison</span>
-      <div className="h-3 w-28 animate-pulse bg-white/10" aria-hidden="true" />
-      <div className="mt-3 h-7 w-56 animate-pulse bg-white/10" aria-hidden="true" />
-      <div className="mt-6 divide-y divide-white/10" aria-hidden="true">
+      <div className="h-3 w-28 animate-pulse bg-surface-raised" aria-hidden="true" />
+      <div className="mt-3 h-7 w-56 animate-pulse bg-surface-raised" aria-hidden="true" />
+      <div className="mt-6 divide-y divide-rule" aria-hidden="true">
         {[0, 1, 2].map((row) => (
           <div key={row} className="flex items-center gap-4 py-3">
-            <div className="h-12 w-8 shrink-0 animate-pulse bg-neutral-900" />
+            <div className="h-12 w-8 shrink-0 animate-pulse bg-surface-raised" />
             <div className="flex-1 space-y-2">
-              <div className="h-3 w-2/3 animate-pulse bg-white/10" />
-              <div className="h-2 w-1/3 animate-pulse bg-white/5" />
+              <div className="h-3 w-2/3 animate-pulse bg-surface-raised" />
+              <div className="h-2 w-1/3 animate-pulse bg-surface" />
             </div>
           </div>
         ))}
@@ -294,15 +294,15 @@ export default function ProfileInsights({
   return (
     <div className="space-y-0">
       {years.length > 0 && (
-        <nav aria-label="Insight year" className="overflow-x-auto border-b border-white/10">
+        <nav aria-label="Insight year" className="overflow-x-auto border-b border-rule">
           <div className="flex flex-wrap items-stretch sm:min-w-max sm:flex-nowrap">
             <Link
               href={yearHref()}
               aria-current={!selectedYear ? "page" : undefined}
               className={`kin-focus -mb-px whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold tracking-wide transition-colors ${
                 !selectedYear
-                  ? "border-red-500 text-red-100"
-                  : "border-transparent text-neutral-400 hover:border-white/20 hover:text-neutral-200"
+                  ? "border-accent text-red-100"
+                  : "border-transparent text-content-muted hover:border-rule-strong hover:text-content"
               }`}
             >
               Overall
@@ -314,8 +314,8 @@ export default function ProfileInsights({
                 aria-current={selectedYear === year ? "page" : undefined}
                 className={`kin-focus -mb-px whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold tracking-wide transition-colors ${
                   selectedYear === year
-                    ? "border-red-500 text-red-100"
-                    : "border-transparent text-neutral-400 hover:border-white/20 hover:text-neutral-200"
+                    ? "border-accent text-red-100"
+                    : "border-transparent text-content-muted hover:border-rule-strong hover:text-content"
                 }`}
               >
                 {year}
@@ -367,7 +367,7 @@ export default function ProfileInsights({
             ]}
           />
 
-          <div className="divide-y divide-white/10">
+          <div className="divide-y divide-rule">
             <section className="py-8" aria-labelledby="watch-activity-heading">
               <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -380,16 +380,16 @@ export default function ProfileInsights({
                   />
                 </div>
                 {insights.bestMonthLabel && (
-                  <p className="text-xs text-neutral-400">
-                    Busiest month: <span className="font-semibold text-neutral-300">{insights.bestMonthLabel}</span>
+                  <p className="text-xs text-content-muted">
+                    Busiest month: <span className="font-semibold text-content">{insights.bestMonthLabel}</span>
                   </p>
                 )}
               </div>
               <MonthlyWatchChart data={insights} headingId="watch-activity-heading" />
             </section>
 
-            <div className="grid xl:grid-cols-2 xl:divide-x xl:divide-white/10">
-              <section className="border-b border-white/10 py-8 xl:border-b-0 xl:pr-8" aria-labelledby="rating-distribution-heading">
+            <div className="grid xl:grid-cols-2 xl:divide-x xl:divide-rule">
+              <section className="border-b border-rule py-8 xl:border-b-0 xl:pr-8" aria-labelledby="rating-distribution-heading">
                 <InsightHeading
                   id="rating-distribution-heading"
                   eyebrow="Favorite ratings"
@@ -429,19 +429,19 @@ export default function ProfileInsights({
                     />
                   </div>
                   {insights.topGenre && (
-                    <p className="text-xs text-neutral-400">
-                      Top: <span className="font-semibold text-neutral-300">{insights.topGenre}</span>
+                    <p className="text-xs text-content-muted">
+                      Top: <span className="font-semibold text-content">{insights.topGenre}</span>
                     </p>
                   )}
                 </div>
                 <div className="space-y-3">
                   {insights.genreBreakdown.map((genre) => (
                     <div key={genre.name} className="grid grid-cols-[minmax(6rem,10rem)_1fr_3rem] items-center gap-3 text-sm">
-                      <span className="truncate text-neutral-300" title={genre.name}>{genre.name}</span>
+                      <span className="truncate text-content" title={genre.name}>{genre.name}</span>
                       <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
                         <div className="h-full rounded-full bg-gold/75" style={{ width: `${(genre.count / maxGenre) * 100}%` }} />
                       </div>
-                      <span className="text-right text-neutral-400">{genre.count}</span>
+                      <span className="text-right text-content-muted">{genre.count}</span>
                     </div>
                   ))}
                 </div>
@@ -462,9 +462,9 @@ export default function ProfileInsights({
                     <Link
                       key={`${item.mediaType}-${item.movieId}`}
                       href={item.href}
-                      className="kin-focus group block min-w-0 border-b border-white/10 pb-3 transition-colors hover:border-gold/50"
+                      className="kin-focus group block min-w-0 border-b border-rule pb-3 transition-colors hover:border-gold/50"
                     >
-                      <div className="relative aspect-2/3 overflow-hidden bg-neutral-900">
+                      <div className="relative aspect-2/3 overflow-hidden bg-surface-raised">
                         {tmdbImage(item.posterPath, "w185") ? (
                           <TmdbPosterImage
                             src={tmdbImage(item.posterPath, "w185") as string}
@@ -483,7 +483,7 @@ export default function ProfileInsights({
                           {(item.rating / 2).toFixed(1)}
                         </span>
                       </div>
-                      <p className="mt-3 truncate text-sm font-medium text-neutral-200">{item.title}</p>
+                      <p className="mt-3 truncate text-sm font-medium text-content">{item.title}</p>
                     </Link>
                   ))}
                 </div>

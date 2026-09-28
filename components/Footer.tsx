@@ -11,7 +11,7 @@ export default function Footer() {
             <span className="grid h-9 w-9 place-items-center rounded-control border border-accent/20 bg-accent/10 text-red-400">
               <Film className="h-5 w-5" aria-hidden="true" />
             </span>
-            <span className="font-display text-xl font-bold">
+            <span className="font-display text-xl font-medium">
               Kin<span className="text-accent">Orbia</span>
             </span>
           </Link>

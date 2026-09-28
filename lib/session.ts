@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import { withRateLimit } from "@/lib/rateLimit";
 
-export async function getSessionUser(): Promise<{ email: string | null; name: string | null }> {
+async function getSessionUser(): Promise<{ email: string | null; name: string | null }> {
   const session = await auth();
   const email = session?.user?.email;
   return {

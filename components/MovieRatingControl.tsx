@@ -76,7 +76,7 @@ export default function MovieRatingControl({ movie, initialRating, isWatched }: 
 
   if (!isWatched) {
     return (
-      <p className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-400">
+      <p className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-rule bg-surface px-4 py-3 text-sm text-content-muted">
         <Eye className="h-4 w-4 shrink-0" aria-hidden="true" />
         Mark this as watched to rate it.
       </p>
@@ -84,17 +84,17 @@ export default function MovieRatingControl({ movie, initialRating, isWatched }: 
   }
 
 return (
-    <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:rounded-full sm:px-3 sm:py-2">
+    <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 rounded-overlay border border-rule bg-surface p-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:rounded-full sm:px-3 sm:py-2">
       <div className="flex items-center justify-between gap-2 sm:shrink-0 sm:justify-start">
         <div className="flex shrink-0 items-center gap-2">
-          <Star className="h-4 w-4 fill-current text-yellow-400" />
-          <span className="text-sm font-medium text-neutral-300">
+          <Star className="h-4 w-4 fill-current text-highlight" />
+          <span className="text-sm font-medium text-content">
             {rating > 0 ? `${savedStars.toFixed(1)} stars` : "Rate"}
           </span>
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-yellow-400" />}
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-highlight" />}
         </div>
 
-        <span className="shrink-0 rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-sm font-bold text-yellow-300 sm:hidden">
+        <span className="shrink-0 rounded-full border border-highlight/20 bg-highlight/10 px-3 py-1 text-sm font-bold text-highlight sm:hidden">
           {draftStars.toFixed(1)}
         </span>
       </div>
@@ -108,7 +108,7 @@ return (
               <span key={star} className="relative h-6 w-6 text-neutral-700">
                 <Star className="h-6 w-6 fill-current" />
                 <span
-                  className="absolute inset-y-0 left-0 overflow-hidden text-yellow-400"
+                  className="absolute inset-y-0 left-0 overflow-hidden text-highlight"
                   style={{ width: `${fillPercent}%` }}
                 >
                   <Star className="h-6 w-6 fill-current" />
@@ -130,7 +130,7 @@ return (
         />
       </div>
 
-      <span className="hidden shrink-0 rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-sm font-bold text-yellow-300 sm:inline-block">
+      <span className="hidden shrink-0 rounded-full border border-highlight/20 bg-highlight/10 px-3 py-1 text-sm font-bold text-highlight sm:inline-block">
         {draftStars.toFixed(1)}
       </span>
 
@@ -138,7 +138,7 @@ return (
         type="button"
         onClick={() => rateMovie(draftStars)}
         disabled={loading || Math.round(draftStars * 2) === rating}
-        className="kin-focus w-full shrink-0 rounded-full border border-white/10 bg-white/7 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-1.5"
+        className="kin-focus w-full shrink-0 rounded-full border border-rule bg-white/7 px-3 py-2 text-sm font-semibold text-content transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-1.5"
       >
         Save
       </button>

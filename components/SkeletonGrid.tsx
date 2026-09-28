@@ -1,18 +1,10 @@
 import Skeleton from "./Skeleton";
 import SkeletonRegion from "./SkeletonRegion";
 
-export default function SkeletonGrid({
-  count = 10,
-  label = "Loading content",
-  className = "grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5",
-}: {
-  count?: number;
-  label?: string;
-  className?: string;
-}) {
+export default function SkeletonGrid({ count = 10 }: { count?: number }) {
   return (
-    <SkeletonRegion label={label}>
-      <div className={className}>
+    <SkeletonRegion label="Loading content">
+      <div className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
         {Array.from({ length: count }).map((_, index) => (
           <div key={index}>
             <Skeleton className="aspect-2/3 w-full" />

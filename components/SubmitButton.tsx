@@ -14,10 +14,15 @@ type SubmitButtonProps = {
   className?: string;
   variant?: SubmitButtonVariant;
   confirmText?: string;
+  // For click-driven async work, where there is no form submission and no
+  // ActionForm transition for `useFormStatus`/`useFormPending` to report. ORed
+  // into the same pending state, so a "Load more" fetch gets the identical
+  // spinner and screen-reader announcement a form submit does.
+  loading?: boolean;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children">;
 
 const variantClasses: Record<SubmitButtonVariant, string> = {
-  primary: "border-transparent bg-accent text-white hover:bg-accent-hover",
+  primary: "border-transparent bg-accent text-content hover:bg-accent-hover",
   secondary:
     "border-rule-strong bg-surface-raised text-content hover:border-highlight/35 hover:bg-surface hover:text-highlight",
   danger: "border-accent/35 bg-accent/5 text-red-200 hover:bg-accent/10",
@@ -30,13 +35,19 @@ export default function SubmitButton({
   className = "",
   variant = "primary",
   confirmText,
+  loading = false,
   disabled,
   onClick,
+  // Defaults to "submit" because that is what a button inside an ActionForm
+  // almost always wants. It was previously hardcoded *after* `{...rest}`, which
+  // silently discarded any `type` a caller passed -- MovieGrid and
+  // SearchLoadMore both wrote `type="button"`, believing they were opting out.
+  type = "submit",
   ...rest
 }: SubmitButtonProps) {
   const { pending: formPending } = useFormStatus();
   const actionPending = useFormPending();
-  const pending = formPending || actionPending;
+  const pending = formPending || actionPending || loading;
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     onClick?.(event);
@@ -52,7 +63,7 @@ export default function SubmitButton({
     <>
       <button
         {...rest}
-        type="submit"
+        type={type}
         disabled={pending || disabled}
         aria-busy={pending}
         onClick={handleClick}

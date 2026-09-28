@@ -82,10 +82,8 @@ type MediaToggleButtonProps = {
   loading: boolean;
   disabled?: boolean;
   activeClassName: string;
-  idleClassName?: string;
   icon: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
   activeIcon?: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
-  iconClassName?: string;
   activeIconClassName?: string;
   label: string;
   onClick: () => void;
@@ -96,10 +94,8 @@ export function MediaToggleButton({
   loading,
   disabled,
   activeClassName,
-  idleClassName = "border-white/10 bg-white/7 text-white hover:bg-white/12",
   icon: Icon,
   activeIcon: ActiveIcon,
-  iconClassName = "h-5 w-5 transition-transform group-active:scale-75",
   activeIconClassName,
   label,
   onClick,
@@ -108,7 +104,7 @@ export function MediaToggleButton({
   const Glyph = usesActiveIcon ? ActiveIcon! : Icon;
   const glyphClassName = usesActiveIcon
     ? (activeIconClassName ?? "")
-    : `${iconClassName}${active ? " fill-current" : ""}`;
+    : `h-5 w-5 transition-transform group-active:scale-75${active ? " fill-current" : ""}`;
 
   return (
     <button
@@ -116,7 +112,9 @@ export function MediaToggleButton({
       onClick={onClick}
       disabled={disabled}
       className={`kin-focus flex h-11 w-11 items-center justify-center rounded-full border transition-all group ${
-        active ? activeClassName : idleClassName
+        active
+          ? activeClassName
+          : "border-rule bg-white/7 text-content hover:bg-white/12"
       }`}
       aria-label={label}
     >

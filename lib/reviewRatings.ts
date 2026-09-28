@@ -3,7 +3,7 @@ import User from "@/models/User";
 import type { FavoriteMovie, MediaType } from "@/types";
 import { mediaKey, normalizeMediaType } from "@/lib/media";
 
-export type ReviewForRating = {
+type ReviewForRating = {
   userEmail: string;
   movieId?: string;
   mediaType?: MediaType;

@@ -128,7 +128,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
           aria-label="KinOrbia home"
         >
           <Film className="h-7 w-7 text-accent transition-transform group-hover:rotate-12 sm:h-8 sm:w-8" aria-hidden="true" />
-          <span className="hidden font-display text-xl font-bold min-[360px]:inline sm:text-2xl">
+          <span className="hidden font-display text-xl font-medium min-[360px]:inline sm:text-2xl">
             Kin<span className="text-accent">Orbia</span>
           </span>
         </Link>
@@ -154,7 +154,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
           <Link
             href="/search"
             onClick={() => setMobileOpen(false)}
-            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-white/10 hover:text-content"
+            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
             aria-label="Search films"
           >
             <Search className="h-5 w-5" aria-hidden="true" />
@@ -192,7 +192,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
 
                 {accountOpen && (
                   <div id="account-menu" className="premium-surface absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-overlay">
-                    <div className="border-b border-rule bg-white/5 px-4 py-3">
+                    <div className="border-b border-rule bg-surface px-4 py-3">
                       <p className="truncate text-sm font-medium text-content">{session.user.name}</p>
                       <p className="truncate text-xs text-content-muted">{session.user.email}</p>
                     </div>
@@ -200,7 +200,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
                       <Link
                         href="/profile"
                         onClick={() => setAccountOpen(false)}
-                        className="kin-focus-inset flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-content-muted transition hover:bg-white/5 hover:text-content"
+                        className="kin-focus-inset flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-content-muted transition hover:bg-surface hover:text-content"
                       >
                         <User className="h-4 w-4" aria-hidden="true" />
                         Profile
@@ -222,7 +222,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}
-              className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-white/10 hover:text-content"
+              className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
               aria-label="Sign in"
             >
               <User className="h-5 w-5" aria-hidden="true" />
@@ -233,7 +233,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
             ref={mobileButtonRef}
             type="button"
             onClick={toggleMobile}
-            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-white/10 hover:text-content lg:hidden"
+            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content lg:hidden"
             aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={mobileOpen}
             aria-controls="mobile-navigation"

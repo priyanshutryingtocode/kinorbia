@@ -2,7 +2,7 @@ import { Globe2, LockKeyhole } from "lucide-react";
 
 type Visibility = "public" | "private";
 
-export type VisibilityBadgeProps = {
+type VisibilityBadgeProps = {
   visibility: Visibility;
 };
 

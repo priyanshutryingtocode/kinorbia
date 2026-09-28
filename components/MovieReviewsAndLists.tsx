@@ -4,6 +4,8 @@ import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import { mediaEquals, mediaHref } from "@/lib/media";
 import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
+import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
+import UserNameLink from "@/components/UserNameLink";
 import { renderRichText } from "@/lib/renderRichText";
 import type { MediaType } from "@/types";
 import EmptyState from "@/components/EmptyState";
@@ -38,16 +40,24 @@ export default async function MovieReviewsAndLists({
     // `movies` narrows to the three fields needed for the entry count and the
     // first poster, so a 500-title list does not transfer in full.
     MovieList.find({ "movies.movieId": movieId, "movies.mediaType": mediaEquals(mediaType), visibility: "public" })
-      .select("_id userName title description movies.movieId movies.title movies.posterPath")
+      .select("_id userEmail userName title description movies.movieId movies.title movies.posterPath")
       .sort({ createdAt: -1 })
       .limit(4)
       .lean<{
         _id: { toString: () => string };
         userName: string;
+        userEmail: string;
         title: string;
         description?: string;
         movies: { movieId: string; title: string; posterPath?: string | null }[];
       }[]>(),
+  ]);
+
+  // One lookup for the bylines across both collections, rather than a read per
+  // review and per list.
+  const usernames = await buildUsernameMap([
+    ...publicReviews.map((review) => review.userEmail),
+    ...publicLists.map((list) => list.userEmail),
   ]);
 
   const ratingMaps = await buildReviewerRatingMaps(
@@ -65,7 +75,7 @@ export default async function MovieReviewsAndLists({
   const reviewPath = mediaHref(mediaType, movieId);
 
   return (
-    <section className="mt-14 grid gap-6 border-t border-white/10 pt-8 lg:grid-cols-2">
+    <section className="mt-14 grid gap-6 border-t border-rule pt-8 lg:grid-cols-2">
       <div>
         <h2 className="mb-5 text-2xl font-bold">Reviews</h2>
         {publicReviews.length > 0 ? (
@@ -77,19 +87,25 @@ export default async function MovieReviewsAndLists({
                 mediaType: review.mediaType,
               });
               return (
-                <article key={review._id.toString()} className="rounded-lg border border-white/10 bg-neutral-900/50 p-4">
+                <article key={review._id.toString()} className="rounded-sheet border border-rule bg-surface-raised/50 p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm text-neutral-400">by {review.userName}</p>
+                    <p className="text-sm text-content-muted">
+                      by{" "}
+                      <UserNameLink
+                        userName={review.userName}
+                        username={usernameFor(usernames, review.userEmail)}
+                      />
+                    </p>
                     {reviewRating > 0 && (
-                      <span className="text-sm font-bold text-yellow-400">{(reviewRating / 2).toFixed(1)} stars</span>
+                      <span className="text-sm font-bold text-highlight">{(reviewRating / 2).toFixed(1)} stars</span>
                     )}
                   </div>
                   {review.spoiler && (
-                    <span className="mt-2 inline-flex rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-yellow-300">
+                    <span className="mt-2 inline-flex rounded-full border border-highlight/20 bg-highlight/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-highlight">
                       Spoiler
                     </span>
                   )}
-                  <p className={`mt-3 line-clamp-4 text-sm leading-6 text-neutral-300 ${review.spoiler ? "select-none opacity-40 blur-sm" : ""}`}>
+                  <p className={`mt-3 line-clamp-4 text-sm leading-6 text-content ${review.spoiler ? "select-none opacity-40 blur-sm" : ""}`}>
                     {review.spoiler ? review.body : renderRichText(review.body)}
                   </p>
                   <CommentSection
@@ -111,14 +127,35 @@ export default async function MovieReviewsAndLists({
         {publicLists.length > 0 ? (
           <div className="space-y-3">
             {publicLists.map((list) => (
-              <Link key={list._id.toString()} href={`/lists/${list._id}`} className="block rounded-lg border border-white/10 bg-neutral-900/50 p-4 transition hover:border-red-500/40">
+              // The card is a container, not a link. Wrapping the whole thing in
+              // a <Link> made the byline un-linkable -- an anchor inside an
+              // anchor is invalid HTML and unreachable by keyboard -- so the
+              // title carries the navigation instead, which is what
+              // `app/(root)/lists/page.tsx` already does.
+              <article
+                key={list._id.toString()}
+                className="rounded-sheet border border-rule bg-surface-raised/50 p-4 transition hover:border-accent/40"
+              >
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-bold">{list.title}</h3>
-                  <span className="text-xs text-neutral-500">{list.movies.length} films</span>
+                  <h3 className="font-bold">
+                    <Link
+                      href={`/lists/${list._id}`}
+                      className="kin-focus rounded-sm transition-colors hover:text-highlight"
+                    >
+                      {list.title}
+                    </Link>
+                  </h3>
+                  <span className="text-xs text-content-subtle">{list.movies.length} films</span>
                 </div>
-                <p className="mt-1 text-xs text-neutral-500">by {list.userName}</p>
-                {list.description && <p className="mt-3 line-clamp-2 text-sm text-neutral-300">{list.description}</p>}
-              </Link>
+                <p className="mt-1 text-xs text-content-subtle">
+                  by{" "}
+                  <UserNameLink
+                    userName={list.userName}
+                    username={usernameFor(usernames, list.userEmail)}
+                  />
+                </p>
+                {list.description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-content">{list.description}</p>}
+              </article>
             ))}
           </div>
         ) : (

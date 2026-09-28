@@ -32,7 +32,7 @@ export default function ProfileTabs({
 }) {
   return (
     <nav aria-label="Profile sections" className="overflow-x-auto">
-      <div className="flex flex-wrap items-stretch border-b border-white/10 sm:flex-nowrap sm:min-w-max">
+      <div className="flex flex-wrap items-stretch border-b border-rule sm:flex-nowrap sm:min-w-max">
         {PROFILE_TABS.map((tab) => {
           const active = tab.key === current;
           return (
@@ -40,10 +40,10 @@ export default function ProfileTabs({
               key={tab.key}
               href={tabHref(tab.key, year)}
               aria-current={active ? "page" : undefined}
-              className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-red-400/80 sm:px-4 sm:text-sm ${
+              className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent/80 sm:px-4 sm:text-sm ${
                 active
-                  ? "border-red-500 text-red-100"
-                  : "border-transparent text-neutral-400 hover:border-white/20 hover:text-neutral-200"
+                  ? "border-accent text-red-100"
+                  : "border-transparent text-content-muted hover:border-rule-strong hover:text-content"
               }`}
             >
               {tab.label}

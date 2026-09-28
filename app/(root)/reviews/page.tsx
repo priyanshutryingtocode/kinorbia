@@ -13,6 +13,7 @@ import SubmitButton from "@/components/SubmitButton";
 import VisibilityField from "@/components/VisibilityField";
 import dbConnect from "@/lib/dbConnect";
 import { buildReviewerRatingMaps, dedupeFavorites, lookupRating } from "@/lib/reviewRatings";
+import { buildUsernameMap } from "@/lib/profileLinks";
 import Review from "@/models/Review";
 import User from "@/models/User";
 import { createReview } from "./actions";
@@ -41,6 +42,8 @@ export default async function ReviewsPage() {
     .lean<RawReview[]>();
   const reviews = rawReviews.map(serializeReview);
   const ratingMaps = await buildReviewerRatingMaps(reviews);
+  // Byline targets. One batched read for the page rather than a lookup per card.
+  const usernames = await buildUsernameMap(reviews.map((review) => review.userEmail));
 
   // Populates a select of rated favorites, so it needs four fields per entry --
   // and not the whole `watchlist` array, which this previously pulled along.
@@ -158,6 +161,7 @@ export default async function ReviewsPage() {
                   rating={lookupRating(ratingMaps, review)}
                   currentUserEmail={currentUserEmail}
                   path="/reviews"
+                  usernames={usernames}
                 />
               ))
             ) : (

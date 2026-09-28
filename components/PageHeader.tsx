@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
-import HeaderBlock, { HEADINGS, type HeadingLevel } from "@/components/HeaderBlock";
+import HeaderBlock from "@/components/HeaderBlock";
 
 type PageHeaderProps = {
   eyebrow?: string;
   title: string;
   description?: ReactNode;
   actions?: ReactNode;
-  headingLevel?: Extract<HeadingLevel, 1 | 2 | 3>;
   className?: string;
 };
 
@@ -15,7 +14,6 @@ export default function PageHeader({
   title,
   description,
   actions,
-  headingLevel = 1,
   className = "",
 }: PageHeaderProps) {
   return (
@@ -23,7 +21,7 @@ export default function PageHeader({
       <HeaderBlock
         eyebrow={eyebrow}
         title={title}
-        titleTag={HEADINGS[headingLevel]}
+        titleTag="h1"
         description={description}
         actions={actions}
         rowClassName="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"

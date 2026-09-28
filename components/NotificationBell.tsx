@@ -186,11 +186,11 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
         aria-expanded={open}
         aria-controls="notification-panel"
-        className="kin-focus relative flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-white/10 hover:text-content"
+        className="kin-focus relative flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
       >
         <Bell className="h-5 w-5" aria-hidden="true" />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white" aria-hidden="true">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-content" aria-hidden="true">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -206,7 +206,7 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
           tabIndex={-1}
           className="fixed inset-x-4 top-[calc(var(--shell-header-height)+0.5rem)] z-[var(--z-header)] flex max-h-[calc(100dvh-var(--shell-header-height)-1rem)] flex-col overflow-hidden rounded-overlay border border-rule bg-surface shadow-2xl lg:left-auto lg:w-80"
         >
-          <div className="flex shrink-0 items-center justify-between border-b border-rule bg-white/5 px-4 py-3">
+          <div className="flex shrink-0 items-center justify-between border-b border-rule bg-surface px-4 py-3">
             <h2 id="notification-heading" className="text-sm font-bold text-content">Notifications</h2>
             {unread > 0 && (
               <button
@@ -232,10 +232,10 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
                   key={item._id}
                   href={hrefFor(item)}
                   onClick={() => onOpenChange(false)}
-                  className={`kin-focus-inset flex items-start gap-3 border-b border-rule px-4 py-3 transition hover:bg-white/5 ${item.read ? "opacity-60" : ""}`}
+                  className={`kin-focus-inset flex items-start gap-3 border-b border-rule px-4 py-3 transition hover:bg-surface ${item.read ? "opacity-60" : ""}`}
                 >
                   <span className="mt-0.5 shrink-0">{ICONS[item.type]}</span>
-                  <span className="min-w-0 text-sm text-neutral-200">{messageFor(item)}</span>
+                  <span className="min-w-0 text-sm text-content">{messageFor(item)}</span>
                   {!item.read && <span className="mt-1.5 ml-auto h-2 w-2 shrink-0 rounded-full bg-accent" aria-hidden="true" />}
                 </Link>
               ))

@@ -9,7 +9,7 @@ export default function RecommendationsSkeleton() {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="aspect-2/3 w-full rounded-lg" />
+          <Skeleton key={i} className="aspect-2/3 w-full rounded-sheet" />
         ))}
       </div>
     </section>

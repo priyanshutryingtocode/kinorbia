@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 
-export type LinkTabItem = {
+type LinkTabItem = {
   label: ReactNode;
   href: string;
   key?: string;
 };
 
-export type LinkTabsProps = {
+type LinkTabsProps = {
   items: readonly LinkTabItem[];
   activeItem: string;
   ariaLabel: string;

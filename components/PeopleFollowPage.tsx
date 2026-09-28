@@ -23,7 +23,7 @@ const COPY = {
   },
 };
 
-export type PeopleSearchParams = {
+type PeopleSearchParams = {
   q?: string | string[];
   page?: string | string[];
 };
@@ -128,7 +128,7 @@ export default async function PeopleFollowPage({
       <PageContainer width="standard">
         <Link
           href={`/u/${encodeURIComponent(username)}`}
-          className="kin-focus group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-400 transition-colors hover:text-gold"
+          className="kin-focus group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-content-muted transition-colors hover:text-gold"
         >
           <span
             className="text-red-400 transition-transform group-hover:-translate-x-0.5"
@@ -138,9 +138,9 @@ export default async function PeopleFollowPage({
           </span>
           Back to profile
         </Link>
-        <header className="mb-6 mt-5 border-b border-white/10 pb-5">
+        <header className="mb-6 mt-5 border-b border-rule pb-5">
           <p className="kin-overline text-gold/80">@{username}</p>
-          <h1 className="mt-2 font-display text-3xl font-medium leading-none text-white sm:text-4xl">
+          <h1 className="mt-2 font-display text-3xl font-medium leading-none text-content sm:text-4xl">
             {copy.heading}
           </h1>
         </header>

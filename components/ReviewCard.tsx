@@ -2,17 +2,26 @@ import { MessageSquare, Star } from "lucide-react";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
 import { tmdbImage } from "@/lib/media";
 import { renderRichText } from "@/lib/renderRichText";
+import { usernameFor } from "@/lib/profileLinks";
 import type { ReviewItem } from "@/types";
 import ManageReviewForm from "./ManageReviewForm";
 import SocialActionButton from "./SocialActionButton";
 import SpoilerText from "./SpoilerText";
+import UserNameLink from "./UserNameLink";
 import VisibilityBadge from "./VisibilityBadge";
+
+// Shared empty map so the optional `usernames` prop does not allocate a new Map
+// on every render of every card in the grid.
+const NO_USERNAMES = new Map<string, string>();
 
 type ReviewCardProps = {
   review: ReviewItem;
   rating?: number;
   currentUserEmail: string;
   path: string;
+  // email -> username, resolved once by the page that owns this list. The card
+  // itself never queries: it is rendered inside grids and repeated per review.
+  usernames?: Map<string, string>;
 };
 
 export default function ReviewCard({
@@ -20,6 +29,7 @@ export default function ReviewCard({
   rating = 0,
   currentUserEmail,
   path,
+  usernames,
 }: ReviewCardProps) {
   const posterUrl = tmdbImage(review.posterPath, "w342");
   const viewerEmail = currentUserEmail.toLowerCase();
@@ -56,7 +66,13 @@ export default function ReviewCard({
           <VisibilityBadge visibility={review.visibility} />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-subtle">
-          <span>By {review.userName}</span>
+          <span>
+            By{" "}
+            <UserNameLink
+              userName={review.userName}
+              username={usernameFor(usernames ?? NO_USERNAMES, review.userEmail)}
+            />
+          </span>
           <span aria-hidden="true">·</span>
           <time dateTime={review.createdAt}>{new Date(review.createdAt).toLocaleDateString()}</time>
           {rating > 0 && (

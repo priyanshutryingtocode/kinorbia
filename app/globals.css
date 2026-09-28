@@ -60,8 +60,6 @@
   --leading-editorial: 0.95;
   --container-page: 80rem;
   --container-frame: 72rem;
-  --container-reading: 48rem;
-  --container-control: 28rem;
   --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -278,6 +276,17 @@ html {
   .kin-search-input {
     padding-left: 3rem;
     padding-right: 7rem;
+  }
+
+  /* The auth forms (login, signup, reset, forgot) each put a leading icon
+     inside the field. They used to hand-roll the whole input -- a darker
+     background, a 0.75rem radius and a mouse-focus ring -- so those four pages
+     looked like a different product from every other form in the app. This
+     follows the kin-search-input idiom: declared after .kin-input, so the
+     padding overrides its px-3.5, and the rest comes from the shared class. */
+  .kin-input-affix {
+    padding-left: 3rem;
+    padding-right: 1rem;
   }
 
   .kin-filter-control {

@@ -33,12 +33,12 @@ const VARIANTS = {
     defaultTitle: "This profile could not be loaded",
     defaultDescription: "The data may be temporarily unavailable. Please try again.",
     defaultAction: "",
-    rule: "bg-red-500",
+    rule: "bg-accent-hover",
     icon: AlertTriangle,
     iconColor: "text-red-300",
-    heading: "text-white",
-    body: "text-neutral-400",
-    action: "rounded-sm bg-red-600 transition-colors hover:bg-red-500",
+    heading: "text-content",
+    body: "text-content-muted",
+    action: "rounded-sm bg-accent transition-colors hover:bg-accent-hover",
   },
   routeNotFound: {
     kind: "not-found",
@@ -59,10 +59,10 @@ const VARIANTS = {
     defaultAction: "Browse KinOrbia",
     rule: "bg-gold",
     icon: UserX,
-    iconColor: "text-neutral-500",
-    heading: "text-white",
-    body: "text-neutral-400",
-    action: "rounded-sm bg-red-600 transition-colors hover:bg-red-500",
+    iconColor: "text-content-subtle",
+    heading: "text-content",
+    body: "text-content-muted",
+    action: "rounded-sm bg-accent transition-colors hover:bg-accent-hover",
   },
 } satisfies Record<string, VariantConfig>;
 
@@ -84,7 +84,7 @@ type StatusStateCommon = {
 type ErrorVariant = Extract<Variant, "routeError" | "profileError">;
 type NotFoundVariant = Exclude<Variant, ErrorVariant>;
 
-export type StatusStateProps = StatusStateCommon &
+type StatusStateProps = StatusStateCommon &
   (
     | { variant: ErrorVariant; onRetry?: () => void; href?: never; action?: never }
     | { variant: NotFoundVariant; href?: string; action?: string; onRetry?: never }
@@ -111,7 +111,7 @@ export default function StatusState({ variant, title, description, onRetry, href
             <button
               type="button"
               onClick={onRetry}
-              className={`kin-focus mt-6 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white ${config.action}`}
+              className={`kin-focus mt-6 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-content ${config.action}`}
             >
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
               Try again
@@ -120,7 +120,7 @@ export default function StatusState({ variant, title, description, onRetry, href
         ) : (
           <Link
             href={href ?? "/"}
-            className={`kin-focus mt-6 inline-flex px-4 py-2 text-sm font-semibold text-white ${config.action}`}
+            className={`kin-focus mt-6 inline-flex px-4 py-2 text-sm font-semibold text-content ${config.action}`}
           >
             {action ?? config.defaultAction}
           </Link>

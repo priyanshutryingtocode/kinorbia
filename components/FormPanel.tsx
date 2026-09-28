@@ -1,13 +1,12 @@
 import type { ReactNode } from "react";
-import HeaderBlock, { HEADINGS, type HeadingLevel } from "@/components/HeaderBlock";
+import HeaderBlock from "@/components/HeaderBlock";
 
-export type FormPanelProps = {
+type FormPanelProps = {
   eyebrow?: ReactNode;
   title?: ReactNode;
   description?: ReactNode;
   children: ReactNode;
   id?: string;
-  headingLevel?: HeadingLevel;
   className?: string;
 };
 
@@ -17,7 +16,6 @@ export default function FormPanel({
   description,
   children,
   id,
-  headingLevel = 2,
   className = "",
 }: FormPanelProps) {
   const hasTitle = title !== undefined && title !== null;
@@ -32,7 +30,7 @@ export default function FormPanel({
             eyebrow={eyebrow}
             title={title}
             titleId={headingId}
-            titleTag={HEADINGS[headingLevel]}
+            titleTag="h2"
             description={description}
             rowClassName=""
             eyebrowClassName="kin-overline mb-1.5 text-highlight/80"

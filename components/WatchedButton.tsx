@@ -39,7 +39,7 @@ export default function WatchedButton({ movie, initialIsWatched }: WatchedButton
       active={active}
       loading={loading}
       disabled={loading || locked}
-      activeClassName="border-emerald-500 bg-emerald-600 text-white shadow-[0_14px_30px_-18px_rgba(16,185,129,0.8)]"
+      activeClassName="border-emerald-500 bg-emerald-600 text-content shadow-[0_14px_30px_-18px_rgba(16,185,129,0.8)]"
       icon={Eye}
       activeIcon={Check}
       activeIconClassName="h-5 w-5"

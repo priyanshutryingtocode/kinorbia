@@ -14,6 +14,8 @@ import VisibilityBadge from "@/components/VisibilityBadge";
 import dbConnect from "@/lib/dbConnect";
 import { formatDate, mediaHref, mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
 import { isObjectId } from "@/lib/objectId";
+import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
+import UserNameLink from "@/components/UserNameLink";
 import { serializeList, type RawMovieList } from "@/lib/serialize";
 import MovieList from "@/models/MovieList";
 import type { ListMovie } from "@/types";
@@ -88,6 +90,8 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
   }
 
   const list = serializeList(rawList);
+  // One author, one lookup.
+  const usernames = await buildUsernameMap([list.userEmail]);
   const countLabel = `${list.movies.length} ${list.movies.length === 1 ? "title" : "titles"}`;
 
   return (
@@ -106,7 +110,9 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
         description={
           <>
             <p>
-              By {list.userName} · {formatDate(list.createdAt)} · {countLabel}
+              By{" "}
+              <UserNameLink userName={list.userName} username={usernameFor(usernames, list.userEmail)} /> ·{" "}
+              {formatDate(list.createdAt)} · {countLabel}
             </p>
             {list.description && (
               <p className="mt-2 max-w-3xl break-words [overflow-wrap:anywhere]">

@@ -6,9 +6,9 @@ import type { ActionState } from "@/lib/actionState";
 import { FormPendingProvider } from "./FormPendingContext";
 
 
-export type Action = (stateOrFormData: ActionState | FormData, formData?: FormData) => Promise<ActionState>;
+type Action = (stateOrFormData: ActionState | FormData, formData?: FormData) => Promise<ActionState>;
 
-export type ActionFormProps = {
+type ActionFormProps = {
   action: Action;
   className?: string;
   children: ReactNode;

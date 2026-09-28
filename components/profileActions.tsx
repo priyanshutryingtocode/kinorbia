@@ -85,7 +85,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
             setBio(user.bio || "");
             setIsEditing(true);
           }}
-          className="kin-focus inline-flex items-center gap-2 rounded-sm border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-200 transition hover:border-gold/30 hover:bg-white/10 hover:text-white"
+          className="kin-focus inline-flex items-center gap-2 rounded-sm border border-rule bg-surface px-3 py-1.5 text-xs font-semibold text-content transition hover:border-gold/30 hover:bg-surface-raised hover:text-content"
         >
           <Settings className="h-4 w-4" aria-hidden="true" />
           Edit profile
@@ -94,7 +94,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
           <button
             type="button"
             onClick={handleShare}
-            className="kin-focus inline-flex items-center gap-2 rounded-sm border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:border-red-500/40 hover:bg-red-500/15 hover:text-white"
+            className="kin-focus inline-flex items-center gap-2 rounded-sm border border-accent/25 bg-accent-hover/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:border-accent/40 hover:bg-accent-hover/15 hover:text-content"
           >
             {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Share2 className="h-4 w-4" aria-hidden="true" />}
             {copied ? "Copied" : "Share"}
@@ -106,7 +106,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">Public identity</p>
-            <h2 id="edit-profile-title" className="mt-1 font-display text-2xl font-bold text-white">
+            <h2 id="edit-profile-title" className="mt-1 font-display text-2xl font-medium text-content">
               Edit profile
             </h2>
           </div>
@@ -114,7 +114,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
             type="button"
             onClick={closeDialog}
             disabled={loading}
-            className="kin-focus rounded-full border border-white/10 bg-white/5 p-2 text-neutral-400 transition hover:text-white disabled:opacity-50"
+            className="kin-focus rounded-full border border-rule bg-surface p-2 text-content-muted transition hover:text-content disabled:opacity-50"
             aria-label="Close edit profile dialog"
           >
             <X className="h-4 w-4" />
@@ -123,7 +123,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
 
         <form onSubmit={handleSave} className="space-y-5">
           <div>
-            <label htmlFor="profile-name" className="mb-2 block text-xs font-bold uppercase tracking-wider text-neutral-400">
+            <label htmlFor="profile-name" className="mb-2 block text-xs font-bold uppercase tracking-wider text-content-muted">
               Display name
             </label>
             <input
@@ -133,12 +133,12 @@ export default function ProfileActions({ user }: { user: UserData }) {
               required
               minLength={1}
               maxLength={60}
-              className="kin-focus w-full rounded-lg border border-white/10 bg-neutral-950 px-4 py-3 text-white placeholder:text-neutral-600"
+              className="kin-focus w-full rounded-sheet border border-rule bg-canvas px-4 py-3 text-content placeholder:text-neutral-600"
             />
           </div>
 
           <div>
-            <label htmlFor="profile-bio" className="mb-2 block text-xs font-bold uppercase tracking-wider text-neutral-400">
+            <label htmlFor="profile-bio" className="mb-2 block text-xs font-bold uppercase tracking-wider text-content-muted">
               Bio
             </label>
             <textarea
@@ -147,14 +147,14 @@ export default function ProfileActions({ user }: { user: UserData }) {
               onChange={(event) => setBio(event.target.value)}
               rows={4}
               maxLength={160}
-              className="kin-focus w-full resize-none rounded-lg border border-white/10 bg-neutral-950 px-4 py-3 text-white placeholder:text-neutral-600"
+              className="kin-focus w-full resize-none rounded-sheet border border-rule bg-canvas px-4 py-3 text-content placeholder:text-neutral-600"
               placeholder="Tell us about your movie taste..."
             />
-            <p className="mt-1 text-right text-xs text-neutral-500">{bio.length}/160</p>
+            <p className="mt-1 text-right text-xs text-content-subtle">{bio.length}/160</p>
           </div>
 
           {error && (
-            <p role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            <p role="alert" className="rounded-sheet border border-accent/20 bg-accent-hover/10 px-3 py-2 text-sm text-red-200">
               {error}
             </p>
           )}
@@ -162,7 +162,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
           <button
             type="submit"
             disabled={loading}
-            className="kin-focus flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 py-3 font-bold text-white transition hover:bg-red-500 disabled:opacity-60"
+            className="kin-focus flex w-full items-center justify-center gap-2 rounded-sheet bg-accent py-3 font-bold text-content transition hover:bg-accent-hover disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {loading ? "Saving..." : "Save changes"}

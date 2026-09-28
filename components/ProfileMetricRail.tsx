@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-export type ProfileMetricEmphasis = "neutral" | "red" | "gold";
+type ProfileMetricEmphasis = "neutral" | "red" | "gold";
 
-export type ProfileMetricItem = {
+type ProfileMetricItem = {
   label: string;
   value: string | number;
   detail?: string;
@@ -10,14 +10,14 @@ export type ProfileMetricItem = {
   emphasis?: ProfileMetricEmphasis;
 };
 
-export type ProfileMetricRailProps = {
+type ProfileMetricRailProps = {
   metrics: ProfileMetricItem[];
   ariaLabel?: string;
   className?: string;
 };
 
 const valueColors: Record<ProfileMetricEmphasis, string> = {
-  neutral: "text-white",
+  neutral: "text-content",
   red: "text-red-200",
   gold: "text-gold",
 };
@@ -35,7 +35,7 @@ export default function ProfileMetricRail({
     <ul
       aria-label={ariaLabel}
       className={[
-        "grid list-none grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-px overflow-hidden rounded-sm border border-white/10 bg-white/10 p-0",
+        "grid list-none grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-px overflow-hidden rounded-sm border border-rule bg-surface-raised p-0",
         className,
       ]
         .filter(Boolean)
@@ -44,18 +44,18 @@ export default function ProfileMetricRail({
       {metrics.map(({ label, value, detail, href, emphasis = "neutral" }) => {
         const content = (
           <>
-            <p className="kin-overline text-neutral-400">{label}</p>
+            <p className="kin-overline text-content-muted">{label}</p>
             <p className={`mt-1.5 break-words font-display text-2xl font-medium leading-none sm:text-3xl ${valueColors[emphasis]}`}>
               {value}
             </p>
-            {detail && <p className="mt-1.5 text-[11px] leading-4 text-neutral-400">{detail}</p>}
+            {detail && <p className="mt-1.5 text-[11px] leading-4 text-content-muted">{detail}</p>}
           </>
         );
         const itemClass =
-          "block h-full bg-neutral-950 p-4 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-400/80 hover:bg-neutral-900/80 sm:p-5";
+          "block h-full bg-canvas p-4 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/80 hover:bg-surface-raised/80 sm:p-5";
 
         return (
-          <li key={`${label}-${String(value)}`} className="min-w-0 bg-neutral-950">
+          <li key={`${label}-${String(value)}`} className="min-w-0 bg-canvas">
             {href ? (
               <Link href={href} className={itemClass}>
                 {content}

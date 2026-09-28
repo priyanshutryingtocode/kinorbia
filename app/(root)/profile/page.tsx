@@ -20,6 +20,7 @@ import {
   getWatchlistPage,
   PROFILE_PAGE_SIZES,
 } from "@/lib/profileData";
+import { buildUsernameMap } from "@/lib/profileLinks";
 import EmptyState from "@/components/EmptyState";
 import MovieCard from "@/components/MovieCard";
 import ProfileActions from "@/components/profileActions";
@@ -60,7 +61,7 @@ function JournalCard({ item }: { item: JournalItem }) {
   const href = item.movieId ? mediaHref(item.mediaType, item.movieId) : null;
   const content = (
     <>
-      <div className="relative aspect-2/3 bg-neutral-900">
+      <div className="relative aspect-2/3 bg-surface-raised">
         {poster ? (
           <TmdbPosterImage src={poster} alt={item.movieTitle} fill sizes="(min-width: 768px) 20vw, 45vw" className="object-cover" />
         ) : (
@@ -68,35 +69,35 @@ function JournalCard({ item }: { item: JournalItem }) {
         )}
       </div>
       <div className="p-3">
-        <h3 className="truncate text-sm font-semibold text-white">{item.movieTitle}</h3>
-        <p className="mt-1 text-xs text-neutral-400">{formatDate(item.watchedAt)}</p>
+        <h3 className="truncate text-sm font-semibold text-content">{item.movieTitle}</h3>
+        <p className="mt-1 text-xs text-content-muted">{formatDate(item.watchedAt)}</p>
       </div>
     </>
   );
-  const className = "kin-focus block overflow-hidden rounded-sm border border-white/10 bg-neutral-900/45 transition-colors hover:border-gold/40";
+  const className = "kin-focus block overflow-hidden rounded-sm border border-rule bg-surface-raised/45 transition-colors hover:border-gold/40";
   return href ? <Link href={href} className={className}>{content}</Link> : <div className={className}>{content}</div>;
 }
 
 function CompactReview({ review }: { review: ReviewItem }) {
   return (
-    <Link href="/reviews" className="kin-focus group block border-b border-white/10 py-4 transition-colors last:border-b-0 hover:bg-neutral-900/25">
+    <Link href="/reviews" className="kin-focus group block border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/25">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-white group-hover:text-gold">{review.movieTitle}</h3>
-        {review.spoiler && <span className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-yellow-300">Spoiler</span>}
+        <h3 className="font-display text-lg font-semibold text-content group-hover:text-gold">{review.movieTitle}</h3>
+        {review.spoiler && <span className="rounded-full border border-highlight/20 bg-highlight/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-highlight">Spoiler</span>}
       </div>
-      <p className={`mt-3 line-clamp-3 text-sm leading-6 text-neutral-400 ${review.spoiler ? "select-none blur-sm" : ""}`}>{review.body}</p>
+      <p className={`mt-3 line-clamp-3 text-sm leading-6 text-content-muted ${review.spoiler ? "select-none blur-sm" : ""}`}>{review.body}</p>
     </Link>
   );
 }
 
 function CompactList({ list }: { list: MovieListItem }) {
   return (
-    <Link href={`/lists/${list._id}`} className="kin-focus group block border-b border-white/10 py-4 transition-colors last:border-b-0 hover:bg-neutral-900/25">
+    <Link href={`/lists/${list._id}`} className="kin-focus group block border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/25">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-white group-hover:text-gold">{list.title}</h3>
-        <span className="shrink-0 text-xs text-neutral-400">{list.movies.length} titles</span>
+        <h3 className="font-display text-lg font-semibold text-content group-hover:text-gold">{list.title}</h3>
+        <span className="shrink-0 text-xs text-content-muted">{list.movies.length} titles</span>
       </div>
-      {list.description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-neutral-400">{list.description}</p>}
+      {list.description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-content-muted">{list.description}</p>}
     </Link>
   );
 }
@@ -129,14 +130,14 @@ function OverviewPanel({
             { label: "Favorites", value: data.favoriteCount, detail: "Personal shelf", emphasis: "red" },
           ]}
         />
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-white/10 pb-4 text-xs text-neutral-400">
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-rule pb-4 text-xs text-content-muted">
           {[
             { label: "watchlist", value: data.watchlistCount, href: "/profile?tab=watchlist" },
             { label: "reviews", value: data.reviewCount, href: "/profile?tab=reviews" },
             { label: "lists", value: data.listCount, href: "/profile?tab=lists" },
           ].map((item) => (
             <Link key={item.label} href={item.href} className="kin-focus rounded-sm transition-colors hover:text-gold">
-              <span className="font-display text-base text-white">{item.value}</span> {item.label}
+              <span className="font-display text-base text-content">{item.value}</span> {item.label}
             </Link>
           ))}
         </div>
@@ -241,9 +242,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     );
   } else if (tab === "reviews") {
     const result = await getReviewPage(email, requestedPage);
+    // Every row on this tab is the viewer's own, so the lookup is a single key.
+    const usernames = await buildUsernameMap([email]);
     panel = (
       <ProfilePanel id="reviews" eyebrow="Writing archive" title="Reviews" description="Your public and private reviews across every title.">
-        {result.total ? <div className="grid gap-4 xl:grid-cols-2">{result.items.map((review) => <ReviewCard key={review._id} review={review} rating={result.ratingMap.get(mediaKey(review.mediaType, review.movieId)) || 0} currentUserEmail={email} path="/profile" />)}</div> : <EmptyState compact title="No reviews yet" description="Write your first review from a movie or show page." />}
+        {result.total ? <div className="grid gap-4 xl:grid-cols-2">{result.items.map((review) => <ReviewCard key={review._id} review={review} rating={result.ratingMap.get(mediaKey(review.mediaType, review.movieId)) || 0} currentUserEmail={email} path="/profile" usernames={usernames} />)}</div> : <EmptyState compact title="No reviews yet" description="Write your first review from a movie or show page." />}
         <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.reviews} />
       </ProfilePanel>
     );
@@ -269,12 +272,12 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         followers={relationships.followers}
         following={relationships.following}
       >
-        {identity.username && <Link href={`/u/${encodeURIComponent(identity.username)}`} className="kin-focus inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:border-gold/30 hover:text-white"><ExternalLink className="h-4 w-4" />Public profile</Link>}
+        {identity.username && <Link href={`/u/${encodeURIComponent(identity.username)}`} className="kin-focus inline-flex items-center gap-2 rounded-full border border-rule bg-surface px-4 py-2 text-sm font-semibold text-content transition hover:border-gold/30 hover:text-content"><ExternalLink className="h-4 w-4" />Public profile</Link>}
         <ProfileActions user={{ name: identity.name || sessionName || "KinOrbia user", bio: identity.bio || "", username: identity.username }} />
-        <a href="/api/user/export" className="kin-focus inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:border-gold/30 hover:text-white"><Download className="h-4 w-4" />Export data</a>
+        <a href="/api/user/export" className="kin-focus inline-flex items-center gap-2 rounded-full border border-rule bg-surface px-4 py-2 text-sm font-semibold text-content transition hover:border-gold/30 hover:text-content"><Download className="h-4 w-4" />Export data</a>
       </ProfileHeader>
 
-      <div className="sticky top-20 z-30 -mx-4 mt-5 border-y border-white/10 bg-neutral-950/95 px-4 py-2 backdrop-blur-xl sm:mx-0 sm:px-0">
+      <div className="sticky top-20 z-30 -mx-4 mt-5 border-y border-rule bg-canvas/95 px-4 py-2 backdrop-blur-xl sm:mx-0 sm:px-0">
         <ProfileTabs current={tab} year={selectedYear} />
       </div>
 

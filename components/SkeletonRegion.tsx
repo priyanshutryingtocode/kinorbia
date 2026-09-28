@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type SkeletonRegionProps = {
+type SkeletonRegionProps = {
   label: string;
   children: ReactNode;
   className?: string;

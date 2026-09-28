@@ -32,7 +32,7 @@ export default function ProfileHeader({
       <div className="profile-wash pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 flex-1 items-start gap-4 sm:gap-5">
-          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-white/15 bg-neutral-900 ring-1 ring-gold/15 sm:h-24 sm:w-24">
+          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-white/15 bg-surface-raised ring-1 ring-gold/15 sm:h-24 sm:w-24">
             {image ? (
               <Image
                 src={image}
@@ -51,17 +51,17 @@ export default function ProfileHeader({
           </div>
           <div className="min-w-0 flex-1 text-left">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h1 className="break-words font-display text-3xl font-medium leading-tight text-white sm:text-4xl">
+              <h1 className="break-words font-display text-3xl font-medium leading-tight text-content sm:text-4xl">
                 {name}
               </h1>
               {username && <p className="kin-overline break-all text-gold/80">@{username}</p>}
             </div>
             {bio ? (
-              <p className="mt-2.5 max-w-2xl text-sm leading-6 text-neutral-400">{bio}</p>
+              <p className="mt-2.5 max-w-2xl text-sm leading-6 text-content-muted">{bio}</p>
             ) : (
-              <p className="mt-2.5 text-sm italic text-neutral-400">No bio yet.</p>
+              <p className="mt-2.5 text-sm italic text-content-muted">No bio yet.</p>
             )}
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-neutral-400">
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-content-muted">
               {joinedYear && (
                 <span className="inline-flex items-center gap-1.5 font-medium uppercase tracking-[0.12em]">
                   <Calendar className="h-3 w-3" aria-hidden="true" />

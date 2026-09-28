@@ -99,7 +99,7 @@ export default function TrailerButton({ videoKey, title }: TrailerButtonProps) {
                   ref={closeRef}
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="kin-focus shrink-0 rounded-control border border-rule bg-white/5 p-2 text-content-muted transition hover:bg-white/10 hover:text-content"
+                  className="kin-focus shrink-0 rounded-control border border-rule bg-surface p-2 text-content-muted transition hover:bg-surface-raised hover:text-content"
                   aria-label="Close trailer"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />

@@ -7,7 +7,7 @@ import type { FavoriteMovie } from "@/types";
 
 const PAGE_SIZE = 50;
 
-export type MoviePickerProps = {
+type MoviePickerProps = {
   name: string;
   favorites: FavoriteMovie[];
   defaultSelected?: string[];

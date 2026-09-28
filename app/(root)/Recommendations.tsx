@@ -62,18 +62,33 @@ export default async function Recommendations({ mediaType }: { mediaType: MediaT
   if (recommendations.length === 0) return null;
 
   return (
-    <section className="mb-14 border-b border-white/5 pb-10">
-      <div className="mb-6 flex flex-col gap-2">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
-          Recommended
+    // A strip, not a second hero. This used to carry a 3xl/4xl display-serif
+    // heading that rivalled the page's <h1>; it is now one small label plus a
+    // quiet subtitle on a single line. The <h2> stays so the region is still
+    // announced in the document outline -- it is just styled like a label.
+    <section className="mb-10 border-t border-rule pt-8">
+      <div className="mb-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h2 className="kin-overline text-highlight">Recommended</h2>
+        <p className="text-sm text-content-subtle">
+          because you liked{" "}
+          <span className="italic text-content-muted">{favorite.title}</span>
         </p>
-        <h2 className="font-display text-3xl font-bold leading-tight text-white md:text-4xl">
-          Because you liked <span className="italic font-normal text-neutral-200">{favorite.title}</span>
-        </h2>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+      {/* Five cards in a two-column grid left a row holding one poster on
+          mobile, every time. Below `md` this is a horizontal snap strip instead
+          -- one row, nothing ragged -- and from `md` up it is the 5-across grid
+          again. The negative margin lets the strip bleed to the screen edge on
+          mobile, matching the container's `px-4 sm:px-6`; `md:mx-0 md:px-0`
+          undoes it once the grid takes over. `hide-scrollbar` is the existing
+          utility, since the snap affordance replaces the scrollbar. */}
+      <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 hide-scrollbar sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-5 md:gap-6 md:overflow-visible md:px-0">
         {recommendations.map((movie, index) => (
-          <MovieCard key={movie.id} movie={movie} loading={index === 0 ? "eager" : undefined} />
+          <div
+            key={movie.id}
+            className="w-[44vw] max-w-44 shrink-0 snap-start md:w-auto md:max-w-none"
+          >
+            <MovieCard movie={movie} loading={index === 0 ? "eager" : undefined} />
+          </div>
         ))}
       </div>
     </section>

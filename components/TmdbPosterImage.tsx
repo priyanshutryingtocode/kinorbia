@@ -17,7 +17,7 @@ export default function TmdbPosterImage({ src, alt, className, ...props }: TmdbP
         role={alt ? "img" : undefined}
         aria-label={alt || undefined}
         aria-hidden={alt ? undefined : true}
-        className={`flex h-full w-full items-center justify-center bg-neutral-900 ${className || ""}`}
+        className={`flex h-full w-full items-center justify-center bg-surface-raised ${className || ""}`}
       >
         <Film className="h-8 w-8 text-neutral-700" aria-hidden="true" />
       </div>

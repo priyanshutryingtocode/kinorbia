@@ -5,22 +5,18 @@ type ProfilePaginationProps = {
   tab: string;
   page: number;
   totalPages: number;
-  year?: number;
   total: number;
   pageSize: number;
 };
 
-function profileHref(tab: string, page: number, year?: number) {
-  if (tab === "overview") {
-    return "/profile";
-  }
-
+// `tab` is always one of the four paginated tabs. The "overview" and "insights"
+// branches this used to have were unreachable, because those tabs render no
+// pager: the profile page handles them with earlier `if` branches. The `year`
+// parameter went with them, and no call site passed it anyway.
+function profileHref(tab: string, page: number) {
   const params = new URLSearchParams({ tab });
   if (page > 1) {
     params.set("page", String(page));
-  }
-  if (tab === "insights" && year) {
-    params.set("year", String(year));
   }
   return `/profile?${params.toString()}`;
 }
@@ -35,7 +31,6 @@ export default function ProfilePagination({
   tab,
   page,
   totalPages,
-  year,
   total,
   pageSize,
 }: ProfilePaginationProps) {
@@ -47,7 +42,7 @@ export default function ProfilePagination({
   const last = Math.min(page * pageSize, total);
   const pages = visiblePages(page, totalPages);
   const previousClass =
-    "kin-focus inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-neutral-400 transition hover:text-white";
+    "kin-focus inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-content-muted transition hover:text-content";
   const previousDisabledClass =
     "inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-neutral-700";
   const pageClass =
@@ -56,15 +51,15 @@ export default function ProfilePagination({
   return (
     <nav
       aria-label={`${tab} pagination`}
-      className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between"
+      className="mt-8 flex flex-col gap-3 border-t border-rule pt-4 sm:flex-row sm:items-center sm:justify-between"
     >
-      <p className="text-center text-xs tracking-wide text-neutral-500 sm:text-left" aria-live="polite">
+      <p className="text-center text-xs tracking-wide text-content-subtle sm:text-left" aria-live="polite">
         Showing {first}–{last} of {total}
       </p>
       <div className="flex items-center justify-center gap-0.5 sm:gap-1" role="group" aria-label="Pagination pages">
         <PagerEdge
           direction="previous"
-          href={page > 1 ? profileHref(tab, page - 1, year) : undefined}
+          href={page > 1 ? profileHref(tab, page - 1) : undefined}
           className={previousClass}
           disabledClassName={previousDisabledClass}
         />
@@ -73,13 +68,13 @@ export default function ProfilePagination({
           return (
             <Link
               key={pageNumber}
-              href={profileHref(tab, pageNumber, year)}
+              href={profileHref(tab, pageNumber)}
               aria-label={`Page ${pageNumber}`}
               aria-current={active ? "page" : undefined}
               className={`${pageClass} ${
                 active
-                  ? "border-red-500/80 font-semibold text-red-100"
-                  : "border-transparent font-normal text-neutral-500 hover:border-white/20 hover:text-neutral-200"
+                  ? "border-accent/80 font-semibold text-red-100"
+                  : "border-transparent font-normal text-content-subtle hover:border-rule-strong hover:text-content"
               }`}
             >
               {pageNumber}
@@ -88,7 +83,7 @@ export default function ProfilePagination({
         })}
         <PagerEdge
           direction="next"
-          href={page < totalPages ? profileHref(tab, page + 1, year) : undefined}
+          href={page < totalPages ? profileHref(tab, page + 1) : undefined}
           className={previousClass}
           disabledClassName={previousDisabledClass}
         />

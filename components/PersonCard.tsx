@@ -25,12 +25,12 @@ export default function PersonCard({ person, isAuthenticated, path }: PersonCard
       ? `/u/${encodeURIComponent(person.username)}`
       : null;
   const avatar = (
-    <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-neutral-900">
+    <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full border border-rule bg-surface-raised">
       {person.image ? (
         <Image src={person.image} alt="" fill sizes="40px" className="object-cover" />
       ) : (
         <span
-          className="flex h-full w-full items-center justify-center text-neutral-400"
+          className="flex h-full w-full items-center justify-center text-content-muted"
           aria-hidden="true"
         >
           <UserIcon className="h-5 w-5" />
@@ -42,10 +42,10 @@ export default function PersonCard({ person, isAuthenticated, path }: PersonCard
     <>
       {avatar}
       <span className="min-w-0 flex-1">
-        <span className="block truncate rounded-sm font-display text-base font-medium leading-tight text-white transition-colors group-hover:text-gold">
+        <span className="block truncate rounded-sm font-display text-base font-medium leading-tight text-content transition-colors group-hover:text-gold">
           {person.name}
         </span>
-        <span className="mt-0.5 block truncate text-xs text-neutral-400">
+        <span className="mt-0.5 block truncate text-xs text-content-muted">
           {person.isSelf
             ? "You"
             : person.username

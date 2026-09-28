@@ -11,6 +11,8 @@ import EmptyState from "@/components/EmptyState";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
+import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
+import UserNameLink from "@/components/UserNameLink";
 import type { MediaType } from "@/types";
 import User from "@/models/User";
 import MovieList from "@/models/MovieList";
@@ -71,12 +73,13 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
         createdAt: Date;
       }[]>(),
     MovieList.find({ visibility: "public", ...scope })
-      .select("_id userName title description createdAt movies.movieId movies.title movies.posterPath")
+      .select("_id userEmail userName title description createdAt movies.movieId movies.title movies.posterPath")
       .sort({ createdAt: -1 })
       .limit(8)
       .lean<{
         _id: { toString: () => string };
         userName: string;
+        userEmail: string;
         title: string;
         description?: string;
         movies: { posterPath?: string; title: string; movieId: string }[];
@@ -91,6 +94,12 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
       mediaType: review.mediaType,
     }))
   );
+
+  // Byline targets, resolved in one batched read for the whole feed.
+  const usernames = await buildUsernameMap([
+    ...reviews.map((review) => review.userEmail),
+    ...lists.map((list) => list.userEmail),
+  ]);
 
   const items = [
     ...reviews.map((review) => ({ kind: "review" as const, date: review.createdAt, review })),
@@ -151,7 +160,11 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
                   <article className="min-w-0 flex-1">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-subtle">
                       <span className="font-semibold uppercase tracking-overline text-content-muted">
-                        {item.review.userName} reviewed
+                        <UserNameLink
+                          userName={item.review.userName}
+                          username={usernameFor(usernames, item.review.userEmail)}
+                        />{" "}
+                        reviewed
                       </span>
                       <span aria-hidden="true">·</span>
                       <time dateTime={new Date(item.review.createdAt).toISOString()}>
@@ -211,29 +224,40 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
                     </div>
                   )}
                 </div>
-                <Link
-                  href={`/lists/${item.list._id}`}
-                  className="kin-focus group min-w-0 flex-1 py-0.5"
-                >
+                <div className="min-w-0 flex-1">
+                  {/* The byline sits outside the <Link> on purpose. It used to be
+                      inside, which made the author's name un-linkable -- an anchor
+                      inside an anchor is invalid HTML and unreachable by keyboard.
+                      The trade-off is that the byline row is no longer part of the
+                      click target; the title and description are. */}
                   <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-subtle">
                     <span className="font-semibold uppercase tracking-overline text-content-muted">
-                      {item.list.userName} created a list
+                      <UserNameLink
+                        userName={item.list.userName}
+                        username={usernameFor(usernames, item.list.userEmail)}
+                      />{" "}
+                      created a list
                     </span>
                     <span aria-hidden="true">·</span>
                     <time dateTime={new Date(item.list.createdAt).toISOString()}>
                       {new Date(item.list.createdAt).toLocaleDateString()}
                     </time>
                   </div>
-                  <h2 className="mt-2 flex min-w-0 items-start gap-2 break-words font-display text-xl font-medium leading-tight text-content transition-colors group-hover:text-highlight">
-                    <List className="mt-1 h-4 w-4 shrink-0 text-highlight" aria-hidden="true" />
-                    <span className="min-w-0 break-words">{item.list.title}</span>
-                  </h2>
-                  {item.list.description && (
-                    <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-content-muted">
-                      {item.list.description}
-                    </p>
-                  )}
-                </Link>
+                  <Link
+                    href={`/lists/${item.list._id}`}
+                    className="kin-focus group block py-0.5"
+                  >
+                    <h2 className="mt-2 flex min-w-0 items-start gap-2 break-words font-display text-xl font-medium leading-tight text-content transition-colors group-hover:text-highlight">
+                      <List className="mt-1 h-4 w-4 shrink-0 text-highlight" aria-hidden="true" />
+                      <span className="min-w-0 break-words">{item.list.title}</span>
+                    </h2>
+                    {item.list.description && (
+                      <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-content-muted">
+                        {item.list.description}
+                      </p>
+                    )}
+                  </Link>
+                </div>
               </li>
             );
           })}

@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
 
-type PageWidth = "page" | "frame" | "standard" | "reading" | "control";
+type PageWidth = "page" | "frame" | "standard";
 
 const widthClasses: Record<PageWidth, string> = {
   page: "max-w-page",
   frame: "max-w-frame",
   standard: "max-w-5xl",
-  reading: "max-w-reading",
-  control: "max-w-control",
 };
 
 export default function PageContainer({

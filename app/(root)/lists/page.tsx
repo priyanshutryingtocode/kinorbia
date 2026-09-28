@@ -17,6 +17,8 @@ import VisibilityBadge from "@/components/VisibilityBadge";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import dbConnect from "@/lib/dbConnect";
 import { formatDate, mediaHref, mediaKey, tmdbImage } from "@/lib/media";
+import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
+import UserNameLink from "@/components/UserNameLink";
 import { serializeFavorites, serializeList, type RawFavoriteMovie, type RawMovieList } from "@/lib/serialize";
 import MovieList from "@/models/MovieList";
 import User from "@/models/User";
@@ -59,10 +61,12 @@ function ListRow({
   list,
   favorites,
   currentUserEmail,
+  usernames,
 }: {
   list: MovieListItem;
   favorites: FavoriteMovie[];
   currentUserEmail: string;
+  usernames: Map<string, string>;
 }) {
   const previews = list.movies.slice(0, 5);
   const isOwner = list.userEmail.toLowerCase() === currentUserEmail;
@@ -85,7 +89,9 @@ function ListRow({
           </Link>
         </h3>
         <p className="mt-1.5 text-xs text-content-subtle">
-          By {list.userName} · {formatDate(list.createdAt)}
+          By{" "}
+          <UserNameLink userName={list.userName} username={usernameFor(usernames, list.userEmail)} /> ·{" "}
+          {formatDate(list.createdAt)}
         </p>
         {list.description && (
           <p className="mt-3 line-clamp-2 text-sm leading-6 text-content-muted">
@@ -232,6 +238,8 @@ export default async function ListsPage() {
     } | null>(),
   ]);
   const lists = rawLists.map(serializeList);
+  // Byline targets for the page, in one read.
+  const usernames = await buildUsernameMap(lists.map((list) => list.userEmail));
   const favorites = serializeFavorites(user?.favorites);
 
   return (
@@ -322,6 +330,7 @@ export default async function ListsPage() {
                   list={list}
                   favorites={favorites}
                   currentUserEmail={currentUserEmail}
+                  usernames={usernames}
                 />
               ))}
             </div>

@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
-import HeaderBlock, { HEADINGS, type HeadingLevel } from "@/components/HeaderBlock";
+import HeaderBlock from "@/components/HeaderBlock";
 
-export type SectionHeaderProps = {
+type SectionHeaderProps = {
   eyebrow?: ReactNode;
   title?: ReactNode;
   description?: ReactNode;
-  actions?: ReactNode;
   id?: string;
-  headingLevel?: HeadingLevel;
   className?: string;
 };
 
@@ -15,9 +13,7 @@ export default function SectionHeader({
   eyebrow,
   title,
   description,
-  actions,
   id,
-  headingLevel = 2,
   className = "",
 }: SectionHeaderProps) {
   const headingId = id && title !== undefined && title !== null ? `${id}-heading` : undefined;
@@ -29,9 +25,8 @@ export default function SectionHeader({
           eyebrow={eyebrow}
           title={title}
           titleId={headingId}
-          titleTag={HEADINGS[headingLevel]}
+          titleTag="h2"
           description={description}
-          actions={actions}
           rowClassName="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
           textClassName="min-w-0"
           eyebrowClassName="kin-overline mb-1.5 text-highlight/80"

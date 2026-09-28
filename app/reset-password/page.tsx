@@ -60,9 +60,9 @@ function ResetPasswordForm() {
 
   if (done) {
     return (
-      <div className="mt-6 flex flex-col items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+      <div className="mt-6 flex flex-col items-start gap-3 rounded-sheet border border-emerald-500/20 bg-emerald-500/10 p-4">
         <CheckCircle2 className="h-6 w-6 text-emerald-400" />
-        <p className="text-sm text-neutral-200">
+        <p className="text-sm text-content">
           Your password has been updated. You can now sign in.
         </p>
         <Link href="/login" className="text-sm font-bold text-red-400 hover:underline">
@@ -75,7 +75,7 @@ function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
       <div className="relative">
-        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
+        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-content-subtle" />
         <input
           type="password"
           value={password}
@@ -84,12 +84,12 @@ function ResetPasswordForm() {
           required
           minLength={8}
           autoComplete="new-password"
-          className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm placeholder:text-neutral-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50"
+          className="kin-input kin-input-affix py-3.5"
         />
       </div>
 
       <div className="relative">
-        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
+        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-content-subtle" />
         <input
           type="password"
           value={confirm}
@@ -98,12 +98,12 @@ function ResetPasswordForm() {
           required
           minLength={8}
           autoComplete="new-password"
-          className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm placeholder:text-neutral-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50"
+          className="kin-input kin-input-affix py-3.5"
         />
       </div>
 
       {error && (
-        <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+        <p className="text-xs text-red-300 bg-accent-hover/10 border border-accent/20 rounded-sheet px-3 py-2">
           {error}
         </p>
       )}
@@ -111,7 +111,7 @@ function ResetPasswordForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-70 text-white font-semibold text-sm py-3.5 rounded-xl flex items-center justify-center gap-2 transition"
+        className="w-full bg-accent hover:bg-accent-hover disabled:opacity-70 text-content font-semibold text-sm py-3.5 rounded-control flex items-center justify-center gap-2 transition"
       >
         {loading && <Loader2 className="h-4 w-4 animate-spin" />}
         Set new password
@@ -122,10 +122,10 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 p-6 text-white">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-neutral-900/50 p-8">
+    <div className="flex min-h-screen items-center justify-center bg-canvas p-6 text-content">
+      <div className="w-full max-w-md rounded-overlay border border-rule bg-surface-raised/50 p-8">
         <h1 className="text-2xl font-bold">Choose a new password</h1>
-        <p className="mt-2 text-sm text-neutral-400">Enter and confirm your new password below.</p>
+        <p className="mt-2 text-sm text-content-muted">Enter and confirm your new password below.</p>
         <Suspense fallback={null}>
           <ResetPasswordForm />
         </Suspense>

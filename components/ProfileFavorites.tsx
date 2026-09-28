@@ -69,7 +69,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
 
   if (initialFavorites.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 rounded-sm border-y border-dashed border-white/10 bg-white/[0.02] px-6 py-10 text-center text-neutral-500">
+      <div className="flex flex-col items-center justify-center gap-4 rounded-sm border-y border-dashed border-rule bg-white/[0.02] px-6 py-10 text-center text-content-subtle">
         <Film className="h-12 w-12 opacity-30" aria-hidden="true" />
         <p>You have not added any favorites yet.</p>
         <Link href="/" className="kin-focus rounded-sm text-sm font-semibold text-red-300 transition hover:text-red-200">
@@ -112,17 +112,17 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
               type="button"
               onClick={closeDialog}
               disabled={loading}
-              className="kin-focus absolute right-4 top-4 rounded-full border border-white/10 bg-white/5 p-2 text-neutral-400 transition hover:text-white disabled:opacity-50"
+              className="kin-focus absolute right-4 top-4 rounded-full border border-rule bg-surface p-2 text-content-muted transition hover:text-content disabled:opacity-50"
               aria-label="Close rating dialog"
             >
               <X className="h-4 w-4" />
             </button>
             <div className="pr-10 text-center">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">Your rating</p>
-              <h2 id="rate-title-dialog" className="mt-1 font-display text-2xl font-bold text-white">
+              <h2 id="rate-title-dialog" className="mt-1 font-display text-2xl font-medium text-content">
                 {selectedMovie.title}
               </h2>
-              <p className="mt-2 text-sm text-neutral-500">Choose a score from 1 to 10.</p>
+              <p className="mt-2 text-sm text-content-subtle">Choose a score from 1 to 10.</p>
             </div>
 
             <div className="mt-6 grid grid-cols-5 gap-2" role="group" aria-label={`Rating for ${selectedMovie.title}`}>
@@ -136,8 +136,8 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
                   aria-pressed={selectedMovie.personalRating === rating}
                   className={`kin-focus flex h-11 items-center justify-center rounded-full border text-sm font-bold transition disabled:opacity-50 ${
                     selectedMovie.personalRating === rating
-                      ? "border-yellow-400 bg-yellow-400 text-black"
-                      : "border-white/10 bg-white/5 text-neutral-300 hover:border-yellow-500/50 hover:text-yellow-300"
+                      ? "border-highlight bg-highlight text-black"
+                      : "border-rule bg-surface text-content hover:border-highlight/50 hover:text-highlight"
                   }`}
                 >
                   {rating}
@@ -145,13 +145,13 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
               ))}
             </div>
 
-            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-neutral-500">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin text-yellow-400" /> : <Star className="h-4 w-4 text-yellow-400" />}
+            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-content-subtle">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin text-highlight" /> : <Star className="h-4 w-4 text-highlight" />}
               {loading ? "Saving rating..." : "Ratings are shown out of five stars."}
             </div>
 
             {error && (
-              <p role="alert" className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+              <p role="alert" className="mt-4 rounded-sheet border border-accent/20 bg-accent-hover/10 px-3 py-2 text-sm text-red-200">
                 {error}
               </p>
             )}

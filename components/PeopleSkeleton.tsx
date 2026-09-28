@@ -10,9 +10,9 @@ export default function PeopleSkeleton() {
         <Skeleton className="mt-5 h-3 w-28" />
         <Skeleton className="mt-2 h-10 w-64 max-w-full" />
         <Skeleton className="mt-6 h-12 w-full" />
-        <div className="mt-5 border-y border-white/10">
+        <div className="mt-5 border-y border-rule">
           {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="flex items-center gap-3 border-b border-white/10 py-3 last:border-b-0">
+            <div key={index} className="flex items-center gap-3 border-b border-rule py-3 last:border-b-0">
               <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-3 w-32" />

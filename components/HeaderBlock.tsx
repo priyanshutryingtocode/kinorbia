@@ -1,19 +1,10 @@
 import type { ElementType, ReactNode } from "react";
 
-// Shared by PageHeader, SectionHeader, and FormPanel, which each declared the
-// same 1->h1, 2->h2, ... map while already sharing this base component.
-export const HEADINGS = {
-  1: "h1",
-  2: "h2",
-  3: "h3",
-  4: "h4",
-  5: "h5",
-  6: "h6",
-} as const;
-
-export type HeadingLevel = keyof typeof HEADINGS;
-
-export type HeaderBlockProps = {
+// Shared by PageHeader, SectionHeader, and FormPanel. Each of those takes a
+// literal `titleTag` now ("h1" for the page, "h2" for a section) rather than
+// routing a `headingLevel` number through a 1->h1, 2->h2 map, which no call
+// site varied -- so the map had no consumers left and is gone.
+type HeaderBlockProps = {
   eyebrow?: ReactNode;
   title?: ReactNode;
   titleId?: string;

@@ -18,13 +18,13 @@ export default function ProfileSkeleton({ publicProfile = false }: { publicProfi
             </div>
           </div>
         </div>
-        <div className={`mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-white/10 bg-white/10 ${publicProfile ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
+        <div className={`mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-rule bg-surface-raised ${publicProfile ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
           {Array.from({ length: statCount }).map((_, index) => (
-            <Skeleton key={index} className="h-24 rounded-none bg-neutral-950" />
+            <Skeleton key={index} className="h-24 rounded-none bg-canvas" />
           ))}
         </div>
         {!publicProfile && (
-          <div className="mt-6 flex gap-4 overflow-hidden border-b border-white/10">
+          <div className="mt-6 flex gap-4 overflow-hidden border-b border-rule">
             {Array.from({ length: 7 }).map((_, index) => (
               <Skeleton key={index} className="h-8 w-16 shrink-0 rounded-none" />
             ))}

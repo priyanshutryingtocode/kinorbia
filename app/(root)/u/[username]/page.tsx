@@ -130,7 +130,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         {!currentEmail && (
           <Link
             href="/login"
-            className="kin-focus inline-flex items-center rounded-sm bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-500"
+            className="kin-focus inline-flex items-center rounded-sm bg-accent px-3 py-1.5 text-xs font-semibold text-content transition-colors hover:bg-accent-hover"
           >
             Sign in to follow
           </Link>
@@ -138,7 +138,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         {isSelf && (
           <Link
             href="/profile"
-            className="kin-focus inline-flex items-center rounded-sm border border-white/10 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition-colors hover:border-gold/40 hover:text-white"
+            className="kin-focus inline-flex items-center rounded-sm border border-rule px-3 py-1.5 text-xs font-semibold text-content transition-colors hover:border-gold/40 hover:text-content"
           >
             Edit your profile
           </Link>
@@ -171,7 +171,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                   <Link
                     key={mediaKey(movie.mediaType, movie.movieId)}
                     href={mediaHref(movie.mediaType, movie.movieId)}
-                    className="kin-focus group relative block aspect-2/3 overflow-hidden rounded-sm border border-white/10 bg-neutral-950 transition-colors hover:border-gold/40"
+                    className="kin-focus group relative block aspect-2/3 overflow-hidden rounded-sm border border-rule bg-canvas transition-colors hover:border-gold/40"
                     aria-label={`${movie.title} (${normalizeMediaType(movie.mediaType) === "tv" ? "TV show" : "movie"})`}
                   >
                     {poster ? (
@@ -204,7 +204,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
             description={reviews.length < publicReviewCount ? `Showing ${reviews.length} of ${publicReviewCount} public reviews.` : undefined}
           >
             {reviews.length ? (
-              <div className="border-y border-white/10">
+              <div className="border-y border-rule">
                 {reviews.map((review) => {
                   const mediaType = normalizeMediaType(review.mediaType);
                   const href = review.movieId ? mediaHref(mediaType, review.movieId) : "/reviews";
@@ -212,13 +212,13 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                   return (
                     <article
                       key={review._id.toString()}
-                      className="border-b border-white/10 py-4 last:border-b-0"
+                      className="border-b border-rule py-4 last:border-b-0"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <h3>
                           <Link
                             href={href}
-                            className="kin-focus rounded-sm font-display text-base font-medium text-white transition-colors hover:text-gold"
+                            className="kin-focus rounded-sm font-display text-base font-medium text-content transition-colors hover:text-gold"
                           >
                             {review.movieTitle}
                           </Link>
@@ -232,7 +232,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                       {review.spoiler ? (
                         <SpoilerText text={review.body} />
                       ) : (
-                        <p className="mt-2 line-clamp-4 text-sm leading-6 text-neutral-400">
+                        <p className="mt-2 line-clamp-4 text-sm leading-6 text-content-muted">
                           {review.body}
                         </p>
                       )}
@@ -252,23 +252,23 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
             description={lists.length < publicListCount ? `Showing ${lists.length} of ${publicListCount} public lists.` : undefined}
           >
             {lists.length ? (
-              <div className="border-y border-white/10">
+              <div className="border-y border-rule">
                 {lists.map((list) => (
                   <Link
                     key={list._id.toString()}
                     href={`/lists/${list._id}`}
-                    className="kin-focus group block border-b border-white/10 py-4 transition-colors last:border-b-0 hover:bg-neutral-900/30"
+                    className="kin-focus group block border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/30"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="font-display text-base font-medium text-white group-hover:text-gold">
+                      <h3 className="font-display text-base font-medium text-content group-hover:text-gold">
                         {list.title}
                       </h3>
-                      <span className="shrink-0 text-xs text-neutral-400">
+                      <span className="shrink-0 text-xs text-content-muted">
                         {list.movieCount} titles
                       </span>
                     </div>
                     {list.description && (
-                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-neutral-400">
+                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-content-muted">
                         {list.description}
                       </p>
                     )}

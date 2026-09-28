@@ -88,7 +88,7 @@ export default async function TvPage({ params }: Props) {
   };
 
   return (
-    <div className="relative overflow-hidden pb-20 text-white">
+    <div className="relative overflow-hidden pb-20 text-content">
       <div className="absolute inset-x-0 top-0 h-[55svh] opacity-50 sm:h-[70svh] lg:h-svh">
         {backdrop && (
           <TmdbPosterImage
@@ -100,7 +100,7 @@ export default async function TvPage({ params }: Props) {
             className="object-cover"
           />
         )}
-        <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/20" />
+        <div className="absolute inset-0 bg-linear-to-t from-canvas via-canvas/70 to-canvas/20" />
         <div className="film-grain absolute inset-0" aria-hidden />
       </div>
 
@@ -114,10 +114,10 @@ export default async function TvPage({ params }: Props) {
                 width={320}
                 height={480}
                 priority
-                className="aspect-2/3 w-full rotate-1 rounded-lg border border-white/10 object-cover shadow-[0_28px_80px_-44px_rgba(0,0,0,0.95)] transition-transform duration-500 hover:rotate-0"
+                className="aspect-2/3 w-full rotate-1 rounded-sheet border border-rule object-cover shadow-[0_28px_80px_-44px_rgba(0,0,0,0.95)] transition-transform duration-500 hover:rotate-0"
               />
             ) : (
-              <div className="flex aspect-2/3 w-full rotate-1 items-center justify-center rounded-lg border border-white/10 bg-neutral-900 shadow-[0_28px_80px_-44px_rgba(0,0,0,0.95)] transition-transform duration-500 hover:rotate-0">
+              <div className="flex aspect-2/3 w-full rotate-1 items-center justify-center rounded-sheet border border-rule bg-surface-raised shadow-[0_28px_80px_-44px_rgba(0,0,0,0.95)] transition-transform duration-500 hover:rotate-0">
                 <Clapperboard className="h-10 w-10 text-neutral-700" />
               </div>
             )}
@@ -125,41 +125,41 @@ export default async function TvPage({ params }: Props) {
 
           <div className="min-w-0">
             <p className="mb-3 text-xs font-bold uppercase tracking-overline text-gold">
-              {releaseYear} <span className="mx-2 text-white/20">—</span> Series
+              {releaseYear} <span className="mx-2 text-content/20">—</span> Series
             </p>
-            <h1 className="font-display max-w-3xl text-4xl font-bold leading-editorial text-white sm:text-5xl">
+            <h1 className="font-display max-w-3xl text-4xl font-medium leading-editorial text-content sm:text-5xl">
               {tv.name}
             </h1>
             {tv.tagline && (
-              <p className="font-display mt-3 max-w-2xl text-base italic leading-7 text-neutral-300 sm:text-lg">
+              <p className="font-display mt-3 max-w-2xl text-base italic leading-7 text-content sm:text-lg">
                 “{tv.tagline}”
               </p>
             )}
 
-            <div className="mt-6 flex flex-wrap items-center gap-2 text-sm font-medium text-neutral-300">
-              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 backdrop-blur-md">
-                <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+            <div className="mt-6 flex flex-wrap items-center gap-2 text-sm font-medium text-content">
+              <div className="flex items-center gap-2 rounded-full border border-rule bg-black/30 px-3 py-1.5 backdrop-blur-md">
+                <Star className="h-4 w-4 fill-highlight text-highlight" />
                 <span>{ratingLabel}</span>
               </div>
               {tv.number_of_seasons != null && (
-                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 backdrop-blur-md">
-                  <Layers className="h-4 w-4 text-neutral-400" />
+                <div className="flex items-center gap-2 rounded-full border border-rule bg-black/30 px-3 py-1.5 backdrop-blur-md">
+                  <Layers className="h-4 w-4 text-content-muted" />
                   <span>{tv.number_of_seasons} {tv.number_of_seasons === 1 ? "season" : "seasons"}</span>
                 </div>
               )}
-              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 backdrop-blur-md">
-                <Calendar className="h-4 w-4 text-neutral-400" />
+              <div className="flex items-center gap-2 rounded-full border border-rule bg-black/30 px-3 py-1.5 backdrop-blur-md">
+                <Calendar className="h-4 w-4 text-content-muted" />
                 <span>{tv.first_air_date || "Release date TBA"}</span>
               </div>
               {personalRating > 0 && (
-                <div className="flex items-center gap-2 rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1.5 text-yellow-300">
+                <div className="flex items-center gap-2 rounded-full border border-highlight/20 bg-highlight/10 px-3 py-1.5 text-highlight">
                   <Star className="h-4 w-4 fill-current" />
                   <span>Your {(personalRating / 2).toFixed(1)} stars</span>
                 </div>
               )}
             </div>
 
-            <div className="mt-8 rounded-lg border border-white/10 bg-neutral-950/70 p-4 backdrop-blur-xl sm:p-5">
+            <div className="mt-8 rounded-sheet border border-rule bg-canvas/70 p-4 backdrop-blur-xl sm:p-5">
               <div className="flex flex-wrap items-center gap-3">
                 {trailer && <TrailerButton videoKey={trailer.key} title={tv.name} />}
                 <FavoriteButton movie={show} initialIsFavorite={isFavorite} />
@@ -171,19 +171,18 @@ export default async function TvPage({ params }: Props) {
               </div>
             </div>
 
-            <div className="mt-8 h-px w-12 bg-gold/40" />
-            <p className="mt-6 max-w-3xl text-base leading-relaxed text-neutral-300 sm:text-lg">
+            <p className="mt-6 max-w-3xl text-base leading-relaxed text-content sm:text-lg">
               {tv.overview || "No overview is available for this show yet."}
             </p>
           </div>
         </div>
 
         {topCast.length > 0 && (
-          <section className="mt-14 border-t border-white/10 pt-8">
-            <h2 className="font-display mb-5 text-2xl font-bold">Top Cast</h2>
+          <section className="mt-14 border-t border-rule pt-8">
+            <h2 className="font-display mb-5 text-2xl font-medium">Top Cast</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {topCast.map((member) => (
-                <div key={member.id} className="rounded-lg border border-white/10 bg-neutral-900/50 p-3 text-center">
+                <div key={member.id} className="rounded-sheet border border-rule bg-surface-raised/50 p-3 text-center">
                   {member.profile_path ? (
                     <Image
                       src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
@@ -194,14 +193,14 @@ export default async function TvPage({ params }: Props) {
                       className="mx-auto aspect-square rounded-full object-cover"
                     />
                   ) : (
-                    <div className="mx-auto flex aspect-square w-30 items-center justify-center rounded-full bg-neutral-800">
-                      <span className="text-3xl font-bold text-neutral-500">
+                    <div className="mx-auto flex aspect-square w-30 items-center justify-center rounded-full bg-surface-raised">
+                      <span className="text-3xl font-bold text-content-subtle">
                         {member.name.trim().charAt(0).toUpperCase()}
                       </span>
                     </div>
                   )}
-                  <p className="mt-3 text-sm font-semibold text-white">{member.name}</p>
-                  <p className="mt-1 text-xs text-neutral-400">
+                  <p className="mt-3 text-sm font-semibold text-content">{member.name}</p>
+                  <p className="mt-1 text-xs text-content-muted">
                     {member.character || "—"}
                   </p>
                 </div>

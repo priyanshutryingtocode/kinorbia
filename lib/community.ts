@@ -3,19 +3,23 @@ import User from "@/models/User";
 import type { FavoriteMovie, MediaType } from "@/types";
 import { normalizeMediaType, mediaKey } from "@/lib/media";
 
-export type CommunityComparisonItem = {
+type CommunityComparisonItem = {
   title: string;
   posterPath: string | null;
   mediaType: MediaType;
   movieId: string;
   yours: number;
-  community: number | null;
+  // Non-null: `items` is a slice of `comparableItems`, which is filtered to
+  // `community !== null`.
+  community: number;
   count: number;
   delta: number;
 };
 
-export type CommunityComparison = {
-  overallCommunityAvg: number | null;
+type CommunityComparison = {
+  // Non-null: a reduce over `comparableItems`, which the guard above proves
+  // non-empty, so the quotient is a real number.
+  overallCommunityAvg: number;
   userComparableAvg: number;
   comparableCount: number;
   communityRatingCount: number;
@@ -82,6 +86,10 @@ export async function buildCommunityComparison(
     existing.count = count;
   }
 
+  // A title nobody else has rated has no community average, so it cannot be
+  // compared. The type predicate drops those rows and narrows `community` to a
+  // real number, which is why the item type above is not `number | null` -- the
+  // filter below is what guarantees it, and the compiler needs to see that.
   const comparableItems: CommunityComparisonItem[] = rated
     .map((favorite) => {
       const mediaType = normalizeMediaType(favorite.mediaType);
@@ -98,14 +106,14 @@ export async function buildCommunityComparison(
         delta: community ? (favorite.personalRating || 0) / 2 - community.avg / 2 : 0,
       };
     })
-    .filter((item) => item.community !== null);
+    .filter((item): item is CommunityComparisonItem => item.community !== null);
 
   if (comparableItems.length === 0) {
     return null;
   }
 
   const overallCommunityAvg =
-    comparableItems.reduce((sum, item) => sum + (item.community || 0), 0) / comparableItems.length;
+    comparableItems.reduce((sum, item) => sum + item.community, 0) / comparableItems.length;
   const userComparableAvg =
     comparableItems.reduce((sum, item) => sum + item.yours, 0) / comparableItems.length;
   const items = [...comparableItems]

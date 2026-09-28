@@ -26,11 +26,6 @@ export const registerSchema = z.object({
   password: z.string().min(8).max(72),
 });
 
-const addToListSchema = z.object({
-  listId: z.string().min(1),
-  movie: movieRefSchema,
-});
-
 export const assistantPromptSchema = z.object({
   message: z.string().trim().min(1).max(2000),
 });
@@ -62,14 +57,6 @@ function normalizeMovieRef(raw: unknown): unknown {
 
 export function parseMovieBody<T extends z.ZodType>(req: Request, schema: T): Promise<z.infer<T> | null> {
   return parseJson(req, schema, (json) => (Array.isArray(json) ? json : normalizeMovieRef(json)));
-}
-
-export function parseAddToListBody(req: Request): Promise<z.infer<typeof addToListSchema> | null> {
-  return parseJson(req, addToListSchema, (json) => {
-    const obj = (json && typeof json === "object" ? json : {}) as Record<string, unknown>;
-    const movie = obj.movie ? normalizeMovieRef(obj.movie) : obj.movie;
-    return { ...obj, movie };
-  });
 }
 
 export function badRequest(message = "Invalid input.") {

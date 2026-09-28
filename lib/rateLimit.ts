@@ -23,7 +23,7 @@ function getRatelimit({ limit, windowMs }: LimitOptions): Ratelimit {
   return rl;
 }
 
-export function getClientIp(req: Request): string {
+function getClientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
     const hops = forwarded.split(",").map((hop) => hop.trim()).filter(Boolean);
@@ -64,7 +64,7 @@ export function withRateLimit(
   };
 }
 
-export function tooManyRequests(windowMs: number) {
+function tooManyRequests(windowMs: number) {
   return NextResponse.json(
     { message: "Too many requests. Please try again later." },
     {

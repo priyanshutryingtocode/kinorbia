@@ -2,7 +2,7 @@ import User from "@/models/User";
 import { mediaEquals, normalizeMediaType } from "@/lib/media";
 import type { MediaType } from "@/types";
 
-export type EmbeddedMediaToggle = "added" | "removed" | "full" | "missing";
+type EmbeddedMediaToggle = "added" | "removed" | "full" | "missing";
 
 // The add-first toggle that both `POST /api/user/favorites` and
 // `POST /api/user/watchlist` were written as, in full, twice.
