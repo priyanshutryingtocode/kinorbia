@@ -62,10 +62,35 @@ type ResultList<T> = { results?: T[] };
 
 type MediaPath = "movie" | "tv";
 
+// TMDB rejects anything past page 500.
+export const MAX_TMDB_PAGE = 500;
+
+// TMDB's page size. The browse actions need it as the target for a "load more":
+// it is the one number that divides the 2, 4 and 5 column browse grids exactly,
+// so a click has to add exactly this many *new* titles or the final row is short.
+export const TMDB_PAGE_SIZE = 20;
+
 // Coerce untrusted page/genre values into safe URL fragments.
 function safePage(page: unknown) {
   const n = Number(page);
-  return Number.isInteger(n) && n >= 1 && n <= 500 ? n : 1;
+  return Number.isInteger(n) && n >= 1 && n <= MAX_TMDB_PAGE ? n : 1;
+}
+
+// Whether a browse page number is still fetchable.
+//
+// TMDB rejects anything past page 500, and `safePage` responds to an
+// out-of-range page by folding it back to 1. That is the right behaviour for a
+// single request but catastrophic for paging: a caller that kept asking would be
+// handed page 1's contents as brand-new cards, over and over, with
+// `hasMore: true` every time and no way out. So the browse actions check this
+// first and report the list as finished instead of asking.
+//
+// These are server-action arguments, so a non-integer can arrive here too, and
+// that reaches the same trap by a different route: `NaN` fails the `<=` test
+// below, passes through, and gets folded to 1.
+export function isFetchablePage(page: unknown): boolean {
+  const n = Number(page);
+  return Number.isInteger(n) && n >= 1 && n <= MAX_TMDB_PAGE;
 }
 
 function safeGenre(genre: string | undefined) {
@@ -179,15 +204,15 @@ function discoverWithParams(mediaType: MediaPath, extraParams: string, page: num
   const params = extraParams.replace(/^&/, "");
   return fetchNormalizedList(
     mediaType,
-    `/discover/${mediaType}?${params ? `${params}&` : ""}language=en-US&page=${page}`,
+    `/discover/${mediaType}?${params ? `${params}&` : ""}language=en-US&page=${safePage(page)}`,
     300
   );
 }
 
-function searchByQuery(mediaType: MediaPath, query: string, extraParams: string) {
+function searchByQuery(mediaType: MediaPath, query: string, extraParams: string, page: number) {
   return fetchNormalizedList(
     mediaType,
-    `/search/${mediaType}?query=${encodeURIComponent(query)}${extraParams}`,
+    `/search/${mediaType}?query=${encodeURIComponent(query)}${extraParams}&page=${safePage(page)}`,
     3600
   );
 }
@@ -211,8 +236,8 @@ export const getDiscoverMovies = (page = 1, genre?: string) =>
 export const discoverMovies = (extraParams = "", page = 1) =>
   discoverWithParams("movie", extraParams, page);
 
-export const searchMovies = (query: string, extraParams = "") =>
-  searchByQuery("movie", query, extraParams);
+export const searchMovies = (query: string, extraParams = "", page = 1) =>
+  searchByQuery("movie", query, extraParams, page);
 
 export async function getMovieWithStatus(id: string): Promise<{
   movie: TmdbMovieDetails | null;
@@ -240,7 +265,8 @@ export const getDiscoverTv = (page = 1, genre?: string) => discoverByGenre("tv",
 export const discoverTv = (extraParams = "", page = 1) =>
   discoverWithParams("tv", extraParams, page);
 
-export const searchTv = (query: string, extraParams = "") => searchByQuery("tv", query, extraParams);
+export const searchTv = (query: string, extraParams = "", page = 1) =>
+  searchByQuery("tv", query, extraParams, page);
 
 export async function getTvWithStatus(id: string): Promise<{
   tv: TmdbTvDetails | null;

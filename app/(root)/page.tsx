@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import RouteShell from "@/components/RouteShell";
-import MovieCard from "@/components/MovieCard";
-import LoadMore from "@/components/LoadMore";
+import MovieGrid from "@/components/MovieGrid";
 import GenreFilter from "@/components/GenreFilter";
 import RecommendationsSkeleton from "@/components/RecommendationsSkeleton";
 import Recommendations from "./Recommendations";
@@ -16,10 +15,25 @@ type Props = {
 export default async function Home({ searchParams }: Props) {
   const { genre } = await searchParams;
 
-  const movies = await fetchMovies(1, genre);
+  const { results: movies } = await fetchMovies({ page: 1, genre });
 
   return (
     <RouteShell spacing="immersive" width="page">
+
+      {/* The page heading comes first. It used to sit below <Recommendations>,
+          which emitted an <h2> in the same display serif above the <h1> -- two
+          competing headings in one viewport and no hierarchy at all. */}
+      <div className="mb-8 max-w-3xl">
+        <p className="mb-3 text-xs font-medium uppercase tracking-overline text-highlight">
+          KinOrbia Picks
+        </p>
+        <h1 className="font-display mb-3 text-4xl font-medium leading-editorial text-content md:text-5xl">
+          {genre ? "Discover" : "Popular"} <span className="italic font-normal text-accent-hover">Movies</span>
+        </h1>
+        <p className="max-w-xl text-base leading-7 text-content-muted">
+          {genre ? "Explore movies in your selected genre." : "Trending films from around the globe"}
+        </p>
+      </div>
 
       {!genre && (
         <Suspense fallback={<RecommendationsSkeleton />}>
@@ -27,27 +41,17 @@ export default async function Home({ searchParams }: Props) {
         </Suspense>
       )}
 
-      <div className="mb-8 max-w-3xl">
-        <p className="mb-3 text-xs font-bold uppercase tracking-overline text-gold">
-          KinOrbia Picks
-        </p>
-        <h1 className="font-display mb-3 text-4xl font-bold leading-editorial text-white md:text-5xl">
-          {genre ? "Discover" : "Popular"} <span className="italic font-normal text-red-500">Movies</span>
-        </h1>
-        <p className="max-w-xl text-base leading-7 text-neutral-400">
-          {genre ? "Explore movies in your selected genre." : "Trending films from around the globe"}
-        </p>
-        <div className="mt-4 h-px w-12 bg-gold/40" />
-      </div>
-
       <GenreFilter mediaType="movie" />
 
       {movies.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {movies.map((movie, index) => (
-            <MovieCard key={movie.id} movie={movie} index={index} />
-          ))}
-        </div>
+        // One grid rather than a page grid plus a second grid for the button's
+        // additions: two grids meant a short row could land mid-page.
+        <MovieGrid
+          key={genre || "all"}
+          initialItems={movies}
+          action={fetchMovies}
+          args={{ genre }}
+        />
       ) : (
         <EmptyState
           title="Couldn't load movies right now"
@@ -56,8 +60,6 @@ export default async function Home({ searchParams }: Props) {
           <RetryButton />
         </EmptyState>
       )}
-
-      {movies.length > 0 && <LoadMore key={genre || "all"} genre={genre} />}
 
     </RouteShell>
   );

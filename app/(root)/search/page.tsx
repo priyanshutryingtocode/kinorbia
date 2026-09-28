@@ -1,70 +1,18 @@
-import Link from "next/link";
-import { Film, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import type { Metadata } from "next";
 import RouteShell from "@/components/RouteShell";
 import PageHeader from "@/components/PageHeader";
 import SectionHeader from "@/components/SectionHeader";
 import LinkTabs from "@/components/LinkTabs";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
 import SearchHistory from "@/components/SearchHistory";
 import SearchTrackerForm from "@/components/SearchTrackerForm";
 import EmptyState from "@/components/EmptyState";
-import {
-  searchMovies as searchTmdbMovies,
-  discoverMovies,
-  searchTv as searchTmdbTv,
-  discoverTv,
-} from "@/lib/tmdb";
+import { fetchSearchResults } from "@/lib/search";
+import { fetchSearchPage } from "../../actions";
+import SearchResultCard from "@/components/SearchResultCard";
+import SearchLoadMore from "@/components/SearchLoadMore";
 import { CURATED_GENRES, curatedGenreName } from "@/lib/genres";
-import type { MovieSummary } from "@/types";
-import { mediaHref, normalizeMediaType, tmdbImage } from "@/lib/media";
-
-type SearchResponse = {
-  results: MovieSummary[];
-};
-
-async function searchContent({
-  query,
-  year,
-  genre,
-  minRating,
-  maxRuntime,
-  language,
-  sort,
-  type,
-}: {
-  query: string;
-  year: string;
-  genre: string;
-  minRating: number;
-  maxRuntime: string;
-  language: string;
-  sort: string;
-  type: "movie" | "tv";
-}): Promise<SearchResponse> {
-  const isTv = type === "tv";
-  const yearKey = isTv ? "first_air_date_year" : "primary_release_year";
-  const yearParam = year ? `&${yearKey}=${encodeURIComponent(year)}` : "";
-  const ratingParam = minRating ? `&vote_average.gte=${encodeURIComponent(minRating)}` : "";
-  const genreParam = genre ? `&with_genres=${encodeURIComponent(genre)}` : "";
-  const runtimeParam = !isTv && maxRuntime ? `&with_runtime.lte=${encodeURIComponent(maxRuntime)}` : "";
-  const languageParam = language ? `&with_original_language=${encodeURIComponent(language)}` : "";
-  const sortParam = sort ? `&sort_by=${encodeURIComponent(sort)}` : "&sort_by=popularity.desc";
-
-  if (!query && !year && !genre && !minRating && !maxRuntime && !language) {
-    return { results: [] };
-  }
-
-  if (query) {
-    const data = isTv ? await searchTmdbTv(query, yearParam) : await searchTmdbMovies(query, yearParam);
-    return { results: data?.results || [] };
-  }
-
-  const data = isTv
-    ? await discoverTv(yearParam + ratingParam + genreParam + languageParam + sortParam)
-    : await discoverMovies(yearParam + ratingParam + genreParam + runtimeParam + languageParam + sortParam);
-  return { results: data?.results || [] };
-}
+import { normalizeMediaType } from "@/lib/media";
 
 type SearchParams = {
   q?: string;
@@ -105,8 +53,18 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const selectedSort = typeof sort === "string" ? sort : "";
   const mediaType = type === "tv" ? "tv" : "movie";
   const isTv = mediaType === "tv";
+  // `selectedSort` counts as a filter because the page always sends a sort to
+  // TMDB (defaulting to popularity), so a sort-only visit is a real search --
+  // without it here, `?sort=rating.desc` fell through to "Start discovering" and
+  // never fetched anything.
   const hasNoFilters =
-    !query && !releaseYear && !selectedGenre && !minimumRating && !maxRuntime && !selectedLanguage;
+    !query &&
+    !releaseYear &&
+    !selectedGenre &&
+    !minimumRating &&
+    !maxRuntime &&
+    !selectedLanguage &&
+    !selectedSort;
 
   const buildTypeHref = (nextType: "movie" | "tv") => {
     const params = new URLSearchParams();
@@ -121,7 +79,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     return `?${params.toString()}`;
   };
 
-  const data = await searchContent({
+  const data = await fetchSearchResults({
     query,
     year: releaseYear,
     genre: selectedGenre,
@@ -130,13 +88,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     language: selectedLanguage,
     sort: selectedSort,
     type: mediaType,
-  });
-  const movies = data.results.filter((movie) => {
-    const matchesRating = !minimumRating || movie.vote_average >= minimumRating;
-    const matchesGenre = !query || !selectedGenre || movie.genre_ids?.includes(Number(selectedGenre));
-    const matchesLanguage = !query || !selectedLanguage || movie.original_language === selectedLanguage;
-    return matchesRating && matchesGenre && matchesLanguage;
-  });
+  }, 1);
+  // Already filtered by the action, so each page arrives ready to render. A
+  // client-side filter here would hide matches from the appended pages while
+  // leaving the "load more" control unable to tell that upstream still has some.
+  const movies = data.results;
 
   return (
     <RouteShell spacing="standard" width="page">
@@ -179,7 +135,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             />
             <button
               type="submit"
-              className="kin-focus absolute right-1.5 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center rounded-control bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
+              className="kin-focus absolute right-1.5 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center rounded-control bg-accent px-4 text-sm font-semibold text-content transition-colors hover:bg-accent-hover"
             >
               Search
             </button>
@@ -302,45 +258,31 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             className="mt-8"
           />
           <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {movies.map((movie) => {
-              const poster = tmdbImage(movie.poster_path, "w500");
-              const resultMediaType = normalizeMediaType(movie.mediaType);
-              const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
-              const href = mediaHref(resultMediaType, movie.id);
-
-              return (
-                <li key={`${resultMediaType}-${movie.id}`}>
-                  <Link
-                    href={href}
-                    className="kin-focus group block overflow-hidden rounded-control border border-rule bg-surface-raised transition-colors hover:border-highlight/40"
-                    aria-label={`${movie.title} (${releaseYear}, ${resultMediaType === "tv" ? "TV show" : "movie"})`}
-                  >
-                    <div className="relative aspect-2/3 overflow-hidden bg-surface-raised">
-                      {poster ? (
-                        <TmdbPosterImage
-                          src={poster}
-                          alt=""
-                          fill
-                          sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
-                          className="object-cover transition-opacity group-hover:opacity-80"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-content-subtle">
-                          <Film className="h-8 w-8" aria-hidden="true" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-3">
-                      <h3 className="truncate font-display text-base font-medium text-content transition-colors group-hover:text-highlight">
-                        {movie.title}
-                      </h3>
-                      <p className="mt-1 text-xs text-content-subtle">{releaseYear}</p>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
+            {movies.map((movie) => (
+              <SearchResultCard
+                key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`}
+                movie={movie}
+              />
+            ))}
           </ul>
+
+          {/* No `!hasNoFilters` guard needed: this sits inside the arm reached
+              only when `hasNoFilters` is already false, so the check was always
+              true. */}
+          <SearchLoadMore
+            key={`${query}|${selectedGenre}|${releaseYear}|${selectedLanguage}|${selectedSort}|${mediaType}`}
+            action={fetchSearchPage}
+            args={{
+              query,
+              year: releaseYear,
+              genre: selectedGenre,
+              minRating: minimumRating,
+              maxRuntime,
+              language: selectedLanguage,
+              sort: selectedSort,
+              type: mediaType,
+            }}
+          />
         </section>
       )}
     </RouteShell>
