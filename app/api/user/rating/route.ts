@@ -56,7 +56,12 @@ export const POST = withAuthedUser(
           "favorites.$.personalRating": clampedRating,
           "favorites.$.title": body.movieTitle,
           ...(body.posterPath ? { "favorites.$.posterPath": body.posterPath } : {}),
-          ...(body.voteAverage !== undefined ? { "favorites.$.voteAverage": body.voteAverage } : {}),
+          // Truthiness, matching the two lines around it. This used to be
+          // `!== undefined`, which was always true: `movieRefSchema` gives
+          // voteAverage a `.default(0)`, so an absent field arrives as 0 rather
+          // than undefined. Any client that omits it -- ProfileFavorites does --
+          // therefore overwrote a stored TMDB rating with 0.
+          ...(body.voteAverage ? { "favorites.$.voteAverage": body.voteAverage } : {}),
           ...(body.releaseDate ? { "favorites.$.releaseDate": body.releaseDate } : {}),
         },
       }

@@ -2,23 +2,23 @@ import type { FavoriteMovie, MediaType } from "@/types";
 import { genreName } from "@/lib/genres";
 import { mediaHref, normalizeMediaType } from "@/lib/media";
 
-export type MonthlyPoint = {
+type MonthlyPoint = {
   key: string;
   label: string;
   count: number;
 };
 
-export type StarBucket = {
+type StarBucket = {
   stars: number;
   count: number;
 };
 
-export type GenreBreakdown = {
+type GenreBreakdown = {
   name: string;
   count: number;
 };
 
-export type TopRatedItem = {
+type TopRatedItem = {
   title: string;
   posterPath: string | null;
   rating: number;
@@ -42,11 +42,14 @@ export type InsightsData = {
   topGenre: string | null;
 };
 
+// The minimum a watched row needs for insights. `posterPath` was declared here
+// and selected from the database for the watched list, but nothing in
+// buildInsights reads it -- TopRatedItem.posterPath (above) comes from the
+// *favorites* side, which is a different collection.
 type JournalLike = {
   watchedAt: string | Date;
   mediaType?: MediaType;
   movieTitle: string;
-  posterPath?: string | null;
   movieId?: string;
   _id?: string | number | { toString(): string };
 };

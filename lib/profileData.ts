@@ -31,7 +31,6 @@ export const PROFILE_PAGE_SIZES = {
 type JournalHistoryRecord = {
   _id: { toString: () => string };
   movieTitle: string;
-  posterPath?: string | null;
   watchedAt: Date;
   mediaType?: MediaType;
   movieId?: string;
@@ -48,7 +47,7 @@ export type ProfileIdentity = {
   following?: string[];
 };
 
-export type ProfileOverviewData = {
+type ProfileOverviewData = {
   favoriteCount: number;
   watchlistCount: number;
   reviewCount: number;
@@ -72,12 +71,12 @@ type ProfilePage<T> = {
   totalPages: number;
 };
 
-export type InsightsSource = {
+type InsightsSource = {
   favorites: FavoriteMovie[];
   journal: JournalHistoryRecord[];
 };
 
-export type PersonalMediaStatus = {
+type PersonalMediaStatus = {
   isFavorite: boolean;
   personalRating: number;
   isWatchlisted: boolean;
@@ -376,7 +375,7 @@ export async function getInsightsSource(email: string): Promise<InsightsSource> 
   const [favorites, journal] = await Promise.all([
     loadUserFavorites(email),
     JournalEntry.find({ userEmail: email })
-      .select("_id movieTitle posterPath watchedAt mediaType movieId")
+      .select("_id movieTitle watchedAt mediaType movieId")
       .lean<JournalHistoryRecord[]>(),
   ]);
   return { favorites, journal };
@@ -410,9 +409,17 @@ export async function getListPage(email: string, requestedPage: number): Promise
     { createdAt: -1, _id: -1 },
     requestedPage,
     PROFILE_PAGE_SIZES.lists,
-    // CompactList shows the title, description, and the number of titles, so the
-    // rest of each entry -- and the two unbounded social arrays -- stay put.
-    "_id title description movies.movieId"
+    // Every document-level field `serializeList` reads has to be here, and it
+    // reads them unconditionally: `createdAt.toISOString()` threw a TypeError
+    // when the projection omitted it, which broke this tab outright for anyone
+    // with at least one list. (Users with none never noticed, because `.map`
+    // over an empty array never calls the serializer.)
+    //
+    // The two unbounded social arrays are the only thing left out, which is the
+    // point of the projection -- a 500-title list does not need to ship the
+    // email lists of everyone who liked it. Same string as getProfileOverview's
+    // list query above, minus likedBy/savedBy.
+    "_id userEmail userName title description visibility createdAt movies.movieId"
   );
   return { items: rows.map(serializeList), ...bounds };
 }
