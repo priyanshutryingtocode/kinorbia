@@ -1,21 +1,21 @@
 import { auth } from "@/auth";
-import FavoriteButton from "@/components/FavouriteButton";
-import WatchedButton from "@/components/WatchedButton";
-import WatchlistButton from "@/components/WatchlistButton";
-import MovieRatingControl from "@/components/MovieRatingControl";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
-import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import { Calendar, Clapperboard, Layers, Star } from "lucide-react";
 import type { TmdbTvCredits, TmdbTvDetails } from "@/types";
 import type { Metadata } from "next";
-import SimilarMedia from "@/components/SimilarMedia";
-import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
-import TrailerButton from "@/components/TrailerButton";
-import PageContainer from "@/components/PageContainer";
-import { getTvWithStatus, getTvCredits, getTvVideos, pickMainTrailer } from "@/lib/tmdb";
-import { tmdbImage } from "@/lib/media";
+import MediaDetailPage from "@/components/MediaDetailPage";
+import {
+  getTvWithStatus,
+  getTvCredits,
+  getTvVideos,
+  pickMainTrailer,
+} from "@/lib/tmdb";
+import {
+  detailChips,
+  detailSummary,
+  detailYear,
+  seasonsChip,
+  topCast,
+} from "@/lib/mediaDetail";
 import { getPersonalMediaStatus } from "@/lib/profileData";
 
 async function getTvDetails(id: string): Promise<TmdbTvDetails> {
@@ -49,7 +49,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${tv.name}${year ? ` (${year})` : ""}`,
     description:
-      tv.tagline || (tv.overview ? tv.overview.slice(0, 160) : `Learn more about ${tv.name} on KinOrbia.`),
+      tv.tagline ||
+      (tv.overview ? tv.overview.slice(0, 160) : `Learn more about ${tv.name} on KinOrbia.`),
   };
 }
 
@@ -63,160 +64,41 @@ export default async function TvPage({ params }: Props) {
   ]);
   const trailer = pickMainTrailer(videos?.results);
 
-  const { isFavorite, personalRating, isWatchlisted, isWatched } = await getPersonalMediaStatus(
-    session?.user?.email,
-    id,
-    "tv"
-  );
-
-  const releaseYear = tv.first_air_date ? tv.first_air_date.split("-")[0] : "TBA";
-  const ratingLabel =
-    typeof tv.vote_average === "number" ? tv.vote_average.toFixed(1) : "N/A";
-
-  const topCast = [...credits.cast].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).slice(0, 6);
-  const backdrop = tmdbImage(tv.backdrop_path, "w1280");
-  const poster = tmdbImage(tv.poster_path, "w500");
-
-  const show = {
-    id: tv.id.toString(),
-    title: tv.name,
-    poster_path: tv.poster_path,
-    vote_average: tv.vote_average || 0,
-    release_date: tv.first_air_date,
-    mediaType: "tv" as const,
-    genre_ids: tv.genres?.map((genre) => genre.id) || [],
-  };
+  const personal = await getPersonalMediaStatus(session?.user?.email, id, "tv");
 
   return (
-    <div className="relative overflow-hidden pb-20 text-content">
-      <div className="absolute inset-x-0 top-0 h-[55svh] opacity-50 sm:h-[70svh] lg:h-svh">
-        {backdrop && (
-          <TmdbPosterImage
-            src={backdrop}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover"
-          />
-        )}
-        <div className="absolute inset-0 bg-linear-to-t from-canvas via-canvas/70 to-canvas/20" />
-        <div className="film-grain absolute inset-0" aria-hidden />
-      </div>
-
-      <PageContainer width="frame" className="relative pt-28 sm:pt-32">
-        <div className="relative grid gap-8 lg:grid-cols-[minmax(260px,360px)_1fr] lg:gap-12">
-          <div className="mx-auto w-full max-w-67.5 sm:max-w-82.5 lg:max-w-none">
-            {poster ? (
-              <TmdbPosterImage
-                src={poster}
-                alt={tv.name}
-                width={320}
-                height={480}
-                priority
-                className="aspect-2/3 w-full rotate-1 rounded-sheet border border-rule object-cover shadow-[0_28px_80px_-44px_rgba(0,0,0,0.95)] transition-transform duration-500 hover:rotate-0"
-              />
-            ) : (
-              <div className="flex aspect-2/3 w-full rotate-1 items-center justify-center rounded-sheet border border-rule bg-surface-raised shadow-[0_28px_80px_-44px_rgba(0,0,0,0.95)] transition-transform duration-500 hover:rotate-0">
-                <Clapperboard className="h-10 w-10 text-neutral-700" />
-              </div>
-            )}
-          </div>
-
-          <div className="min-w-0">
-            <p className="mb-3 text-xs font-bold uppercase tracking-overline text-gold">
-              {releaseYear} <span className="mx-2 text-content/20">—</span> Series
-            </p>
-            <h1 className="font-display max-w-3xl text-4xl font-medium leading-editorial text-content sm:text-5xl">
-              {tv.name}
-            </h1>
-            {tv.tagline && (
-              <p className="font-display mt-3 max-w-2xl text-base italic leading-7 text-content sm:text-lg">
-                “{tv.tagline}”
-              </p>
-            )}
-
-            <div className="mt-6 flex flex-wrap items-center gap-2 text-sm font-medium text-content">
-              <div className="flex items-center gap-2 rounded-full border border-rule bg-black/30 px-3 py-1.5 backdrop-blur-md">
-                <Star className="h-4 w-4 fill-highlight text-highlight" />
-                <span>{ratingLabel}</span>
-              </div>
-              {tv.number_of_seasons != null && (
-                <div className="flex items-center gap-2 rounded-full border border-rule bg-black/30 px-3 py-1.5 backdrop-blur-md">
-                  <Layers className="h-4 w-4 text-content-muted" />
-                  <span>{tv.number_of_seasons} {tv.number_of_seasons === 1 ? "season" : "seasons"}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 rounded-full border border-rule bg-black/30 px-3 py-1.5 backdrop-blur-md">
-                <Calendar className="h-4 w-4 text-content-muted" />
-                <span>{tv.first_air_date || "Release date TBA"}</span>
-              </div>
-              {personalRating > 0 && (
-                <div className="flex items-center gap-2 rounded-full border border-highlight/20 bg-highlight/10 px-3 py-1.5 text-highlight">
-                  <Star className="h-4 w-4 fill-current" />
-                  <span>Your {(personalRating / 2).toFixed(1)} stars</span>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 rounded-sheet border border-rule bg-canvas/70 p-4 backdrop-blur-xl sm:p-5">
-              <div className="flex flex-wrap items-center gap-3">
-                {trailer && <TrailerButton videoKey={trailer.key} title={tv.name} />}
-                <FavoriteButton movie={show} initialIsFavorite={isFavorite} />
-                <WatchedButton movie={show} initialIsWatched={isWatched} />
-                <WatchlistButton movie={show} initialIsWatchlisted={isWatchlisted} />
-                <div className="mt-3 w-full sm:mt-0 sm:w-auto sm:flex-1 sm:min-w-0">
-                  <MovieRatingControl movie={show} initialRating={personalRating} isWatched={isWatched} />
-                </div>
-              </div>
-            </div>
-
-            <p className="mt-6 max-w-3xl text-base leading-relaxed text-content sm:text-lg">
-              {tv.overview || "No overview is available for this show yet."}
-            </p>
-          </div>
-        </div>
-
-        {topCast.length > 0 && (
-          <section className="mt-14 border-t border-rule pt-8">
-            <h2 className="font-display mb-5 text-2xl font-medium">Top Cast</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-              {topCast.map((member) => (
-                <div key={member.id} className="rounded-sheet border border-rule bg-surface-raised/50 p-3 text-center">
-                  {member.profile_path ? (
-                    <Image
-                      src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
-                      alt={member.name}
-                      unoptimized
-                      width={120}
-                      height={120}
-                      className="mx-auto aspect-square rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="mx-auto flex aspect-square w-30 items-center justify-center rounded-full bg-surface-raised">
-                      <span className="text-3xl font-bold text-content-subtle">
-                        {member.name.trim().charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <p className="mt-3 text-sm font-semibold text-content">{member.name}</p>
-                  <p className="mt-1 text-xs text-content-muted">
-                    {member.character || "—"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <Suspense fallback={null}>
-          <MovieReviewsAndLists movieId={id} mediaType="tv" />
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <SimilarMedia id={id} mediaType="tv" />
-        </Suspense>
-      </PageContainer>
-    </div>
+    <MediaDetailPage
+      personal={personal}
+      model={{
+        id,
+        mediaType: "tv",
+        title: tv.name,
+        tagline: tv.tagline,
+        overview: tv.overview || "No overview is available for this show yet.",
+        kindLabel: "Series",
+        releaseYear: detailYear(tv.first_air_date),
+        releaseDate: tv.first_air_date,
+        posterPath: tv.poster_path,
+        backdropPath: tv.backdrop_path,
+        chips: detailChips({
+          voteAverage: tv.vote_average,
+          releaseDate: tv.first_air_date,
+          personalRating: personal.personalRating,
+          mediumChip: seasonsChip(tv.number_of_seasons),
+        }),
+        cast: topCast(credits.cast),
+        crew: [],
+        summary: detailSummary({
+          id: tv.id,
+          title: tv.name,
+          posterPath: tv.poster_path,
+          voteAverage: tv.vote_average,
+          releaseDate: tv.first_air_date,
+          genreIds: tv.genres?.map((genre) => genre.id) || [],
+          mediaType: "tv",
+        }),
+        trailerKey: trailer?.key ?? null,
+      }}
+    />
   );
 }
