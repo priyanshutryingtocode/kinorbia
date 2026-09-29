@@ -102,6 +102,48 @@ export const POST = withAuthedUser(
       );
 
       if (pushedFavorite.modifiedCount === 0) {
+        // A no-op push is ambiguous. The guard filter fails for three different
+        // reasons, and reporting "full" for all of them claims the rating was
+        // rejected when it was in fact stored: the account is at
+        // MAX_FAVORITES, or a concurrent request inserted this same favorite
+        // first, or the user document is gone. Resolve it with a read, the same
+        // way lib/mediaListToggle does before it settles on "full".
+        const current = await User.findOne({ email })
+          .select("favorites.movieId favorites.mediaType")
+          .lean<{ favorites?: { movieId: string; mediaType?: string }[] } | null>();
+
+        if (!current) {
+          return NextResponse.json({ message: "Account not found." }, { status: 404 });
+        }
+
+        // `mediaEquals` is a query fragment, so mirror it by hand: "tv" is an
+        // exact match, "movie" also covers a legacy entry with no mediaType.
+        const alreadyStored = (current.favorites || []).some(
+          (favorite) =>
+            favorite.movieId === normalizedMovieId &&
+            (normalizedMediaType === "tv"
+              ? favorite.mediaType === "tv"
+              : favorite.mediaType !== "tv")
+        );
+
+        if (alreadyStored) {
+          // Lost the race, so the entry exists without our rating. Apply the
+          // update the positional $set above would have performed.
+          await User.updateOne(
+            {
+              email,
+              favorites: {
+                $elemMatch: {
+                  movieId: normalizedMovieId,
+                  mediaType: mediaEquals(normalizedMediaType),
+                },
+              },
+            },
+            { $set: { "favorites.$.personalRating": clampedRating, "favorites.$.title": body.movieTitle } }
+          );
+          return NextResponse.json({ rating: clampedRating });
+        }
+
         return NextResponse.json({ message: "Favorites list is full." }, { status: 409 });
       }
     }
