@@ -118,7 +118,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
               <X className="h-4 w-4" />
             </button>
             <div className="pr-10 text-center">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">Your rating</p>
+              <p className="text-xs font-bold uppercase tracking-overline text-gold">Your rating</p>
               <h2 id="rate-title-dialog" className="mt-1 font-display text-2xl font-medium text-content">
                 {selectedMovie.title}
               </h2>

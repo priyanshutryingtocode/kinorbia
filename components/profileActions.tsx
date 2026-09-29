@@ -105,7 +105,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
       <AccessibleDialog open={isEditing} onClose={closeDialog} titleId="edit-profile-title">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">Public identity</p>
+            <p className="text-xs font-bold uppercase tracking-overline text-gold">Public identity</p>
             <h2 id="edit-profile-title" className="mt-1 font-display text-2xl font-medium text-content">
               Edit profile
             </h2>

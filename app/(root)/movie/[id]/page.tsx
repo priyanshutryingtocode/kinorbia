@@ -130,10 +130,10 @@ export default async function MoviePage({ params }: Props) {
           </div>
 
           <div className="min-w-0">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-gold">
+            <p className="mb-3 text-xs font-bold uppercase tracking-overline text-gold">
               {releaseYear} <span className="mx-2 text-content/20">—</span> Film
             </p>
-            <h1 className="font-display max-w-3xl text-4xl font-medium leading-[0.95] text-content sm:text-5xl">
+            <h1 className="font-display max-w-3xl text-4xl font-medium leading-editorial text-content sm:text-5xl">
               {movie.title}
             </h1>
             {movie.tagline && (
