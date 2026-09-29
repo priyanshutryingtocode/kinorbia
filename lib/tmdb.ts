@@ -134,16 +134,6 @@ function normalizeTvResult(result: RawTvResult): MovieSummary {
 // Shared list/detail/sub-resource fetchers. TV responses are normalized into
 // MovieSummary shape (name -> title, first_air_date -> release_date); movie
 // responses already match and are returned untouched.
-function fetchList(mediaType: MediaPath, endpoint: string, revalidate: number) {
-  if (mediaType === "tv") {
-    return tmdbFetch<ResultList<RawTvResult>>(`/tv/${endpoint}`, revalidate).then((data) => ({
-      results: data?.results?.map(normalizeTvResult) || [],
-    }));
-  }
-
-  return tmdbFetch<ResultList<MovieSummary>>(`/movie/${endpoint}`, revalidate);
-}
-
 function fetchSubResource<T>(mediaType: MediaPath, id: string, resource: string, revalidate = 3600) {
   return tmdbFetch<T>(`/${mediaType}/${safeId(id)}/${resource}?language=en-US`, revalidate);
 }
@@ -228,7 +218,11 @@ function recommendations(mediaType: MediaPath, id: string) {
 // --- Movies ---
 
 export const getPopularMovies = (page = 1) =>
-  fetchList("movie", `popular?language=en-US&page=${safePage(page)}`, 300);
+  fetchNormalizedList(
+    "movie",
+    `/movie/popular?language=en-US&page=${safePage(page)}`,
+    300
+  );
 
 export const getDiscoverMovies = (page = 1, genre?: string) =>
   discoverByGenre("movie", genre, page);
@@ -258,7 +252,11 @@ export const getRecommendationMovies = (id: string) => recommendations("movie", 
 // --- TV ---
 
 export const getPopularTv = (page = 1) =>
-  fetchList("tv", `popular?language=en-US&page=${safePage(page)}`, 300);
+  fetchNormalizedList(
+    "tv",
+    `/tv/popular?language=en-US&page=${safePage(page)}`,
+    300
+  );
 
 export const getDiscoverTv = (page = 1, genre?: string) => discoverByGenre("tv", genre, page);
 
