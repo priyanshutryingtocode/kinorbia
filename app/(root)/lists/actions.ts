@@ -194,16 +194,47 @@ export async function updateMovieList(
     }
 
     const favorites = dedupeFavorites(user?.favorites || []);
-    const favoriteKeys = new Set(
-      favorites.map((movie) => mediaKey(movie.mediaType, movie.movieId))
+    const favoriteByKey = new Map(
+      favorites.map((movie) => [mediaKey(movie.mediaType, movie.movieId), movie])
     );
-    const selectedMovies = favorites
-      .filter((movie) => selectedKeys.has(mediaKey(movie.mediaType, movie.movieId)))
-      .map(toListMovie);
-    const preserved = (existing.movies || []).filter(
-      (movie) => !favoriteKeys.has(mediaKey(movie.mediaType, movie.movieId))
-    );
-    const mergedMovies = [...preserved, ...selectedMovies];
+
+    // The picker submits a membership set, not a sequence, so the stored order
+    // is the only order a list has. Rebuilding it from `favorites` instead, as
+    // this used to, reshuffled every list on every save -- including a title
+    // typo fix -- into the User document's favorite insertion order, and
+    // reordered it again on the next save if favorites were re-added in
+    // between. Walking `existing.movies` keeps the order the Manage form is
+    // already displaying, while still taking each entry's data from the
+    // current favorite so a retitled or re-rated film does not go stale.
+    const mergedMovies: ListMovie[] = [];
+    const mergedKeys = new Set<string>();
+
+    for (const movie of existing.movies || []) {
+      const key = mediaKey(movie.mediaType, movie.movieId);
+      if (mergedKeys.has(key)) {
+        continue;
+      }
+      const favorite = favoriteByKey.get(key);
+      if (favorite) {
+        // A favorite the user unticked leaves the list.
+        if (!selectedKeys.has(key)) {
+          continue;
+        }
+        mergedMovies.push(toListMovie(favorite));
+      } else {
+        // Not in favorites, so the picker could not have offered it. Keep it.
+        mergedMovies.push(movie);
+      }
+      mergedKeys.add(key);
+    }
+
+    for (const movie of favorites) {
+      const key = mediaKey(movie.mediaType, movie.movieId);
+      if (selectedKeys.has(key) && !mergedKeys.has(key)) {
+        mergedMovies.push(toListMovie(movie));
+        mergedKeys.add(key);
+      }
+    }
 
     if (mergedMovies.length > MAX_LIST_MOVIES) {
       return {
