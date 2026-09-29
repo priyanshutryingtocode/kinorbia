@@ -4,6 +4,7 @@ import User from "@/models/User";
 import MovieCard, { type MovieProp } from "@/components/MovieCard";
 import { getRecommendationMovies, getTvRecommendations } from "@/lib/tmdb";
 import type { MediaType } from "@/types";
+import { emailMatch } from "@/lib/emailMatch";
 
 type SourceFavorite = { movieId: string; title: string };
 
@@ -16,7 +17,7 @@ type SourceFavorite = { movieId: string; title: string };
 // never appear. Filter the array first, then take its last element.
 async function latestFavoriteOfType(email: string, mediaType: MediaType) {
   const [row] = await User.aggregate<{ favorites?: SourceFavorite[] }>([
-    { $match: { email } },
+    { $match: { email: emailMatch(email) } },
     {
       $project: {
         favorites: {

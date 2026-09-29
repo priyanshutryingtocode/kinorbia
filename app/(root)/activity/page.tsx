@@ -18,6 +18,7 @@ import User from "@/models/User";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import { tmdbImage } from "@/lib/media";
+import { emailMatch } from "@/lib/emailMatch";
 
 export const dynamic = "force-dynamic";
 
@@ -35,15 +36,16 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
   const isFollowingFeed = feed === "following";
 
   const session = await auth();
-  if (isFollowingFeed && !session?.user?.email) {
+  const sessionEmail = session?.user?.email ?? null;
+  if (isFollowingFeed && !sessionEmail) {
     redirect("/login");
   }
 
   await dbConnect();
 
   const following: string[] = [];
-  if (isFollowingFeed) {
-    const currentUser = await User.findOne({ email: session!.user!.email })
+  if (isFollowingFeed && sessionEmail) {
+    const currentUser = await User.findOne({ email: emailMatch(sessionEmail) })
       .select("following")
       .lean<{ following?: string[] } | null>();
     following.push(...(currentUser?.following || []));

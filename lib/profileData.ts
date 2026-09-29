@@ -19,6 +19,7 @@ import {
 } from "@/lib/serialize";
 import type { FavoriteMovie, MediaType, WatchlistMovie } from "@/types";
 import { mediaEquals, normalizeMediaType } from "@/lib/media";
+import { emailMatch } from "@/lib/emailMatch";
 import { pageBounds } from "@/lib/pagination";
 
 export const PROFILE_PAGE_SIZES = {
@@ -102,7 +103,7 @@ export async function getPersonalMediaStatus(
   // other five sub-fields of each entry out of the response, so the type is
   // narrowed to match what actually comes back rather than claiming to be a
   // full FavoriteMovie.
-  const user = await User.findOne({ email })
+  const user = await User.findOne({ email: emailMatch(email) })
     .select(
       "favorites.movieId favorites.mediaType favorites.personalRating watchlist.movieId watchlist.mediaType"
     )
