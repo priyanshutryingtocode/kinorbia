@@ -88,7 +88,8 @@
    near-black, so reusing them on near-white measures 1.09:1 for --content and
    2.23:1 for --highlight -- the gold overline on every page would disappear.
    These are separate values, each checked against all three light surfaces; the
-   tightest is --highlight at 5.00:1, better than dark mode's worst of 3.71:1. */
+   tightest is --highlight at 4.82:1 against --surface. The dark palette's floor is
+   --content-subtle at 5.19:1, so both themes clear AA for body text with margin. */
 :root[data-theme="light"] {
   color-scheme: light;
 
