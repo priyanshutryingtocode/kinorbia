@@ -155,9 +155,6 @@
   --color-accent-hover: var(--accent-hover);
   --color-highlight: var(--highlight);
   --color-highlight-soft: var(--highlight-soft);
-  --color-brand: var(--accent);
-  --color-brand-hover: var(--accent-hover);
-  --color-gold: var(--highlight);
   --color-on-highlight: var(--on-highlight);
   --color-on-accent: var(--on-accent);
   --color-on-scrim: var(--on-scrim);

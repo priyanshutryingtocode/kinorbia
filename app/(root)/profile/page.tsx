@@ -76,7 +76,7 @@ function JournalCard({ item }: { item: JournalItem }) {
       </div>
     </>
   );
-  const className = "kin-focus block overflow-hidden rounded-sm border border-rule bg-surface-raised/45 transition-colors hover:border-gold/40";
+  const className = "kin-focus block overflow-hidden rounded-sm border border-rule bg-surface-raised/45 transition-colors hover:border-highlight/40";
   return href ? <Link href={href} className={className}>{content}</Link> : <div className={className}>{content}</div>;
 }
 
@@ -90,7 +90,7 @@ function CompactReview({ review }: { review: ReviewItem }) {
     <div className="group border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/25">
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-display text-lg font-semibold">
-          <Link href="/reviews" className="kin-focus text-content transition-colors group-hover:text-gold">
+          <Link href="/reviews" className="kin-focus text-content transition-colors group-hover:text-highlight">
             {review.movieTitle}
           </Link>
         </h3>
@@ -111,7 +111,7 @@ function CompactList({ list }: { list: MovieListItem }) {
   return (
     <Link href={`/lists/${list._id}`} className="kin-focus group block border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/25">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-content group-hover:text-gold">{list.title}</h3>
+        <h3 className="font-display text-lg font-semibold text-content group-hover:text-highlight">{list.title}</h3>
         <span className="shrink-0 text-xs text-content-muted">{list.movies.length} titles</span>
       </div>
       {list.description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-content-muted">{list.description}</p>}
@@ -153,7 +153,7 @@ function OverviewPanel({
             { label: "reviews", value: data.reviewCount, href: "/profile?tab=reviews" },
             { label: "lists", value: data.listCount, href: "/profile?tab=lists" },
           ].map((item) => (
-            <Link key={item.label} href={item.href} className="kin-focus rounded-sm transition-colors hover:text-gold">
+            <Link key={item.label} href={item.href} className="kin-focus rounded-sm transition-colors hover:text-highlight">
               <span className="font-display text-base text-content">{item.value}</span> {item.label}
             </Link>
           ))}
@@ -289,9 +289,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         followers={relationships.followers}
         following={relationships.following}
       >
-        {identity.username && <Link href={`/u/${encodeURIComponent(identity.username)}`} className="kin-focus inline-flex items-center gap-2 rounded-full border border-rule bg-surface px-4 py-2 text-sm font-semibold text-content transition hover:border-gold/30 hover:text-content"><ExternalLink className="h-4 w-4" />Public profile</Link>}
+        {identity.username && <Link href={`/u/${encodeURIComponent(identity.username)}`} className="kin-focus inline-flex items-center gap-2 rounded-full border border-rule bg-surface px-4 py-2 text-sm font-semibold text-content transition hover:border-highlight/30 hover:text-content"><ExternalLink className="h-4 w-4" />Public profile</Link>}
         <ProfileActions user={{ name: identity.name || sessionName || "KinOrbia user", bio: identity.bio || "", username: identity.username }} />
-        <a href="/api/user/export" className="kin-focus inline-flex items-center gap-2 rounded-full border border-rule bg-surface px-4 py-2 text-sm font-semibold text-content transition hover:border-gold/30 hover:text-content"><Download className="h-4 w-4" />Export data</a>
+        <a href="/api/user/export" className="kin-focus inline-flex items-center gap-2 rounded-full border border-rule bg-surface px-4 py-2 text-sm font-semibold text-content transition hover:border-highlight/30 hover:text-content"><Download className="h-4 w-4" />Export data</a>
       </ProfileHeader>
 
       <div className="sticky top-20 z-30 -mx-4 mt-5 border-y border-rule bg-canvas/95 px-4 py-2 backdrop-blur-xl sm:mx-0 sm:px-0">

@@ -30,7 +30,7 @@ export default function FollowButton({
         aria-label={targetName ? `${action} ${targetName}` : undefined}
         className={`kin-focus shrink-0 rounded-sm border px-3 py-1.5 text-xs font-semibold transition-colors ${
           isFollowing
-            ? "border-glass-line-strong bg-transparent text-content hover:border-gold/40 hover:text-gold"
+            ? "border-glass-line-strong bg-transparent text-content hover:border-highlight/40 hover:text-highlight"
             : "border-accent bg-accent text-on-accent hover:bg-accent-hover"
         }`}
       >

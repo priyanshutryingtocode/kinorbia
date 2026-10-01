@@ -20,7 +20,7 @@ export default async function SimilarMedia({ id, mediaType }: SimilarMediaProps)
   return (
     <section className="mt-14 border-t border-rule pt-8">
       <div className="mb-6 flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-content">More Like This</h2>
+        <h2 className="font-display text-2xl font-medium leading-tight text-content">More Like This</h2>
       </div>
 
       <MovieCarousel movies={movies} />

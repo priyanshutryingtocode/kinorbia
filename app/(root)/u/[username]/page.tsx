@@ -139,7 +139,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         {isSelf && (
           <Link
             href="/profile"
-            className="kin-focus inline-flex items-center rounded-sm border border-rule px-3 py-1.5 text-xs font-semibold text-content transition-colors hover:border-gold/40 hover:text-content"
+            className="kin-focus inline-flex items-center rounded-sm border border-rule px-3 py-1.5 text-xs font-semibold text-content transition-colors hover:border-highlight/40 hover:text-content"
           >
             Edit your profile
           </Link>
@@ -172,7 +172,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                   <Link
                     key={mediaKey(movie.mediaType, movie.movieId)}
                     href={mediaHref(movie.mediaType, movie.movieId)}
-                    className="kin-focus group relative block aspect-2/3 overflow-hidden rounded-sm border border-rule bg-canvas transition-colors hover:border-gold/40"
+                    className="kin-focus group relative block aspect-2/3 overflow-hidden rounded-sm border border-rule bg-canvas transition-colors hover:border-highlight/40"
                     aria-label={`${movie.title} (${normalizeMediaType(movie.mediaType) === "tv" ? "TV show" : "movie"})`}
                   >
                     {poster ? (
@@ -219,13 +219,13 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                         <h3>
                           <Link
                             href={href}
-                            className="kin-focus rounded-sm font-display text-base font-medium text-content transition-colors hover:text-gold"
+                            className="kin-focus rounded-sm font-display text-base font-medium text-content transition-colors hover:text-highlight"
                           >
                             {review.movieTitle}
                           </Link>
                         </h3>
                         {rating > 0 && (
-                          <span className="shrink-0 text-sm font-semibold text-gold">
+                          <span className="shrink-0 text-sm font-semibold text-highlight">
                             {(rating / 2).toFixed(1)} ★
                           </span>
                         )}
@@ -263,7 +263,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                     className="kin-focus group block border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/30"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="font-display text-base font-medium text-content group-hover:text-gold">
+                      <h3 className="font-display text-base font-medium text-content group-hover:text-highlight">
                         {list.title}
                       </h3>
                       <span className="shrink-0 text-xs text-content-muted">

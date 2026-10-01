@@ -102,7 +102,7 @@ export default async function MediaDetailPage({
           </div>
 
           <div className="min-w-0">
-            <p className="mb-3 text-xs font-bold uppercase tracking-overline text-gold">
+            <p className="mb-3 text-xs font-bold uppercase tracking-overline text-highlight">
               {model.releaseYear} <span className="mx-2 text-content/20">—</span>{" "}
               {model.kindLabel}
             </p>

@@ -42,7 +42,7 @@ export default function PersonCard({ person, isAuthenticated, path }: PersonCard
     <>
       {avatar}
       <span className="min-w-0 flex-1">
-        <span className="block truncate rounded-sm font-display text-base font-medium leading-tight text-content transition-colors group-hover:text-gold">
+        <span className="block truncate rounded-sm font-display text-base font-medium leading-tight text-content transition-colors group-hover:text-highlight">
           {person.name}
         </span>
         <span className="mt-0.5 block truncate text-xs text-content-muted">

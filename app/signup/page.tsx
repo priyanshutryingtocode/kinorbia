@@ -49,7 +49,7 @@ export default function SignUpPage() {
         {registered ? (
           <div className="space-y-4">
             <CheckCircle2 className="w-10 h-10 mx-auto text-green-400" />
-            <h2 className="text-xl font-bold text-content">Account created</h2>
+            <h2 className="font-display text-xl font-medium leading-tight text-content">Account created</h2>
             <p className="text-sm text-content">
               You can sign in now with <span className="font-semibold text-content">{email}</span>.
               Verifying your email is optional, and only needed to post publicly.

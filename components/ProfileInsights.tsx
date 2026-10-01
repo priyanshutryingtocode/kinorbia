@@ -17,7 +17,7 @@ type ProfileInsightsProps = {
   userEmail: string;
 };
 
-const EYEBROW_CLASS = "kin-overline text-gold/80";
+const EYEBROW_CLASS = "kin-overline text-highlight/80";
 const HEADING_CLASS = "mt-2 flex items-center gap-2 font-display text-2xl font-medium text-content";
 
 function InsightHeading({
@@ -218,7 +218,7 @@ function RatingBars({ data }: { data: InsightsData }) {
             aria-valuemax={max}
             aria-valuenow={bucket.count}
           >
-            <div className="h-full rounded-full bg-gold/80" style={{ width: `${(bucket.count / max) * 100}%` }} />
+            <div className="h-full rounded-full bg-highlight/80" style={{ width: `${(bucket.count / max) * 100}%` }} />
           </div>
           <span className="text-right text-content">{bucket.count}</span>
         </div>
@@ -241,12 +241,12 @@ function MediaSplit({ data }: { data: InsightsData }) {
         role="img"
         aria-label={`${data.moviesWatched} movies and ${data.showsWatched} shows`}
       >
-        <div className="bg-gold" style={{ width: `${moviePercent}%` }} />
+        <div className="bg-highlight" style={{ width: `${moviePercent}%` }} />
         <div className="bg-accent-hover" style={{ width: `${100 - moviePercent}%` }} />
       </div>
       <div className="mt-4 grid grid-cols-2 divide-x divide-rule border-y border-rule">
         <div className="py-3 pr-4 sm:pr-6">
-          <p className="font-display text-2xl font-medium leading-none text-gold">{data.moviesWatched}</p>
+          <p className="font-display text-2xl font-medium leading-none text-highlight">{data.moviesWatched}</p>
           <p className="mt-1 text-xs uppercase tracking-wider text-content-muted">Movies · {Math.round(moviePercent)}%</p>
         </div>
         <div className="py-3 pl-4 sm:pl-6">
@@ -395,7 +395,7 @@ export default function ProfileInsights({
                   eyebrow="Favorite ratings"
                   title="Rating distribution"
                   icon={Star}
-                  iconClassName="h-5 w-5 text-gold"
+                  iconClassName="h-5 w-5 text-highlight"
                 />
                 <div className="mt-6">
                   <RatingBars data={insights} />
@@ -425,7 +425,7 @@ export default function ProfileInsights({
                       eyebrow="Taste profile"
                       title="Favorite genres"
                       icon={Film}
-                      iconClassName="h-5 w-5 text-gold"
+                      iconClassName="h-5 w-5 text-highlight"
                     />
                   </div>
                   {insights.topGenre && (
@@ -439,7 +439,7 @@ export default function ProfileInsights({
                     <div key={genre.name} className="grid grid-cols-[minmax(6rem,10rem)_1fr_3rem] items-center gap-3 text-sm">
                       <span className="truncate text-content" title={genre.name}>{genre.name}</span>
                       <div className="h-1.5 overflow-hidden rounded-full bg-glass-hover">
-                        <div className="h-full rounded-full bg-gold/75" style={{ width: `${(genre.count / maxGenre) * 100}%` }} />
+                        <div className="h-full rounded-full bg-highlight/75" style={{ width: `${(genre.count / maxGenre) * 100}%` }} />
                       </div>
                       <span className="text-right text-content-muted">{genre.count}</span>
                     </div>
@@ -455,14 +455,14 @@ export default function ProfileInsights({
                   eyebrow="Personal picks"
                   title="Top rated"
                   icon={TrendingUp}
-                  iconClassName="h-5 w-5 text-gold"
+                  iconClassName="h-5 w-5 text-highlight"
                 />
                 <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
                   {insights.topRated.map((item) => (
                     <Link
                       key={`${item.mediaType}-${item.movieId}`}
                       href={item.href}
-                      className="kin-focus group block min-w-0 border-b border-rule pb-3 transition-colors hover:border-gold/50"
+                      className="kin-focus group block min-w-0 border-b border-rule pb-3 transition-colors hover:border-highlight/50"
                     >
                       <div className="relative aspect-2/3 overflow-hidden bg-surface-raised">
                         {tmdbImage(item.posterPath, "w185") ? (

@@ -19,7 +19,7 @@ type ProfileMetricRailProps = {
 const valueColors: Record<ProfileMetricEmphasis, string> = {
   neutral: "text-content",
   red: "text-red-200",
-  gold: "text-gold",
+  gold: "text-highlight",
 };
 
 export default function ProfileMetricRail({

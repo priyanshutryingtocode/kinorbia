@@ -85,7 +85,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
             setBio(user.bio || "");
             setIsEditing(true);
           }}
-          className="kin-focus inline-flex items-center gap-2 rounded-sm border border-rule bg-surface px-3 py-1.5 text-xs font-semibold text-content transition hover:border-gold/30 hover:bg-surface-raised hover:text-content"
+          className="kin-focus inline-flex items-center gap-2 rounded-sm border border-rule bg-surface px-3 py-1.5 text-xs font-semibold text-content transition hover:border-highlight/30 hover:bg-surface-raised hover:text-content"
         >
           <Settings className="h-4 w-4" aria-hidden="true" />
           Edit profile
@@ -105,7 +105,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
       <AccessibleDialog open={isEditing} onClose={closeDialog} titleId="edit-profile-title">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-overline text-gold">Public identity</p>
+            <p className="text-xs font-bold uppercase tracking-overline text-highlight">Public identity</p>
             <h2 id="edit-profile-title" className="mt-1 font-display text-2xl font-medium text-content">
               Edit profile
             </h2>

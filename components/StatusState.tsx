@@ -57,7 +57,7 @@ const VARIANTS = {
     defaultTitle: "Profile not found",
     defaultDescription: "This member may have changed their username or no longer be available.",
     defaultAction: "Browse KinOrbia",
-    rule: "bg-gold",
+    rule: "bg-highlight",
     icon: UserX,
     iconColor: "text-content-subtle",
     heading: "text-content",

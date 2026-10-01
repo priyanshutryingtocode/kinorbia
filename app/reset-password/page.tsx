@@ -132,7 +132,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas p-6 text-content">
       <div className="w-full max-w-md rounded-overlay border border-rule bg-surface-raised/50 p-8">
-        <h1 className="text-2xl font-bold">Choose a new password</h1>
+        <h1 className="font-display text-2xl font-medium leading-tight text-content">Choose a new password</h1>
         <p className="mt-2 text-sm text-content-muted">Enter and confirm your new password below.</p>
         <Suspense fallback={null}>
           <ResetPasswordForm />

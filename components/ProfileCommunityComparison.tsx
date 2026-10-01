@@ -52,9 +52,9 @@ export default async function ProfileCommunityComparison({
     <section aria-labelledby="community-heading" className="py-8">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="kin-overline text-gold/80">Shared taste</p>
+          <p className="kin-overline text-highlight/80">Shared taste</p>
           <h3 id="community-heading" className="flex items-center gap-2 font-display text-2xl font-medium text-content">
-            <Users className="h-5 w-5 text-gold" aria-hidden="true" />
+            <Users className="h-5 w-5 text-highlight" aria-hidden="true" />
             You vs the community
           </h3>
         </div>
@@ -66,7 +66,7 @@ export default async function ProfileCommunityComparison({
       <div className="grid grid-cols-2 divide-x divide-rule border-y border-rule">
         <div className="py-4 pr-4 sm:pr-6">
           <p className="kin-overline text-content-muted">You</p>
-          <p className="mt-1 font-display text-2xl font-medium leading-none text-gold">
+          <p className="mt-1 font-display text-2xl font-medium leading-none text-highlight">
             {community.userComparableAvg.toFixed(1)}
           </p>
           <p className="mt-1 text-xs text-content-muted">Comparable average</p>
@@ -89,7 +89,7 @@ export default async function ProfileCommunityComparison({
           <thead>
             <tr className="border-b border-rule">
               <th scope="col" className="min-w-[13rem] pb-3 pr-4 text-left font-medium text-content-muted">Title</th>
-              <th scope="col" className="px-2 pb-3 text-right font-medium text-gold">You</th>
+              <th scope="col" className="px-2 pb-3 text-right font-medium text-highlight">You</th>
               <th scope="col" className="px-2 pb-3 text-right font-medium text-content">Community</th>
               <th scope="col" className="pb-3 pl-2 text-right font-medium text-content">Difference</th>
             </tr>
@@ -100,7 +100,7 @@ export default async function ProfileCommunityComparison({
               const communityRating = item.community.toFixed(1);
               const deltaLabel = item.delta > 0 ? "higher" : item.delta < 0 ? "lower" : "the same";
               const deltaClass =
-                item.delta > 0 ? "text-gold" : item.delta < 0 ? "text-red-300" : "text-content-muted";
+                item.delta > 0 ? "text-highlight" : item.delta < 0 ? "text-red-300" : "text-content-muted";
 
               return (
                 <tr key={`${item.mediaType}-${item.movieId}`}>
@@ -114,7 +114,7 @@ export default async function ProfileCommunityComparison({
                       <div className="min-w-0">
                         <Link
                           href={mediaHref(item.mediaType, item.movieId)}
-                          className="kin-focus block truncate rounded-sm font-semibold text-content transition hover:text-gold"
+                          className="kin-focus block truncate rounded-sm font-semibold text-content transition hover:text-highlight"
                         >
                           {item.title}
                         </Link>
@@ -123,7 +123,7 @@ export default async function ProfileCommunityComparison({
                     </div>
                   </th>
                   <td
-                    className="whitespace-nowrap px-2 text-right font-semibold text-gold"
+                    className="whitespace-nowrap px-2 text-right font-semibold text-highlight"
                     aria-label={`Your rating ${item.yours.toFixed(1)} out of 5`}
                   >
                     {item.yours.toFixed(1)}

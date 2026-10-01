@@ -78,7 +78,7 @@ export default async function MovieReviewsAndLists({
   return (
     <section className="mt-14 grid gap-6 border-t border-rule pt-8 lg:grid-cols-2">
       <div>
-        <h2 className="mb-5 text-2xl font-bold">Reviews</h2>
+        <h2 className="font-display mb-5 text-2xl font-medium leading-tight text-content">Reviews</h2>
         {publicReviews.length > 0 ? (
           <div className="space-y-3">
             {publicReviews.map((review) => {
@@ -128,7 +128,7 @@ export default async function MovieReviewsAndLists({
       </div>
 
       <div>
-        <h2 className="mb-5 text-2xl font-bold">In Lists</h2>
+        <h2 className="font-display mb-5 text-2xl font-medium leading-tight text-content">In Lists</h2>
         {publicLists.length > 0 ? (
           <div className="space-y-3">
             {publicLists.map((list) => (

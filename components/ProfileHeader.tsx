@@ -32,7 +32,7 @@ export default function ProfileHeader({
       <div className="profile-wash pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 flex-1 items-start gap-4 sm:gap-5">
-          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-glass-line-strong bg-surface-raised ring-1 ring-gold/15 sm:h-24 sm:w-24">
+          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-glass-line-strong bg-surface-raised ring-1 ring-highlight/15 sm:h-24 sm:w-24">
             {image ? (
               <Image
                 src={image}
@@ -54,7 +54,7 @@ export default function ProfileHeader({
               <h1 className="break-words font-display text-3xl font-medium leading-tight text-content sm:text-4xl">
                 {name}
               </h1>
-              {username && <p className="kin-overline break-all text-gold/80">@{username}</p>}
+              {username && <p className="kin-overline break-all text-highlight/80">@{username}</p>}
             </div>
             {bio ? (
               <p className="mt-2.5 max-w-2xl text-sm leading-6 text-content-muted">{bio}</p>
@@ -72,13 +72,13 @@ export default function ProfileHeader({
                 <>
                   <Link
                     href={`${profilePath}/followers`}
-                    className="kin-focus rounded-sm underline-offset-4 transition hover:text-gold hover:underline"
+                    className="kin-focus rounded-sm underline-offset-4 transition hover:text-highlight hover:underline"
                   >
                     {followers} {followers === 1 ? "follower" : "followers"}
                   </Link>
                   <Link
                     href={`${profilePath}/following`}
-                    className="kin-focus rounded-sm underline-offset-4 transition hover:text-gold hover:underline"
+                    className="kin-focus rounded-sm underline-offset-4 transition hover:text-highlight hover:underline"
                   >
                     {following} following
                   </Link>
