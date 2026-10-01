@@ -60,26 +60,12 @@
   --glass-line: rgba(255, 255, 255, 0.05);
   --glass-line-strong: rgba(255, 255, 255, 0.15);
 
-  /* The auth orb, hand-tuned per theme rather than alpha-inverted. */
-  --orb-halo: rgba(153, 27, 27, 0.2);
-  --orb-glow: rgba(220, 38, 38, 0.2);
-  --orb-glow-inner: rgba(220, 38, 38, 0.1);
-  --orb-base-a: #0a0a0a;
-  --orb-base-b: #171717;
-  --orb-blend: screen;
-  /* The sphere's lighting lives in `.orb-shading` rather than in tokens here,
-     because it needs a ramp -- a tight specular core falling off through a
-     mid tone -- and a single colour cannot express that. What is kept separate
-     is the rule that the lighting never rotates: --orb-glow belongs to the
-     swirl, and .orb-shading has no animation at all. Theme-independent because
-     the orb is dark in both themes. */
   /* 0.95-alpha black on a near-white canvas reads as a bruise, so the light
      theme gets its own much lighter values rather than reusing these. */
   --elevation-card: 0 18px 45px -34px rgba(0, 0, 0, 0.95);
   --elevation-card-hover: 0 24px 60px -42px rgba(220, 38, 38, 0.45);
   --elevation-float: 0 24px 80px -48px rgba(0, 0, 0, 0.95);
   --elevation-poster: 0 28px 80px -44px rgba(0, 0, 0, 0.95);
-  --elevation-orb-rim: inset 0 0 35px 8px rgba(0, 0, 0, 0.8);
   --elevation-filter: 0 18px 55px -42px rgba(0, 0, 0, 0.95);
   /* The glow around the active genre chip, which sits on bg-content. Inverts,
      because bg-content does. */
@@ -109,9 +95,6 @@
   /* Glass for controls sitting *on* the orb. Theme-independent because the orb
      no longer inverts, so the light theme needs the dark theme's light-on-dark
      values rather than its own black-on-white ones -- which would disappear. */
-  --orb-glass: rgba(255, 255, 255, 0.04);
-  --orb-glass-hover: rgba(255, 255, 255, 0.09);
-  --orb-glass-line: rgba(255, 255, 255, 0.1);
 
   --duration-fast: 150ms;
   --duration-panel: 260ms;
@@ -169,18 +152,11 @@
      `multiply` stand-in left a flat white circle. It stays dark in light mode,
      which is why AuthShell's contents follow the ink ramp rather than the
      page's own tokens. */
-  --orb-base-a: #0d0909;
-  --orb-base-b: #1e1515;
-  --orb-blend: screen;
   /* Against a light page the halo carries further than it does on near-black. */
-  --orb-halo: rgba(220, 38, 38, 0.28);
-  --orb-glow: rgba(220, 38, 38, 0.34);
-  --orb-glow-inner: rgba(220, 38, 38, 0.18);
   --elevation-card: 0 18px 45px -34px rgba(28, 20, 18, 0.16);
   --elevation-card-hover: 0 24px 60px -42px rgba(185, 28, 28, 0.3);
   --elevation-float: 0 24px 80px -48px rgba(28, 20, 18, 0.2);
   --elevation-poster: 0 28px 80px -44px rgba(28, 20, 18, 0.24);
-  --elevation-orb-rim: inset 0 0 35px 8px rgba(0, 0, 0, 0.8);
   --elevation-filter: 0 18px 55px -42px rgba(28, 20, 18, 0.18);
   --elevation-glow: 0 12px 28px -18px rgba(28, 20, 18, 0.3);
   /* Grain at the dark theme's opacity reads as dirt once the ground is light. */
@@ -209,9 +185,6 @@
   --color-highlight-vivid: var(--highlight-vivid);
   --color-accent-bright: var(--accent-bright);
   --color-danger: var(--danger);
-  --color-orb-glass: var(--orb-glass);
-  --color-orb-glass-hover: var(--orb-glass-hover);
-  --color-orb-glass-line: var(--orb-glass-line);
   --color-on-highlight: var(--on-highlight);
   --color-on-accent: var(--on-accent);
   --color-on-scrim: var(--on-scrim);
@@ -221,12 +194,10 @@
   --color-glass-strong: var(--glass-strong);
   --color-glass-line: var(--glass-line);
   --color-glass-line-strong: var(--glass-line-strong);
-  --color-orb-halo: var(--orb-halo);
   --shadow-card: var(--elevation-card);
   --shadow-card-hover: var(--elevation-card-hover);
   --shadow-float: var(--elevation-float);
   --shadow-poster: var(--elevation-poster);
-  --shadow-orb-rim: var(--elevation-orb-rim);
   --shadow-filter: var(--elevation-filter);
   --shadow-glow: var(--elevation-glow);
   --radius-sheet: 0.125rem;
@@ -283,21 +254,50 @@ html {
   color: white;
 }
 
-@keyframes orb-spin {
-  from { transform: rotate(0deg); }
+/* The 2D orb's motion. Four small animations, all additive on top of a static
+ * drawing, and all of them safe to freeze: an arc is still an arc, a dash
+ * pattern is still a ring, and the dots land at defined points on their circles.
+ *
+ * `transform-box: view-box` plus a 50% origin is required on every rotating
+ * group. SVG's default transform origin is 0 0, which would send each dot
+ * orbiting the top-left corner of the viewBox instead of the orb. */
+@keyframes auth-orb-turn {
   to { transform: rotate(360deg); }
 }
 
-@keyframes orb-bloom {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.06); opacity: 1; }
+@keyframes auth-orb-turn-rev {
+  to { transform: rotate(-360deg); }
 }
 
-/* Exposed as a utility so AuthShell can opt out under prefers-reduced-motion.
-   The blanket rule in the reduced-motion block would freeze it at the first
-   frame regardless; this variant is what actually removes it. */
-@utility animate-orb-bloom {
-  animation: orb-bloom 7s ease-in-out infinite;
+@keyframes auth-orb-dashoffset {
+  to { stroke-dashoffset: -136; }
+}
+
+.auth-orb-arc,
+.auth-orb-orbit,
+.auth-orb-orbit-rev {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+
+.auth-orb-arc { animation: auth-orb-turn 48s linear infinite; }
+.auth-orb-orbit { animation: auth-orb-turn 34s linear infinite; }
+.auth-orb-orbit-rev { animation: auth-orb-turn-rev 52s linear infinite; }
+.auth-orb-dash { animation: auth-orb-dashoffset 26s linear infinite; }
+
+/* The blanket reduced-motion rule above freezes duration and iteration count,
+ * which would leave each of these on its final frame. That is safe here by
+ * design, but the orb is opted out entirely rather than left mid-transform: with
+ * `animation: none` the authored geometry shows through, which is a complete
+ * globe. These rules sit after the blanket block so they win at equal
+ * specificity. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-orb-arc,
+  .auth-orb-orbit,
+  .auth-orb-orbit-rev,
+  .auth-orb-dash {
+    animation: none;
+  }
 }
 
 @keyframes shell-panel-enter {
@@ -318,66 +318,6 @@ html {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* Two layers, because they must move differently.
- *
- * A sphere reads as solid only if its light source stays put. Bundling the
- * shading and the swirl under one rotation sent the highlight travelling around
- * the rim, which reads as a spinning flat disc rather than a ball. So `.orb-swirl`
- * turns and `.orb-shading` does not.
- */
-.orb-swirl {
-  background:
-    radial-gradient(circle at 50% 50%, var(--orb-glow-inner) 0%, transparent 60%),
-    conic-gradient(from 0deg at 50% 50%, transparent 0deg, var(--orb-glow) 180deg, transparent 360deg),
-    linear-gradient(45deg, var(--orb-base-a) 0%, var(--orb-base-b) 100%);
-  background-blend-mode: var(--orb-blend);
-  animation: orb-spin 22s linear infinite;
-}
-
-/* Static, and the half that makes the swirl read as a ball rather than a disc.
- *
- * Both gradients are keyed to the LIGHT at 30-34% 26-30%, never to the centre
- * of the box. That is the whole difference between a sphere and a disc: a
- * terminator has to run perpendicular to the light, so a centred one -- which
- * darkens equally in all four directions -- is a vignette and describes no
- * shape at all. Measured at equal distance from the centre, these stops give
- * 0.06 black toward the light and 0.71 away from it.
- *
- * The size keywords are what keep this from clipping, and they are chosen per
- * gradient rather than by hand-tuned stops:
- *
- *   the shape is `rounded-full`: a circle of radius 0.5W in a square
- *
- *   specular    `closest-side`, so 100% is the nearest edge, 0.260W from the
- *               light. It is fully faded by 58% = 0.151W, against a visible
- *               edge at 0.188W. It cannot be clipped by construction.
- *   terminator  `farthest-side`, so 100% is 0.700W. The lit edge sits at
- *               0.244W (35% along, still bright) and the far edge at 0.756W
- *               (108%, clamps to full shadow), which is the falloff we want.
- *
- * A previous version used the default `farthest-corner`, which measures to
- * the box *corner* and put every percentage out by a factor of about 1.4 --
- * that is what sliced the old rim light into a crescent. `farthest-side` and
- * `closest-side` are measured along the axes, so the numbers above mean what
- * they look like and the clipped-crescent class of bug cannot recur.
- */
-.orb-shading {
-  background:
-    radial-gradient(
-      circle closest-side at 30% 26%,
-      rgba(255, 246, 235, 0.62) 0%,
-      rgba(255, 246, 235, 0.16) 22%,
-      transparent 58%
-    ),
-    radial-gradient(
-      circle farthest-side at 34% 30%,
-      transparent 0%,
-      transparent 25%,
-      rgba(0, 0, 0, 0.55) 70%,
-      rgba(0, 0, 0, 0.92) 100%
-    );
 }
 
 .film-grain::before {

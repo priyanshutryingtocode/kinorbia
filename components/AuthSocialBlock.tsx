@@ -16,18 +16,18 @@ export default function AuthSocialBlock({ verb }: { verb: string }) {
       <button
         type="button"
         onClick={() => signIn("google", { callbackUrl: "/" })}
-        className="w-full flex items-center justify-center gap-3 bg-orb-glass hover:bg-orb-glass-hover border border-ink-rule rounded-control py-3.5 px-4 transition-colors duration-150 group"
+        className="w-full flex items-center justify-center gap-3 bg-glass hover:bg-glass-hover border border-rule rounded-control py-3.5 px-4 transition-colors duration-150 group"
       >
-        <Chrome className="w-5 h-5 text-ink-muted group-hover:text-ink-content transition-colors" />
-        <span className="text-sm font-medium text-ink-content group-hover:text-ink-content transition-colors">
+        <Chrome className="w-5 h-5 text-content-muted group-hover:text-content transition-colors" />
+        <span className="text-sm font-medium text-content group-hover:text-content transition-colors">
           {verb} with Google
         </span>
       </button>
 
       <div className="flex items-center gap-4 my-2">
-        <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1" />
-        <span className="text-ink-subtle text-[10px] font-bold uppercase tracking-widest">Or</span>
-        <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1" />
+        <div className="h-px bg-linear-to-r from-transparent via-rule to-transparent flex-1" />
+        <span className="text-content-subtle text-[10px] font-bold uppercase tracking-widest">Or</span>
+        <div className="h-px bg-linear-to-r from-transparent via-rule to-transparent flex-1" />
       </div>
     </>
   );
