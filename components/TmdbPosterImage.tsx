@@ -1,27 +1,22 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
-import { Film } from "lucide-react";
 import { useState } from "react";
+import PosterFallback from "@/components/PosterFallback";
 
 type TmdbPosterImageProps = Omit<ImageProps, "src" | "onError" | "unoptimized"> & {
   src: string;
 };
 
+// Handles the second of the two ways a poster can fail: the URL resolved, but
+// the image did not load. The first -- TMDB returning no poster path at all --
+// never reaches this component, and is PosterImage's job. Both render
+// `PosterFallback` so a missing poster looks the same either way.
 export default function TmdbPosterImage({ src, alt, className, ...props }: TmdbPosterImageProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
   if (failedSrc === src) {
-    return (
-      <div
-        role={alt ? "img" : undefined}
-        aria-label={alt || undefined}
-        aria-hidden={alt ? undefined : true}
-        className={`flex h-full w-full items-center justify-center bg-surface-raised ${className || ""}`}
-      >
-        <Film className="h-8 w-8 text-content-subtle" aria-hidden="true" />
-      </div>
-    );
+    return <PosterFallback alt={alt || undefined} className={className} />;
   }
 
   return (
