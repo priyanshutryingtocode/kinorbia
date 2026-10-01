@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Bell, Bookmark, CheckCheck, Heart, Loader2, MessageSquare, UserPlus } from "lucide-react";
 import { mediaHref } from "@/lib/media";
+import { useDismiss } from "@/lib/useDismiss";
 import type { NotificationItem } from "@/types";
 
 const ICONS: Record<NotificationItem["type"], React.ReactNode> = {
@@ -57,6 +58,10 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
+
+  // Stable identity, because useDismiss lists `onDismiss` in its deps. The prop
+  // is `(open: boolean)`; the hook wants a no-argument close.
+  const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   const loadUnread = useCallback(async () => {
     try {
@@ -125,37 +130,14 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
     }
   }, [open, loadAll]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (
-        menuRef.current &&
-        panelRef.current &&
-        !menuRef.current.contains(target) &&
-        !panelRef.current.contains(target)
-      ) {
-        onOpenChange(false);
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onOpenChange(false);
-        triggerRef.current?.focus();
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, onOpenChange]);
+  // Two refs, not one: the panel is rendered into a portal, so the trigger and
+  // the panel are separate elements and a press on either must keep it open.
+  useDismiss({
+    open,
+    onDismiss: close,
+    returnFocusRef: triggerRef,
+    insideRefs: [menuRef, panelRef],
+  });
 
   const markAllRead = async () => {
     if (marking) {

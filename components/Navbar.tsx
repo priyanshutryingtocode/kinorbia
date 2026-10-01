@@ -5,9 +5,10 @@ import Image from "next/image";
 import { Film, Search, User, LogOut, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
+import { useDismiss } from "@/lib/useDismiss";
 
 const NAV_LINKS = [
   { name: "Movies", href: "/" },
@@ -35,6 +36,11 @@ function NavbarShell({ pathname }: { pathname: string }) {
   const isActive = (path: string) =>
     path === "/" ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
 
+  // Stable identities: useDismiss lists `onDismiss` in its dependency array, so
+  // an inline arrow would re-run the effect on every render.
+  const closeAccount = useCallback(() => setAccountOpen(false), []);
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
+
   useEffect(() => {
     if (previousPathname.current === pathname) {
       return;
@@ -49,47 +55,21 @@ function NavbarShell({ pathname }: { pathname: string }) {
     return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
 
-  useEffect(() => {
-    if (!accountOpen) {
-      return;
-    }
+  useDismiss({
+    open: accountOpen,
+    onDismiss: closeAccount,
+    returnFocusRef: accountButtonRef,
+    insideRefs: [accountRef],
+  });
 
-    const handlePointerDown = (event: PointerEvent) => {
-      if (accountRef.current && !accountRef.current.contains(event.target as Node)) {
-        setAccountOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setAccountOpen(false);
-        accountButtonRef.current?.focus();
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [accountOpen]);
-
-  useEffect(() => {
-    if (!mobileOpen) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileOpen(false);
-        mobileButtonRef.current?.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [mobileOpen]);
+  // No outside-press dismissal here: the mobile panel is closed by Escape or by
+  // choosing a destination, not by tapping the page behind it.
+  useDismiss({
+    open: mobileOpen,
+    onDismiss: closeMobile,
+    returnFocusRef: mobileButtonRef,
+    dismissOnPointerDownOutside: false,
+  });
 
   const toggleMobile = () => {
     setMobileOpen((value) => {
@@ -111,13 +91,16 @@ function NavbarShell({ pathname }: { pathname: string }) {
     });
   };
 
-  const handleNotificationOpenChange = (value: boolean) => {
+  // Stable so that NotificationBell's `close`, which wraps it, is stable too --
+  // otherwise useDismiss's effect would tear down and re-add its listeners on
+  // every render of the Navbar.
+  const handleNotificationOpenChange = useCallback((value: boolean) => {
     setNotificationOpen(value);
     if (value) {
-      setMobileOpen(false);
-      setAccountOpen(false);
+      closeMobile();
+      closeAccount();
     }
-  };
+  }, [closeMobile, closeAccount]);
 
   return (
     <header className="shell-header" data-mobile-open={mobileOpen ? "true" : undefined}>
