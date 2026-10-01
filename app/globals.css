@@ -94,6 +94,13 @@
   --highlight-vivid: #d4a574;
   --accent-bright: #ef4444;
 
+  /* Glass for controls sitting *on* the orb. Theme-independent because the orb
+     no longer inverts, so the light theme needs the dark theme's light-on-dark
+     values rather than its own black-on-white ones -- which would disappear. */
+  --orb-glass: rgba(255, 255, 255, 0.04);
+  --orb-glass-hover: rgba(255, 255, 255, 0.09);
+  --orb-glass-line: rgba(255, 255, 255, 0.1);
+
   --duration-fast: 150ms;
   --duration-panel: 260ms;
   --shell-header-height: 5rem;
@@ -144,19 +151,23 @@
   --glass-line: rgba(0, 0, 0, 0.07);
   --glass-line-strong: rgba(0, 0, 0, 0.16);
 
-  --orb-halo: rgba(185, 28, 28, 0.12);
-  --orb-glow: rgba(185, 28, 28, 0.16);
-  --orb-glow-inner: rgba(185, 28, 28, 0.08);
-  --orb-base-a: #ffffff;
-  --orb-base-b: #ebebeb;
-  /* `screen` blows out to white on a light base; `multiply` is the light-theme
-     equivalent of the same additive glow. */
-  --orb-blend: multiply;
+  /* The orb does not invert. A glowing orb is a light source, so drawing it as a
+     white disc on a white page killed it: `screen` blew out to nothing and the
+     `multiply` stand-in left a flat white circle. It stays dark in light mode,
+     which is why AuthShell's contents follow the ink ramp rather than the
+     page's own tokens. */
+  --orb-base-a: #0d0909;
+  --orb-base-b: #1e1515;
+  --orb-blend: screen;
+  /* Against a light page the halo carries further than it does on near-black. */
+  --orb-halo: rgba(220, 38, 38, 0.28);
+  --orb-glow: rgba(220, 38, 38, 0.34);
+  --orb-glow-inner: rgba(220, 38, 38, 0.18);
   --elevation-card: 0 18px 45px -34px rgba(15, 23, 42, 0.1);
   --elevation-card-hover: 0 24px 60px -42px rgba(185, 28, 28, 0.22);
   --elevation-float: 0 24px 80px -48px rgba(15, 23, 42, 0.14);
   --elevation-poster: 0 28px 80px -44px rgba(15, 23, 42, 0.16);
-  --elevation-orb-rim: inset 0 0 60px 15px rgba(15, 23, 42, 0.06), inset 0 4px 10px rgba(255, 255, 255, 0.7);
+  --elevation-orb-rim: inset 0 0 60px 15px rgba(0, 0, 0, 0.8), inset 0 4px 10px rgba(255, 255, 255, 0.1);
   --elevation-filter: 0 18px 55px -42px rgba(15, 23, 42, 0.12);
   --elevation-glow: 0 12px 28px -18px rgba(15, 23, 42, 0.22);
   /* Grain at the dark theme's opacity reads as dirt once the ground is light. */
@@ -183,6 +194,9 @@
   --color-ink-subtle: var(--ink-subtle);
   --color-highlight-vivid: var(--highlight-vivid);
   --color-accent-bright: var(--accent-bright);
+  --color-orb-glass: var(--orb-glass);
+  --color-orb-glass-hover: var(--orb-glass-hover);
+  --color-orb-glass-line: var(--orb-glass-line);
   --color-on-highlight: var(--on-highlight);
   --color-on-accent: var(--on-accent);
   --color-on-scrim: var(--on-scrim);

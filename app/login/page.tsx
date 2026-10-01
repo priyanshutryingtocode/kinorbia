@@ -45,7 +45,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative group">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-red-400 transition-colors" />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-subtle group-focus-within:text-red-400 transition-colors" />
             <label htmlFor="login-email" className="sr-only">
               Email address
             </label>
@@ -64,14 +64,14 @@ export default function LoginPage() {
           <div className="flex items-center justify-end -mt-1">
             <Link
               href="/forgot-password"
-              className="text-[11px] font-medium text-content-subtle hover:text-red-400 transition"
+              className="text-[11px] font-medium text-ink-subtle hover:text-red-400 transition"
             >
               Forgot password?
             </Link>
           </div>
 
           <div className="relative group">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-red-400 transition-colors" />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-subtle group-focus-within:text-red-400 transition-colors" />
             <label htmlFor="login-password" className="sr-only">
               Password
             </label>
@@ -104,7 +104,7 @@ export default function LoginPage() {
         </form>
       </div>
 
-      <p className="mt-8 text-xs text-content-subtle">
+      <p className="mt-8 text-xs text-ink-subtle">
         Need an account? <Link href="/signup" className="text-red-400 font-medium hover:text-red-300 hover:underline transition-colors">Sign up</Link>
       </p>
     </AuthShell>

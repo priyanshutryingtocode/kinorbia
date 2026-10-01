@@ -49,9 +49,9 @@ export default function SignUpPage() {
         {registered ? (
           <div className="space-y-4">
             <CheckCircle2 className="w-10 h-10 mx-auto text-green-400" />
-            <h2 className="font-display text-xl font-medium leading-tight text-content">Account created</h2>
-            <p className="text-sm text-content">
-              You can sign in now with <span className="font-semibold text-content">{email}</span>.
+            <h2 className="font-display text-xl font-medium leading-tight text-ink-content">Account created</h2>
+            <p className="text-sm text-ink-content">
+              You can sign in now with <span className="font-semibold text-ink-content">{email}</span>.
               Verifying your email is optional, and only needed to post publicly.
             </p>
             <Link
@@ -67,7 +67,7 @@ export default function SignUpPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="relative group">
-                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-red-400 transition-colors" />
+                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-subtle group-focus-within:text-red-400 transition-colors" />
                 <label htmlFor="signup-name" className="sr-only">
                   Full name
                 </label>
@@ -84,7 +84,7 @@ export default function SignUpPage() {
               </div>
 
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-red-400 transition-colors" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-subtle group-focus-within:text-red-400 transition-colors" />
                 <label htmlFor="signup-email" className="sr-only">
                   Email address
                 </label>
@@ -101,7 +101,7 @@ export default function SignUpPage() {
               </div>
 
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-red-400 transition-colors" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-subtle group-focus-within:text-red-400 transition-colors" />
                 <label htmlFor="signup-password" className="sr-only">
                   Password
                 </label>
@@ -137,7 +137,7 @@ export default function SignUpPage() {
         )}
       </div>
 
-      <p className="mt-8 text-xs text-content-subtle">
+      <p className="mt-8 text-xs text-ink-subtle">
         Already have an account? <Link href="/login" className="text-red-400 font-medium hover:text-red-300 hover:underline transition-colors">Sign in</Link>
       </p>
     </AuthShell>

@@ -29,9 +29,9 @@ export default function AuthShell({ children, size = "default" }: AuthShellProps
             : "relative w-full max-w-130 aspect-square"
         }
       >
-        <div className="absolute inset-0 rounded-full shadow-[0_0_100px_-20px_rgba(220,38,38,0.3)] bg-canvas" />
+        <div className="absolute inset-0 rounded-full bg-ink shadow-[0_0_100px_-20px_rgba(220,38,38,0.55)]" />
         <div className="absolute inset-1 rounded-full orb-plasma overflow-hidden opacity-80" />
-        <div className="absolute inset-0 rounded-full shadow-orb-rim border border-glass-line" />
+        <div className="absolute inset-0 rounded-full shadow-orb-rim border border-ink-rule" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center p-10 z-10 text-center backdrop-blur-sm rounded-full">
           <Link
@@ -39,8 +39,8 @@ export default function AuthShell({ children, size = "default" }: AuthShellProps
             className="flex items-center gap-2 group mb-6 hover:scale-105 transition-transform"
           >
             <Film className="w-8 h-8 text-accent-hover" />
-            <span className="text-3xl font-bold text-content">
-              Kin<span className="text-accent-hover">Orbia</span>
+            <span className="text-3xl font-bold text-ink-content">
+              Kin<span className="text-accent-bright">Orbia</span>
             </span>
           </Link>
 
