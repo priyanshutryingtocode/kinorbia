@@ -10,12 +10,10 @@ import type { MovieSummary } from "@/types";
 type BrowseArgs = { page: number; genre?: string; exclude?: string[] };
 
 type MovieGridProps = {
-  // The page's first 20 titles, already server-rendered into the RSC payload.
-  // The button only ever appends to this list, so the first paint is unchanged
-  // and there is no cost to the client boundary.
+  // The page's first 20 titles, already in the RSC payload. The button only
+  // appends, so first paint is unaffected.
   initialItems: MovieSummary[];
-  // A server action reference, not a callback: plain functions cannot cross the
-  // server -> client boundary.
+  // A reference, not a callback: plain functions cannot cross the boundary.
   action: (args: BrowseArgs) => Promise<LoadMorePage<MovieSummary>>;
   args?: { genre?: string };
 };
@@ -25,27 +23,24 @@ type MovieGridProps = {
 const keyOf = (movie: MovieSummary) => mediaKey(movie.mediaType, movie.id);
 
 // One grid for the whole page: the 20 the server rendered and everything the
-// button has since loaded.
+// button has loaded since. Two grids is what used to put a short row mid-page,
+// because a last row is only full when the count divides by the column count.
 //
-// They used to be two separate grids, which is what put a short row in the
-// middle of the page. A grid's last row is only full when the item count divides
-// by the column count, and the browse grid is 2, 4 or 5 columns -- so a click has
-// to add exactly 20 titles, which is what `loadBrowsePage` guarantees by topping
-// up past any titles TMDB has re-ranked into the batch. That is why there is no
-// de-duplication here: the action returns only titles not already on screen, and
-// filtering them again would put the total back on an arbitrary residue.
+// No de-duplication here on purpose: `loadBrowsePage` already returns only titles
+// not on screen, and filtering again would put the total back on the arbitrary
+// residue this exists to avoid. See app/actions.ts for why a click must add
+// exactly 20.
 export default function MovieGrid({
   initialItems,
   action,
   args = {},
 }: MovieGridProps) {
-  // Seeded once, on mount, and never read from the prop again. `fetchMovies` is
-  // a server action, so clicking it revalidates this route and the page
-  // re-renders with a *new* `initialItems` array. Deriving the grid from the prop
-  // on every render meant that re-render replaced everything with the fresh 20
-  // and the click looked like it had done nothing. A genre change is the one case
-  // that genuinely wants a new seed, and the call site's `key={genre || "all"}`
-  // remounts this component for it.
+  // Seeded once on mount, never read from the prop again. `fetchMovies` is a
+  // server action, so a click revalidates the route and re-renders with a *new*
+  // `initialItems`; deriving from the prop each render replaced everything with
+  // the fresh 20, so the click looked like it had done nothing. A genre change
+  // is the one case that wants a new seed, and the call site remounts via
+  // `key={genre || "all"}`.
   const [seed] = useState(initialItems);
   const seedKeys = useMemo(() => seed.map(keyOf), [seed]);
 

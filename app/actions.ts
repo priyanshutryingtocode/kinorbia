@@ -13,39 +13,32 @@ import { mediaKey } from "@/lib/media";
 import { fetchSearchResults, type SearchFilters } from "@/lib/search";
 
 // TMDB exposes no total count, so `hasMore` is a question about the furthest
-// page reached, not a count comparison. Every action here resolves to the same
-// shape because `useLoadMore` consumes it directly -- a bare array cannot
-// express whether more pages exist.
+// page reached, not a count comparison. Every action resolves to this shape
+// because `useLoadMore` consumes it directly.
 //
-// `nextPage` is where the next click should start reading, which is not always
-// `page + 1`: the browse loop may have pulled an extra page to top up to a full
-// batch, and re-reading those would fetch the same titles again.
+// `nextPage` is where the next click resumes, which is not always `page + 1`: the
+// browse loop may have pulled an extra page to top up, and re-reading it would
+// fetch the same titles again.
 type BrowsePage = { results: MovieSummary[]; hasMore: boolean; nextPage?: number };
 
 // One "load more" click adds exactly TMDB_PAGE_SIZE (20) *new* titles.
 //
-// Exactly 20 matters: the browse grid is 2, 4 or 5 columns, and 20 divides all
-// three, so a click that added any other count would leave a short final row.
+// Exactly 20 matters: the browse grid is 2, 4 or 5 columns and 20 divides all
+// three, so any other count leaves a short final row.
 //
-// Fetching one page and returning whatever it holds is not enough on its own.
-// TMDB's popularity ranking shifts between requests, so a page fetched a second
-// after the previous one routinely repeats titles already on screen -- measured
-// at four to nine of twenty in practice. Dedupe on the client kept the cards
-// honest but left the visible total at 40-minus-an-arbitrary-number, which is
-// exactly the ragged row this is meant to prevent.
+// Returning one page's contents is not enough. TMDB's popularity ranking shifts
+// between requests, so a page fetched a second after the previous one repeats
+// titles already on screen -- measured at four to nine of twenty. Client-side
+// dedupe kept the cards honest but left the total at 40-minus-an-arbitrary-number,
+// which is the ragged row this prevents. So the filtering happens here, where
+// the count can still be corrected: the loop pulls until it holds 20 unique
+// titles or the source runs out, and reports where to resume.
 //
-// So the filtering happens here, where the count can still be corrected: the
-// loop keeps pulling pages until it has a full 20 unique titles or the source
-// genuinely runs out, and reports the page to resume from so the pages it read to
-// top up are not fetched again.
-//
-// A consequence, accepted: a page's unused tail is skipped. If page 3 has six
-// titles already shown, this takes its other fourteen and moves to page 4, so
-// those six never appear. In a ten-thousand-title popularity list that is
-// invisible, and nothing is persisted either way.
-//
-// `fetchPage` may resolve to null: `tmdbFetch` swallows transport errors and
-// returns null, so a failure is not an exception the hook can catch.
+// Two consequences, both accepted. A page's unused tail is skipped, so six titles
+// on page 3 that were already shown never appear -- invisible in a
+// ten-thousand-title list, and nothing is persisted either way. And `fetchPage`
+// may resolve to null, since `tmdbFetch` swallows transport errors rather than
+// throwing, so a failure is not an exception the hook can catch.
 async function loadBrowsePage(
   startPage: number,
   fetchPage: (page: number) => Promise<{ results?: MovieSummary[] } | null>,
@@ -57,8 +50,8 @@ async function loadBrowsePage(
   let hasMore = true;
 
   while (results.length < TMDB_PAGE_SIZE) {
-    // Past TMDB's page ceiling. Reported as a finished list so the button
-    // disappears rather than looping on whatever `safePage` folded the request to.
+    // Past TMDB's page ceiling: reported as finished so the button disappears
+    // rather than looping on whatever `safePage` folded the request to.
     if (!isFetchablePage(page)) {
       hasMore = false;
       break;
@@ -66,14 +59,12 @@ async function loadBrowsePage(
 
     const batch = await fetchPage(page);
 
-    // A response that is not a well-formed page is "unknown", not "the end of
-    // the list", and must not remove the button permanently. Testing `!results`
-    // rather than `=== null` covers all three ways it goes wrong: a transport
-    // error (null), a body without the key, and a fetcher resolving to undefined.
-    // An empty array is truthy, so a genuinely empty page still falls through to
-    // the end-of-list check below -- and TMDB exposes no total count, so an empty
-    // page is the only end-of-list signal there is. Note that this breaks
-    // *before* `page` is incremented, so the retry re-reads the failed page.
+    // A malformed page is "unknown", not "the end", and must not remove the
+    // button permanently. Testing `!results` rather than `=== null` covers all
+    // three failure shapes: null, a body without the key, and undefined. An empty
+    // array is truthy, so a genuinely empty page falls through to the end-of-list
+    // check below -- the only signal available, since TMDB has no total. This
+    // breaks *before* `page` increments, so a retry re-reads the failed page.
     if (!batch?.results) {
       break;
     }
@@ -102,12 +93,10 @@ async function loadBrowsePage(
   return { results, hasMore, nextPage: page };
 }
 
-// A server action is a public HTTP endpoint, so its arguments arrive from the
-// wire and arrive unvalidated. `isFetchablePage` and `safePage` both fold a
-// bad page to page 1 rather than throwing, so without this a crafted call would
-// quietly get page 1's contents back rather than an error. Coercing here means
-// the invariant is enforced once, at the boundary, instead of being assumed by
-// each browse action.
+// A server action is a public endpoint, so its arguments arrive unvalidated, and
+// both `isFetchablePage` and `safePage` fold a bad page to 1 rather than throwing
+// -- a crafted call would quietly get page 1 back instead of an error. Coercing
+// here enforces the invariant once, at the boundary, rather than in each action.
 function toPageNumber(value: unknown): number {
   const n = Number(value);
   return Number.isInteger(n) && n >= 1 ? n : 1;
@@ -120,8 +109,7 @@ export async function fetchMovies({
 }: {
   page: number;
   genre?: string;
-  // `mediaKey` strings for every title already on screen. Sent by the grid so
-  // the action can guarantee a click adds 20 titles it has not already shown.
+  // `mediaKey` for every title on screen, so the action can guarantee 20 new ones.
   exclude?: string[];
 }): Promise<BrowsePage> {
   return loadBrowsePage(

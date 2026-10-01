@@ -1,21 +1,12 @@
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 
-// Reviews, lists, and comments all store a *display* name -- `session.user.name`,
-// e.g. "Priya Sharma" -- because that is what the byline is supposed to read.
-// The public profile route resolves the username *slug* instead
-// (`app/(root)/u/[username]/page.tsx` does `User.findOne({ username })`, and
-// `User.username` is a `slugifyUsername` derivation of the name, e.g.
-// "priya-sharma").
-//
-// So a byline cannot be linked with the name it already holds: the two are
-// different strings, display names are not unique, and every such link would
-// 404. `userEmail` is the only reliable join key, and every one of those
-// documents already carries it.
-//
-// Hence one batched `$in` read per page -- the same shape as
-// `buildReviewerRatingMaps` in `lib/reviewRatings.ts`, which resolves a page of
-// reviews to their authors' ratings the same way.
+// Reviews, lists, and comments store a *display* name ("Priya Sharma"), but the
+// public profile route resolves a *slug* ("priya-sharma"). A byline cannot be
+// linked with the name it already holds: they are different strings, display
+// names are not unique, and every such link would 404. `userEmail` is the only
+// reliable join key, and every one of those documents already carries it -- hence
+// one batched `$in` read per page, the same shape as buildReviewerRatingMaps.
 
 // Keyed by lowercased email. Emails are written through `requireUser()`, which
 // lowercases, but older rows and Google sign-ins are not guaranteed to be, so
@@ -36,9 +27,8 @@ export async function buildUsernameMap(
   }
 
   await dbConnect();
-  // `username: { $exists: true }` matters: an account created before
-  // `ensureUserIdentity` ran has no slug, and returning a map entry pointing at
-  // `undefined` would render a link to `/u/undefined`.
+  // `$exists` matters: an account predating `ensureUserIdentity` has no slug, and
+  // an entry pointing at `undefined` renders a link to `/u/undefined`.
   const users = await User.find({ email: { $in: normalized }, username: { $exists: true } })
     .select("email username")
     .lean<{ email: string; username: string }[]>();
@@ -50,9 +40,8 @@ export async function buildUsernameMap(
   return map;
 }
 
-// Reading side of the join. Returns undefined when the author has no username
-// or no account, which is the signal to render plain text instead of a link that
-// would dead-end on `notFound()`.
+// Reading side. Undefined when the author has no username or no account, which
+// is the signal to render plain text rather than a link that would dead-end.
 export function usernameFor(
   usernames: Map<string, string>,
   email: string | null | undefined
@@ -60,8 +49,7 @@ export function usernameFor(
   return email ? usernames.get(email.toLowerCase()) : undefined;
 }
 
-// The one place that knows a public profile's URL shape. Three components were
-// each spelling out `/u/${encodeURIComponent(username)}` inline.
+// The one place that knows a public profile's URL shape.
 export function profileHref(username: string): string {
   return `/u/${encodeURIComponent(username)}`;
 }
