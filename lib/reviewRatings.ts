@@ -11,23 +11,33 @@ type ReviewForRating = {
 
 // Generic over the two fields it reads, so a caller that has projected the rest
 // of each favorite away can still pass the result here without a cast.
+//
+// Keeps the *newest* copy of a duplicate, matching the `$reduce` in
+// `uniqueMediaItems` (lib/profileData.ts). That is the correct direction: Mongo
+// preserves insertion order and `addedAt` defaults to the insertion time, so
+// walking backwards and taking the first hit keeps the most recently added row.
+// The rating route updates `favorites.$` positionally, so the newest copy is
+// also the one holding the freshest title, poster, and personalRating.
+//
+// This walked forwards and kept the *oldest*, so the two dedupes disagreed about
+// which copy survived -- and only rows that predate the unique index can contain
+// duplicates at all, which is why the disagreement was invisible for so long.
+//
+// Output order matches the input order, so a caller rendering the result shows
+// the array's own sequence rather than the reverse.
 export function dedupeFavorites<T extends { movieId?: string; mediaType?: string }>(
   favorites: T[]
 ): T[] {
-  const seen = new Set<string>();
-  const deduped: T[] = [];
+  const lastIndexByKey = new Map<string, number>();
 
-  for (const favorite of favorites) {
-    const key = mediaKey(favorite.mediaType, favorite.movieId);
-    if (seen.has(key)) {
-      continue;
-    }
-
-    seen.add(key);
-    deduped.push(favorite);
+  for (let index = 0; index < favorites.length; index += 1) {
+    lastIndexByKey.set(mediaKey(favorites[index].mediaType, favorites[index].movieId), index);
   }
 
-  return deduped;
+  return favorites.filter(
+    (favorite, index) =>
+      lastIndexByKey.get(mediaKey(favorite.mediaType, favorite.movieId)) === index
+  );
 }
 
 export function buildRatingMap(favorites: FavoriteMovie[]): Map<string, number> {

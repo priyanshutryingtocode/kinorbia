@@ -133,6 +133,13 @@ export async function getPersonalMediaStatus(
   };
 }
 
+// Reverses, reduces keeping the first hit per mediaKey, so the surviving copy is
+// the LAST in storage order -- and since Mongo preserves insertion order and
+// addedAt defaults to the insertion time, that is the newest. Matches
+// dedupeFavorites in lib/reviewRatings.ts; keep the two in step.
+//
+// Not merged with it: this is load-bearing for pagination, computing the total
+// and slicing items in one round trip, which the JS twin cannot do.
 function uniqueMediaItems(field: "favorites" | "watchlist") {
   return {
     $reduce: {
