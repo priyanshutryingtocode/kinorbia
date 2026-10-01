@@ -57,7 +57,7 @@ export default function LoginPage() {
               placeholder="Email address"
               required
               autoComplete="email"
-              className="kin-input kin-input-affix py-3.5"
+              className="kin-input kin-input-ink kin-input-affix py-3.5"
             />
           </div>
 
@@ -83,7 +83,7 @@ export default function LoginPage() {
               placeholder="Password"
               required
               autoComplete="current-password"
-              className="kin-input kin-input-affix py-3.5"
+              className="kin-input kin-input-ink kin-input-affix py-3.5"
             />
           </div>
 

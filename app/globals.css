@@ -198,6 +198,7 @@
   --color-ink-content: var(--ink-content);
   --color-ink-muted: var(--ink-muted);
   --color-ink-subtle: var(--ink-subtle);
+    --color-ink-rule: var(--ink-rule);
   --color-highlight-vivid: var(--highlight-vivid);
   --color-accent-bright: var(--accent-bright);
   --color-orb-glass: var(--orb-glass);
@@ -517,6 +518,21 @@ html {
   .kin-input {
     @apply w-full rounded-control border border-rule bg-surface-raised px-3.5 py-2.5 text-sm text-content placeholder:text-content-subtle transition-colors focus-visible:border-accent-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-50;
     transition-duration: var(--duration-fast);
+  }
+
+  /* The auth pages are the only place a form sits on the ink ramp rather than
+   * the page surfaces, and `.kin-input` above is deliberately left alone because
+   * nine other files use it. Composed after it, so the later source order wins:
+   *
+   *   className="kin-input kin-input-ink"
+   *
+   * This is not cosmetic. `bg-surface-raised` resolves to #ffffff in the light
+   * theme, so without the override a light-theme visitor got a white input on a
+   * near-black panel -- and the surrounding text is all `ink-*`, which is why it
+   * had gone unnoticed. The orb is dark in both themes, so the auth form is too,
+   * and the inputs have to agree with that. */
+  .kin-input-ink {
+    @apply border-ink-rule bg-ink-raised text-ink-content placeholder:text-ink-subtle;
   }
 
   .kin-search-input {

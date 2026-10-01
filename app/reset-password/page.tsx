@@ -88,7 +88,7 @@ function ResetPasswordForm() {
           required
           minLength={8}
           autoComplete="new-password"
-          className="kin-input kin-input-affix py-3.5"
+          className="kin-input kin-input-ink kin-input-affix py-3.5"
         />
       </div>
 
@@ -106,7 +106,7 @@ function ResetPasswordForm() {
           required
           minLength={8}
           autoComplete="new-password"
-          className="kin-input kin-input-affix py-3.5"
+          className="kin-input kin-input-ink kin-input-affix py-3.5"
         />
       </div>
 

@@ -43,7 +43,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <AuthShell size="tall">
+    <AuthShell>
       <h1 className="sr-only">Create your KinOrbia account</h1>
       <div className="w-full max-w-70 space-y-4">
         {registered ? (
@@ -79,7 +79,7 @@ export default function SignUpPage() {
                   placeholder="Full Name"
                   required
                   autoComplete="name"
-                  className="kin-input kin-input-affix py-3.5"
+                  className="kin-input kin-input-ink kin-input-affix py-3.5"
                 />
               </div>
 
@@ -96,7 +96,7 @@ export default function SignUpPage() {
                   placeholder="Email address"
                   required
                   autoComplete="email"
-                  className="kin-input kin-input-affix py-3.5"
+                  className="kin-input kin-input-ink kin-input-affix py-3.5"
                 />
               </div>
 
@@ -114,7 +114,7 @@ export default function SignUpPage() {
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className="kin-input kin-input-affix py-3.5"
+                  className="kin-input kin-input-ink kin-input-affix py-3.5"
                 />
               </div>
 
