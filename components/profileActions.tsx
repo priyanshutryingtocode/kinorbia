@@ -162,7 +162,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
           <button
             type="submit"
             disabled={loading}
-            className="kin-focus flex w-full items-center justify-center gap-2 rounded-sheet bg-accent py-3 font-bold text-content transition hover:bg-accent-hover disabled:opacity-60"
+            className="kin-focus flex w-full items-center justify-center gap-2 rounded-sheet bg-accent py-3 font-bold text-on-accent transition hover:bg-accent-hover disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {loading ? "Saving..." : "Save changes"}

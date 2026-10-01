@@ -32,7 +32,7 @@ export default function ProfileHeader({
       <div className="profile-wash pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 flex-1 items-start gap-4 sm:gap-5">
-          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-white/15 bg-surface-raised ring-1 ring-gold/15 sm:h-24 sm:w-24">
+          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-glass-line-strong bg-surface-raised ring-1 ring-gold/15 sm:h-24 sm:w-24">
             {image ? (
               <Image
                 src={image}

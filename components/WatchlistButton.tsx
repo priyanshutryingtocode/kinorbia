@@ -44,7 +44,7 @@ export default function WatchlistButton({ movie, initialIsWatchlisted }: Watchli
       active={active}
       loading={loading}
       disabled={loading}
-      activeClassName="border-blue-500 bg-blue-600 text-content shadow-[0_14px_30px_-18px_rgba(59,130,246,0.9)]"
+      activeClassName="border-blue-500 bg-blue-600 text-on-accent shadow-[0_14px_30px_-18px_rgba(59,130,246,0.9)]"
       icon={Bookmark}
       label={active ? "Remove from watchlist" : "Add to watchlist"}
       onClick={toggle}

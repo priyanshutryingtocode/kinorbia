@@ -136,7 +136,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
                   aria-pressed={selectedMovie.personalRating === rating}
                   className={`kin-focus flex h-11 items-center justify-center rounded-full border text-sm font-bold transition disabled:opacity-50 ${
                     selectedMovie.personalRating === rating
-                      ? "border-highlight bg-highlight text-black"
+                      ? "border-highlight bg-highlight text-on-highlight"
                       : "border-rule bg-surface text-content hover:border-highlight/50 hover:text-highlight"
                   }`}
                 >

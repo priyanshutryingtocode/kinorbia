@@ -38,7 +38,7 @@ function Chip({ chip }: { chip: DetailChip }) {
     ? "h-4 w-4 fill-current"
     : chip.icon === "star-filled"
       ? "h-4 w-4 fill-highlight text-highlight"
-      : "h-4 w-4 text-content-muted";
+      : "h-4 w-4 text-on-scrim-muted";
 
   return (
     <div className={chip.accent ? ACCENT_CHIP_CLASS : CHIP_CLASS}>
@@ -92,10 +92,10 @@ export default async function MediaDetailPage({
                 width={320}
                 height={480}
                 priority
-                className="aspect-2/3 w-full rotate-1 rounded-sheet border border-rule object-cover shadow-[0_28px_80px_-44px_rgba(0,0,0,0.95)] transition-transform duration-500 hover:rotate-0"
+                className="aspect-2/3 w-full rotate-1 rounded-sheet border border-rule object-cover shadow-poster transition-transform duration-500 hover:rotate-0"
               />
             ) : (
-              <div className="flex aspect-2/3 w-full rotate-1 items-center justify-center rounded-sheet border border-rule bg-surface-raised shadow-[0_28px_80px_-44px_rgba(0,0,0,0.95)] transition-transform duration-500 hover:rotate-0">
+              <div className="flex aspect-2/3 w-full rotate-1 items-center justify-center rounded-sheet border border-rule bg-surface-raised shadow-poster transition-transform duration-500 hover:rotate-0">
                 <FallbackIcon className="h-10 w-10 text-content-subtle" />
               </div>
             )}
@@ -115,7 +115,7 @@ export default async function MediaDetailPage({
               </p>
             )}
 
-            <div className="mt-6 flex flex-wrap items-center gap-2 text-sm font-medium text-content">
+            <div className="mt-6 flex flex-wrap items-center gap-2 text-sm font-medium text-on-scrim">
               {model.chips.map((chip) => (
                 <Chip key={chip.key} chip={chip} />
               ))}

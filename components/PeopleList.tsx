@@ -81,7 +81,7 @@ export default function PeopleList({
           </div>
           <button
             type="submit"
-            className="kin-focus h-10 shrink-0 rounded-sm bg-accent px-4 text-xs font-semibold text-content transition-colors hover:bg-accent-hover"
+            className="kin-focus h-10 shrink-0 rounded-sm bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover"
           >
             Search
           </button>

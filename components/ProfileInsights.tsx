@@ -184,7 +184,7 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
             </thead>
             <tbody>
               {data.monthly.map((point) => (
-                <tr key={point.key} className="border-t border-white/5">
+                <tr key={point.key} className="border-t border-glass-line">
                   <td className="py-2 pr-4">{point.key}</td>
                   <td className="py-2">{point.count}</td>
                 </tr>
@@ -211,7 +211,7 @@ function RatingBars({ data }: { data: InsightsData }) {
         <div key={bucket.stars} className="grid grid-cols-[3rem_1fr_2.5rem] items-center gap-3 text-sm">
           <span className="text-content-muted">{bucket.stars} star</span>
           <div
-            className="h-1.5 overflow-hidden rounded-full bg-white/8"
+            className="h-1.5 overflow-hidden rounded-full bg-glass-hover"
             role="progressbar"
             aria-label={`${bucket.stars} star ratings`}
             aria-valuemin={0}
@@ -237,7 +237,7 @@ function MediaSplit({ data }: { data: InsightsData }) {
   return (
     <div>
       <div
-        className="flex h-2 overflow-hidden rounded-full bg-white/8"
+        className="flex h-2 overflow-hidden rounded-full bg-glass-hover"
         role="img"
         aria-label={`${data.moviesWatched} movies and ${data.showsWatched} shows`}
       >
@@ -438,7 +438,7 @@ export default function ProfileInsights({
                   {insights.genreBreakdown.map((genre) => (
                     <div key={genre.name} className="grid grid-cols-[minmax(6rem,10rem)_1fr_3rem] items-center gap-3 text-sm">
                       <span className="truncate text-content" title={genre.name}>{genre.name}</span>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
+                      <div className="h-1.5 overflow-hidden rounded-full bg-glass-hover">
                         <div className="h-full rounded-full bg-gold/75" style={{ width: `${(genre.count / maxGenre) * 100}%` }} />
                       </div>
                       <span className="text-right text-content-muted">{genre.count}</span>
@@ -478,7 +478,7 @@ export default function ProfileInsights({
                             <Film className="h-6 w-6" />
                           </div>
                         )}
-                        <span className="absolute right-2 top-2 inline-flex items-center gap-1 bg-black/75 px-2 py-1 text-xs font-bold text-gold">
+                        <span className="absolute right-2 top-2 inline-flex items-center gap-1 bg-black/75 px-2 py-1 text-xs font-bold text-on-scrim">
                           <Star className="h-3 w-3 fill-current" aria-hidden="true" />
                           {(item.rating / 2).toFixed(1)}
                         </span>

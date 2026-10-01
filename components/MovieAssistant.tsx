@@ -176,7 +176,7 @@ export default function MovieAssistant() {
           aria-labelledby="movie-assistant-heading"
           className="premium-surface mb-4 flex max-h-[min(38rem,calc(100dvh-var(--shell-header-height)-6rem))] w-[calc(100vw-2.5rem)] max-w-md flex-col overflow-hidden rounded-overlay text-content ring-1 ring-white/5"
         >
-          <div className="flex shrink-0 items-center justify-between border-b border-rule bg-white/4 px-4 py-3">
+          <div className="flex shrink-0 items-center justify-between border-b border-rule bg-glass px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="rounded-sheet border border-accent/20 bg-accent-hover/12 p-2 text-red-300 shadow-[0_0_28px_rgba(220,38,38,0.12)]">
                 <Sparkles className="h-5 w-5" />
@@ -207,8 +207,8 @@ export default function MovieAssistant() {
                 <div
                   className={`inline-block max-w-[85%] rounded-overlay px-4 py-3 text-sm leading-relaxed ${
                     message.role === "user"
-                      ? "bg-accent text-content shadow-[0_14px_32px_-22px_rgba(220,38,38,0.9)]"
-                      : "border border-rule bg-white/8 text-content"
+                      ? "bg-accent text-on-accent shadow-[0_14px_32px_-22px_rgba(220,38,38,0.9)]"
+                      : "border border-rule bg-glass-hover text-content"
                   }`}
                 >
                   {message.content}
@@ -221,7 +221,7 @@ export default function MovieAssistant() {
                         key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`}
                         href={mediaHref(movie.mediaType, movie.id)}
                         onClick={() => closeAssistant(false)}
-                        className="kin-focus flex gap-3 rounded-control border border-rule bg-black/25 p-2 transition hover:border-accent/50 hover:bg-white/8"
+                        className="kin-focus flex gap-3 rounded-control border border-rule bg-glass-strong p-2 transition hover:border-accent/50 hover:bg-glass-hover"
                       >
                         <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-sheet bg-surface-raised">
                           <AssistantPoster movie={movie} />
@@ -274,7 +274,7 @@ export default function MovieAssistant() {
               <button
                 type="submit"
                 disabled={loading}
-                className="kin-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-accent text-content transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="kin-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-accent text-on-accent transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Send message"
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
@@ -288,7 +288,7 @@ export default function MovieAssistant() {
         ref={launcherRef}
         type="button"
         onClick={() => (open ? closeAssistant() : setOpen(true))}
-        className="kin-focus ml-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-accent/90 text-content shadow-card-hover backdrop-blur-xl transition hover:scale-105 hover:bg-accent-hover"
+        className="kin-focus ml-auto flex h-14 w-14 items-center justify-center rounded-full border border-glass-line-strong bg-accent/90 text-on-accent shadow-card-hover backdrop-blur-xl transition hover:scale-105 hover:bg-accent-hover"
         aria-label={open ? "Close movie assistant" : "Open movie assistant"}
         aria-expanded={open}
         aria-controls="movie-assistant-panel"

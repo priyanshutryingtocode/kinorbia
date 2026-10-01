@@ -49,7 +49,7 @@ export default function MovieCard({
         <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/8" />
         <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 rounded-full border border-rule bg-black/55 px-2 py-0.5 backdrop-blur-md sm:top-2 sm:right-2 sm:gap-1 sm:px-2.5 sm:py-1">
           <Star className="h-2.5 w-2.5 fill-highlight text-highlight sm:h-3 sm:w-3" />
-          <span className="text-[10px] font-medium text-content sm:text-xs">{movie.vote_average.toFixed(1)}</span>
+          <span className="text-[10px] font-medium text-on-scrim sm:text-xs">{movie.vote_average.toFixed(1)}</span>
         </div>
       </Link>
 
@@ -61,7 +61,7 @@ export default function MovieCard({
           className={`kin-focus absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-full border border-rule px-2.5 py-1 text-xs font-bold backdrop-blur-md transition-colors ${
             movie.personalRating > 0
               ? "bg-highlight/12 text-highlight hover:bg-highlight/20"
-              : "bg-black/55 text-content hover:bg-surface-raised hover:text-content"
+              : "bg-black/55 text-on-scrim hover:bg-surface-raised hover:text-content"
           }`}
         >
           <Star className={`w-3 h-3 ${movie.personalRating > 0 ? "fill-current" : ""}`} />

@@ -186,11 +186,11 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
         aria-expanded={open}
         aria-controls="notification-panel"
-        className="kin-focus relative flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
+        className="kin-focus relative flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-glass text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
       >
         <Bell className="h-5 w-5" aria-hidden="true" />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-content" aria-hidden="true">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-on-accent" aria-hidden="true">
             {unread > 9 ? "9+" : unread}
           </span>
         )}

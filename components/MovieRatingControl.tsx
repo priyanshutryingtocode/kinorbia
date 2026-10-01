@@ -138,7 +138,7 @@ return (
         type="button"
         onClick={() => rateMovie(draftStars)}
         disabled={loading || Math.round(draftStars * 2) === rating}
-        className="kin-focus w-full shrink-0 rounded-full border border-rule bg-white/7 px-3 py-2 text-sm font-semibold text-content transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-1.5"
+        className="kin-focus w-full shrink-0 rounded-full border border-rule bg-glass-strong px-3 py-2 text-sm font-semibold text-content transition hover:bg-glass-strong disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-1.5"
       >
         Save
       </button>

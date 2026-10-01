@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import NotificationBell from "./NotificationBell";
+import ThemeToggle from "./ThemeToggle";
 
 const NAV_LINKS = [
   { name: "Movies", href: "/" },
@@ -133,7 +134,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
           </span>
         </Link>
 
-        <div className="hidden items-center gap-1 rounded-control border border-rule bg-white/3 p-1 lg:flex">
+        <div className="hidden items-center gap-1 rounded-control border border-rule bg-glass p-1 lg:flex">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.name}
@@ -142,7 +143,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
               className={`kin-focus rounded-control px-3 py-2 text-sm font-medium transition-colors ${
                 isActive(link.href)
                   ? "bg-accent/10 text-red-200 ring-1 ring-accent/25"
-                  : "text-content-muted hover:bg-white/7 hover:text-content"
+                  : "text-content-muted hover:bg-glass-strong hover:text-content"
               }`}
             >
               {link.name}
@@ -151,10 +152,12 @@ function NavbarShell({ pathname }: { pathname: string }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <ThemeToggle />
+
           <Link
             href="/search"
             onClick={() => setMobileOpen(false)}
-            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
+            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-glass text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
             aria-label="Search films"
           >
             <Search className="h-5 w-5" aria-hidden="true" />
@@ -172,7 +175,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
                   ref={accountButtonRef}
                   type="button"
                   onClick={toggleAccount}
-                  className="kin-focus flex h-10 w-10 items-center justify-center rounded-full border border-rule bg-white/3 transition hover:border-accent/50"
+                  className="kin-focus flex h-10 w-10 items-center justify-center rounded-full border border-rule bg-glass transition hover:border-accent/50"
                   aria-label="Account menu"
                   aria-expanded={accountOpen}
                   aria-controls="account-menu"
@@ -222,7 +225,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}
-              className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
+              className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-glass text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
               aria-label="Sign in"
             >
               <User className="h-5 w-5" aria-hidden="true" />
@@ -233,7 +236,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
             ref={mobileButtonRef}
             type="button"
             onClick={toggleMobile}
-            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-white/3 text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content lg:hidden"
+            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-glass text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content lg:hidden"
             aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={mobileOpen}
             aria-controls="mobile-navigation"
@@ -256,7 +259,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
                   className={`rounded-control px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive(link.href)
                       ? "bg-accent/10 text-red-200 ring-1 ring-accent/25"
-                      : "text-content-muted hover:bg-white/7 hover:text-content"
+                      : "text-content-muted hover:bg-glass-strong hover:text-content"
                   }`}
                 >
                   {link.name}
@@ -269,7 +272,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
                   <Link
                     href="/profile"
                     onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 rounded-control px-3 py-2.5 text-sm font-medium text-content-muted transition hover:bg-white/7 hover:text-content"
+                    className="flex items-center gap-2 rounded-control px-3 py-2.5 text-sm font-medium text-content-muted transition hover:bg-glass-strong hover:text-content"
                   >
                     <User className="h-4 w-4" aria-hidden="true" />
                     Profile

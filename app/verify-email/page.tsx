@@ -51,7 +51,7 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
       <p className="mt-4 max-w-md text-content-muted">{copy.body}</p>
       <Link
         href="/"
-        className="mt-8 rounded-full bg-accent px-6 py-3 text-sm font-bold text-content transition hover:bg-accent-hover"
+        className="mt-8 rounded-full bg-accent px-6 py-3 text-sm font-bold text-on-accent transition hover:bg-accent-hover"
       >
         Back to KinOrbia
       </Link>

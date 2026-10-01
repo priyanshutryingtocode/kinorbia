@@ -29,6 +29,25 @@ npm i -D mongodb
 Locally this is a non-issue, because a normal `npm install` includes
 devDependencies.
 
+## `checkContrast.mjs` is not an admin script
+
+The other three need a live database. This one reads `app/globals.css` and the
+component tree and needs neither a URI nor any dependency, so it takes no
+`--env-file`:
+
+```bash
+npm run check:contrast
+```
+
+It exists because of a specific failure. `text-neutral-700` is a Tailwind grey
+intended for a light background, and it reached fifteen call sites in an app
+whose canvas is `#0a0a0a`. At 1.91:1 it rendered the rating stars, the disabled
+pager buttons, and every poster-fallback icon invisible — none of which is
+obvious in review. The script rejects those greys outright, checks every
+declared `--color-*` against all three surfaces of both themes, verifies each
+one actually resolves, and checks the two raw-palette filled chips that also
+carry accent text. Worth running in CI alongside `tsc`, `eslint`, and `build`.
+
 ## What each one does
 
 | Script | Purpose | Destructive |

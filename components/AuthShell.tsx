@@ -20,7 +20,7 @@ type AuthShellProps = {
 export default function AuthShell({ children, size = "default" }: AuthShellProps) {
   return (
     <div className="min-h-screen bg-canvas flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 bg-red-900/20 rounded-full blur-3xl opacity-50 pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 bg-orb-halo rounded-full blur-3xl opacity-50 pointer-events-none" />
 
       <div
         className={
@@ -31,7 +31,7 @@ export default function AuthShell({ children, size = "default" }: AuthShellProps
       >
         <div className="absolute inset-0 rounded-full shadow-[0_0_100px_-20px_rgba(220,38,38,0.3)] bg-canvas" />
         <div className="absolute inset-1 rounded-full orb-plasma overflow-hidden opacity-80" />
-        <div className="absolute inset-0 rounded-full shadow-[inset_0_0_60px_15px_rgba(0,0,0,0.8),inset_0_4px_10px_rgba(255,255,255,0.1)] border border-white/5" />
+        <div className="absolute inset-0 rounded-full shadow-orb-rim border border-glass-line" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center p-10 z-10 text-center backdrop-blur-sm rounded-full">
           <Link

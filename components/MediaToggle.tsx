@@ -114,7 +114,7 @@ export function MediaToggleButton({
       className={`kin-focus flex h-11 w-11 items-center justify-center rounded-full border transition-all group ${
         active
           ? activeClassName
-          : "border-rule bg-white/7 text-content hover:bg-white/12"
+          : "border-rule bg-glass-strong text-content hover:bg-glass-strong"
       }`}
       aria-label={label}
     >

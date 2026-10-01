@@ -135,7 +135,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             />
             <button
               type="submit"
-              className="kin-focus absolute right-1.5 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center rounded-control bg-accent px-4 text-sm font-semibold text-content transition-colors hover:bg-accent-hover"
+              className="kin-focus absolute right-1.5 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center rounded-control bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover"
             >
               Search
             </button>

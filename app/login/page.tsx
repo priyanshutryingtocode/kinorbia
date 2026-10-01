@@ -43,7 +43,7 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => signIn("google", { callbackUrl: "/" })}
-          className="w-full flex items-center justify-center gap-3 bg-white/3 hover:bg-white/8 border border-rule rounded-control py-3.5 px-4 transition-colors duration-150 group"
+          className="w-full flex items-center justify-center gap-3 bg-glass hover:bg-glass-hover border border-rule rounded-control py-3.5 px-4 transition-colors duration-150 group"
         >
           <Chrome className="w-5 h-5 text-content-muted group-hover:text-content transition-colors" />
           <span className="text-sm font-medium text-content group-hover:text-content transition-colors">Continue with Google</span>
@@ -108,7 +108,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-accent hover:bg-accent-hover disabled:opacity-70 disabled:hover:bg-accent text-content font-semibold text-sm py-3.5 rounded-control transition-colors duration-300 flex items-center justify-center gap-2"
+            className="w-full bg-accent hover:bg-accent-hover disabled:opacity-70 disabled:hover:bg-accent text-on-accent font-semibold text-sm py-3.5 rounded-control transition-colors duration-300 flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             Sign In

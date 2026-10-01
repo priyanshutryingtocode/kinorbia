@@ -32,7 +32,7 @@ export default function GenreFilter({ mediaType }: { mediaType: MediaType }) {
 
   return (
     <div className="mb-10">
-      <div className="relative overflow-hidden rounded-sheet border border-rule bg-canvas/55 p-1.5 shadow-[0_18px_55px_-42px_rgba(0,0,0,0.95)] backdrop-blur-xl">
+      <div className="relative overflow-hidden rounded-sheet border border-rule bg-canvas/55 p-1.5 shadow-filter backdrop-blur-xl">
         <div className="overflow-x-auto hide-scrollbar">
           <div className="grid w-max snap-x grid-flow-col auto-cols-max gap-1.5 lg:w-full lg:grid-flow-row lg:grid-cols-[repeat(11,minmax(max-content,1fr))]">
             {genres.map((genre) => {
@@ -47,8 +47,8 @@ export default function GenreFilter({ mediaType }: { mediaType: MediaType }) {
                   }}
                   className={`kin-focus relative w-full snap-start whitespace-nowrap rounded-control px-4 py-2 text-sm font-medium transition-all duration-300 lg:px-2 ${
                     isActive
-                      ? "bg-content text-canvas shadow-[0_12px_28px_-18px_rgba(255,255,255,0.7)]"
-                      : "text-content-muted hover:bg-white/7 hover:text-content"
+                      ? "bg-content text-canvas shadow-glow"
+                      : "text-content-muted hover:bg-glass-strong hover:text-content"
                   }`}
                 >
                   {genre.name}

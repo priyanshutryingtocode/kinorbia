@@ -22,7 +22,7 @@ type SubmitButtonProps = {
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children">;
 
 const variantClasses: Record<SubmitButtonVariant, string> = {
-  primary: "border-transparent bg-accent text-content hover:bg-accent-hover",
+  primary: "border-transparent bg-accent text-on-accent hover:bg-accent-hover",
   secondary:
     "border-rule-strong bg-surface-raised text-content hover:border-highlight/35 hover:bg-surface hover:text-highlight",
   danger: "border-accent/35 bg-accent/5 text-red-200 hover:bg-accent/10",

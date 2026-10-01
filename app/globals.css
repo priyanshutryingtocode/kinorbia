@@ -1,19 +1,79 @@
 @import "tailwindcss";
 
+/* Dark is the default and lives on :root, so the app renders correctly with no
+   JavaScript at all. `app/layout.tsx` sets `data-theme` on <html> before first
+   paint; this block only overrides the palette, never the structure, which is
+   why light mode needs no changes to any component.
+   Every text value below is verified against all three surfaces; the tightest
+   is --content-subtle at 5.19:1. */
 :root {
   color-scheme: dark;
+
+  /* Elevation reads as "lighter" in both themes. */
   --canvas: #0a0a0a;
   --surface: #111111;
   --surface-raised: #171717;
+
   --content: #f5f5f5;
   --content-muted: #a3a3a3;
   --content-subtle: #8a8a8a;
+
   --rule: rgba(255, 255, 255, 0.1);
   --rule-strong: rgba(255, 255, 255, 0.2);
+
   --accent: #dc2626;
-  --accent-hover: #ef4444;
+  /* Deeper than the base rather than brighter: #ef4444 carried near-white text
+     at 3.76:1, and a lighter hover cannot fix that. #d92626 is the same hue and
+     clears AA with white at 4.93:1. Hovering darker is also what the light
+     theme already does. */
+  --accent-hover: #d92626;
   --highlight: #d4a574;
   --highlight-soft: rgba(212, 165, 116, 0.14);
+
+  /* Text sitting on a filled accent/highlight chip. Inverts, because the chip
+     beneath it does. */
+  --on-highlight: #0a0a0a;
+
+  /* Text sitting on a dark scrim laid over artwork. Deliberately does NOT
+     invert: the scrim stays dark in both themes so a label stays legible over
+     a poster of unknown brightness, so its text must stay light too. */
+  /* Text on a *filled* accent chip. Saturated in both themes, so unlike
+     --on-highlight this does not invert: near-white measures 4.43:1 on the dark
+     accent and 5.93:1 on the light one, while --content would drop to 2.77:1 on
+     the light accent and become unreadable. */
+  --on-accent: #ffffff;
+  --on-scrim: #f5f5f5;
+  --on-scrim-muted: rgba(245, 245, 245, 0.72);
+
+  /* Faint tints that sit on the app's own surfaces. Full colours rather than
+     alpha-on-white/black, because the direction inverts: what lifts near-black
+     would be invisible on near-white. */
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-hover: rgba(255, 255, 255, 0.08);
+  --glass-strong: rgba(255, 255, 255, 0.09);
+  --glass-line: rgba(255, 255, 255, 0.05);
+  --glass-line-strong: rgba(255, 255, 255, 0.15);
+
+  /* The auth orb, hand-tuned per theme rather than alpha-inverted. */
+  --orb-halo: rgba(153, 27, 27, 0.2);
+  --orb-glow: rgba(220, 38, 38, 0.2);
+  --orb-glow-inner: rgba(220, 38, 38, 0.1);
+  --orb-base-a: #0a0a0a;
+  --orb-base-b: #171717;
+  --orb-blend: screen;
+  /* 0.95-alpha black on a near-white canvas reads as a bruise, so the light
+     theme gets its own much lighter values rather than reusing these. */
+  --elevation-card: 0 18px 45px -34px rgba(0, 0, 0, 0.95);
+  --elevation-card-hover: 0 24px 60px -42px rgba(220, 38, 38, 0.45);
+  --elevation-float: 0 24px 80px -48px rgba(0, 0, 0, 0.95);
+  --elevation-poster: 0 28px 80px -44px rgba(0, 0, 0, 0.95);
+  --elevation-orb-rim: inset 0 0 60px 15px rgba(0, 0, 0, 0.8), inset 0 4px 10px rgba(255, 255, 255, 0.1);
+  --elevation-filter: 0 18px 55px -42px rgba(0, 0, 0, 0.95);
+  /* The glow around the active genre chip, which sits on bg-content. Inverts,
+     because bg-content does. */
+  --elevation-glow: 0 12px 28px -18px rgba(255, 255, 255, 0.7);
+  --grain-opacity: 0.035;
+
   --duration-fast: 150ms;
   --duration-panel: 260ms;
   --shell-header-height: 5rem;
@@ -22,6 +82,64 @@
   --z-assistant: 60;
   --z-modal: 100;
   --z-toast: 200;
+}
+
+/* Light is not an inversion. The dark values were chosen to contrast against
+   near-black, so reusing them on near-white measures 1.09:1 for --content and
+   2.23:1 for --highlight -- the gold overline on every page would disappear.
+   These are separate values, each checked against all three light surfaces; the
+   tightest is --highlight at 5.00:1, better than dark mode's worst of 3.71:1. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --canvas: #f7f7f7;
+  --surface: #eeeeee;
+  --surface-raised: #ffffff;
+
+  --content: #171717;
+  --content-muted: #525252;
+  --content-subtle: #5f5f5f;
+
+  --rule: rgba(0, 0, 0, 0.1);
+  --rule-strong: rgba(0, 0, 0, 0.18);
+
+  --accent: #b91c1c;
+  --accent-hover: #991b1b;
+  --highlight: #8a5f2b;
+  --highlight-soft: rgba(138, 95, 43, 0.12);
+
+  --on-highlight: #fafafa;
+  /* Text on a *filled* accent chip. Saturated in both themes, so unlike
+     --on-highlight this does not invert: near-white measures 4.43:1 on the dark
+     accent and 5.93:1 on the light one, while --content would drop to 2.77:1 on
+     the light accent and become unreadable. */
+  --on-accent: #ffffff;
+  --on-scrim: #f5f5f5;
+  --on-scrim-muted: rgba(245, 245, 245, 0.72);
+
+  --glass: rgba(0, 0, 0, 0.03);
+  --glass-hover: rgba(0, 0, 0, 0.06);
+  --glass-strong: rgba(0, 0, 0, 0.07);
+  --glass-line: rgba(0, 0, 0, 0.07);
+  --glass-line-strong: rgba(0, 0, 0, 0.16);
+
+  --orb-halo: rgba(185, 28, 28, 0.12);
+  --orb-glow: rgba(185, 28, 28, 0.16);
+  --orb-glow-inner: rgba(185, 28, 28, 0.08);
+  --orb-base-a: #ffffff;
+  --orb-base-b: #ebebeb;
+  /* `screen` blows out to white on a light base; `multiply` is the light-theme
+     equivalent of the same additive glow. */
+  --orb-blend: multiply;
+  --elevation-card: 0 18px 45px -34px rgba(15, 23, 42, 0.1);
+  --elevation-card-hover: 0 24px 60px -42px rgba(185, 28, 28, 0.22);
+  --elevation-float: 0 24px 80px -48px rgba(15, 23, 42, 0.14);
+  --elevation-poster: 0 28px 80px -44px rgba(15, 23, 42, 0.16);
+  --elevation-orb-rim: inset 0 0 60px 15px rgba(15, 23, 42, 0.06), inset 0 4px 10px rgba(255, 255, 255, 0.7);
+  --elevation-filter: 0 18px 55px -42px rgba(15, 23, 42, 0.12);
+  --elevation-glow: 0 12px 28px -18px rgba(15, 23, 42, 0.22);
+  /* Grain at the dark theme's opacity reads as dirt once the ground is light. */
+  --grain-opacity: 0.018;
 }
 
 @theme inline {
@@ -40,12 +158,26 @@
   --color-brand: var(--accent);
   --color-brand-hover: var(--accent-hover);
   --color-gold: var(--highlight);
+  --color-on-highlight: var(--on-highlight);
+  --color-on-accent: var(--on-accent);
+  --color-on-scrim: var(--on-scrim);
+  --color-on-scrim-muted: var(--on-scrim-muted);
+  --color-glass: var(--glass);
+  --color-glass-hover: var(--glass-hover);
+  --color-glass-strong: var(--glass-strong);
+  --color-glass-line: var(--glass-line);
+  --color-glass-line-strong: var(--glass-line-strong);
+  --color-orb-halo: var(--orb-halo);
+  --shadow-card: var(--elevation-card);
+  --shadow-card-hover: var(--elevation-card-hover);
+  --shadow-float: var(--elevation-float);
+  --shadow-poster: var(--elevation-poster);
+  --shadow-orb-rim: var(--elevation-orb-rim);
+  --shadow-filter: var(--elevation-filter);
+  --shadow-glow: var(--elevation-glow);
   --radius-sheet: 0.125rem;
   --radius-control: 0.25rem;
   --radius-overlay: 0.5rem;
-  --shadow-card: 0 18px 45px -34px rgba(0, 0, 0, 0.95);
-  --shadow-card-hover: 0 24px 60px -42px rgba(220, 38, 38, 0.45);
-  --shadow-float: 0 24px 80px -48px rgba(0, 0, 0, 0.95);
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-fraunces);
   --text-overline: 0.625rem;
@@ -125,10 +257,10 @@ html {
 
 .orb-plasma {
   background:
-    radial-gradient(circle at 50% 50%, rgba(220, 38, 38, 0.1) 0%, transparent 60%),
-    conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(220, 38, 38, 0.2) 180deg, transparent 360deg),
-    linear-gradient(45deg, #0a0a0a 0%, #171717 100%);
-  background-blend-mode: screen;
+    radial-gradient(circle at 50% 50%, var(--orb-glow-inner) 0%, transparent 60%),
+    conic-gradient(from 0deg at 50% 50%, transparent 0deg, var(--orb-glow) 180deg, transparent 360deg),
+    linear-gradient(45deg, var(--orb-base-a) 0%, var(--orb-base-b) 100%);
+  background-blend-mode: var(--orb-blend);
   animation: orb-spin 20s linear infinite;
 }
 
@@ -137,7 +269,7 @@ html {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.035;
+  opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E");
 }
 
