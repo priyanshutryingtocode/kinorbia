@@ -9,6 +9,12 @@ type ProfilePaginationProps = {
   pageSize: number;
 };
 
+// Numbered pages plus a "Showing X-Y of Z" range, where PeopleList offers only
+// previous/next and a "Page X of Y" count. Those are different affordances, so
+// they are deliberately not one component even though they share PagerEdge --
+// and this still uses `text-red-100` for the current page, the same colour drift
+// the tab bars had. Left alone when they were unified, since this is a pager.
+//
 // `tab` is always one of the four paginated tabs. The "overview" and "insights"
 // branches this used to have were unreachable, because those tabs render no
 // pager: the profile page handles them with earlier `if` branches. The `year`

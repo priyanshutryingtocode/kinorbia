@@ -4,6 +4,16 @@ import { Film, Star } from "lucide-react";
 import { mediaHref, tmdbImage } from "@/lib/media";
 import type { MovieSummary } from "@/types";
 
+// Not to be merged with SearchResultCard, the inline posters in
+// `app/(root)/lists/[id]/page.tsx` and `app/(root)/u/[username]/page.tsx`, or
+// MovieCarousel's. They look like one component and are three: this is a poster
+// *tile* with the rating overlaid and a hover lift, SearchResultCard and
+// ListPoster are poster *plus caption* rows, and CarouselPoster is a bare image
+// with no chrome. Compared line by line the two caption cards differ in image
+// `sizes`, `alt`, hover opacity, fallback icon size, background, padding, title
+// classes and caption wording -- unifying them needs roughly eight override
+// props and buys one component that expresses none of them well. The duplicated
+// part worth sharing is the poster-or-fallback image itself, not the card.
 export type MovieProp = MovieSummary;
 
 export default function MovieCard({
