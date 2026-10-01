@@ -27,6 +27,12 @@
      clears AA with white at 4.93:1. Hovering darker is also what the light
      theme already does. */
   --accent-hover: #d92626;
+  /* Error text, and the reason it is its own token rather than a shade of
+     --accent. No existing red clears body-text AA on both themes' surfaces:
+     #dc2626 is 3.71:1 on --surface-raised in dark, #ef4444 is 3.76:1 on
+     #ffffff in light. These pair per theme instead, clearing 4.5:1 on all
+     three surfaces in both. Checked by scripts/checkContrast.mjs. */
+  --danger: #ef4444;
   --highlight: #d4a574;
   --highlight-soft: rgba(212, 165, 116, 0.14);
 
@@ -139,6 +145,7 @@
 
   --accent: #b91c1c;
   --accent-hover: #991b1b;
+  --danger: #b91c1c;
   --highlight: #8a5f2b;
   --highlight-soft: rgba(138, 95, 43, 0.12);
 
@@ -201,6 +208,7 @@
     --color-ink-rule: var(--ink-rule);
   --color-highlight-vivid: var(--highlight-vivid);
   --color-accent-bright: var(--accent-bright);
+  --color-danger: var(--danger);
   --color-orb-glass: var(--orb-glass);
   --color-orb-glass-hover: var(--orb-glass-hover);
   --color-orb-glass-line: var(--orb-glass-line);
