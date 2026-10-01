@@ -11,7 +11,20 @@ type AccessibleDialogProps = {
   titleId: string;
   children: ReactNode;
   className?: string;
+  // Replaces the panel's entire styling string rather than appending to it.
+  // Needed by a caller that wants a different `width` and `padding`: `w-full`
+  // and `w-[…]` are the same specificity, and so are `p-6` and `p-0`, so
+  // appending cannot win -- Tailwind resolves equal-specificity utilities by
+  // their order in the stylesheet, not by where they sit in the class string.
+  // The structural and ARIA attributes are never part of this string, so a
+  // replacement still gets a focusable role="dialog" panel.
+  panelClassName?: string;
 };
+
+// Split out so `panelClassName` can replace it wholesale, and so both this file
+// and `TrailerButton` name the same default.
+export const DIALOG_PANEL_CLASS =
+  "shell-panel-enter relative max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-overlay border border-rule bg-canvas p-6 shadow-2xl focus:outline-none";
 
 function getFocusableElements(container: HTMLElement) {
   return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
@@ -25,6 +38,7 @@ export default function AccessibleDialog({
   titleId,
   children,
   className = "max-w-md",
+  panelClassName,
 }: AccessibleDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -97,7 +111,7 @@ export default function AccessibleDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`shell-panel-enter relative max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-overlay border border-rule bg-canvas p-6 shadow-2xl focus:outline-none ${className}`}
+        className={panelClassName ?? `${DIALOG_PANEL_CLASS} ${className}`}
       >
         {children}
       </div>
