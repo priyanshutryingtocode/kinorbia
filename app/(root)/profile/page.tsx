@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
 import RouteShell from "@/components/RouteShell";
+import SpoilerText from "@/components/SpoilerText";
+import { renderRichText } from "@/lib/renderRichText";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Download, ExternalLink, Film } from "lucide-react";
@@ -65,7 +67,7 @@ function JournalCard({ item }: { item: JournalItem }) {
         {poster ? (
           <TmdbPosterImage src={poster} alt={item.movieTitle} fill sizes="(min-width: 768px) 20vw, 45vw" className="object-cover" />
         ) : (
-          <div className="flex h-full items-center justify-center text-neutral-700"><Film className="h-8 w-8" /></div>
+          <div className="flex h-full items-center justify-center text-content-subtle"><Film className="h-8 w-8" /></div>
         )}
       </div>
       <div className="p-3">
@@ -80,13 +82,28 @@ function JournalCard({ item }: { item: JournalItem }) {
 
 function CompactReview({ review }: { review: ReviewItem }) {
   return (
-    <Link href="/reviews" className="kin-focus group block border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/25">
+    // The row is a container, not a link. It used to be a <Link> around the
+    // whole thing, which would have put the spoiler's reveal <button> inside an
+    // <a> -- invalid HTML, unreachable by keyboard, and clicking "reveal"
+    // would navigate away instead. The title carries the navigation, matching
+    // `components/MovieReviewsAndLists`.
+    <div className="group border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/25">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-content group-hover:text-gold">{review.movieTitle}</h3>
+        <h3 className="font-display text-lg font-semibold">
+          <Link href="/reviews" className="kin-focus text-content transition-colors group-hover:text-gold">
+            {review.movieTitle}
+          </Link>
+        </h3>
         {review.spoiler && <span className="rounded-full border border-highlight/20 bg-highlight/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-highlight">Spoiler</span>}
       </div>
-      <p className={`mt-3 line-clamp-3 text-sm leading-6 text-content-muted ${review.spoiler ? "select-none blur-sm" : ""}`}>{review.body}</p>
-    </Link>
+      {review.spoiler ? (
+        <SpoilerText text={review.body} />
+      ) : (
+        <div className="mt-3 line-clamp-3 text-sm leading-6 text-content-muted">
+          {renderRichText(review.body)}
+        </div>
+      )}
+    </div>
   );
 }
 

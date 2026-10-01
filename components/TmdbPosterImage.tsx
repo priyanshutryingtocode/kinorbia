@@ -19,7 +19,7 @@ export default function TmdbPosterImage({ src, alt, className, ...props }: TmdbP
         aria-hidden={alt ? undefined : true}
         className={`flex h-full w-full items-center justify-center bg-surface-raised ${className || ""}`}
       >
-        <Film className="h-8 w-8 text-neutral-700" aria-hidden="true" />
+        <Film className="h-8 w-8 text-content-subtle" aria-hidden="true" />
       </div>
     );
   }

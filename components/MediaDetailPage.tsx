@@ -96,7 +96,7 @@ export default async function MediaDetailPage({
               />
             ) : (
               <div className="flex aspect-2/3 w-full rotate-1 items-center justify-center rounded-sheet border border-rule bg-surface-raised shadow-[0_28px_80px_-44px_rgba(0,0,0,0.95)] transition-transform duration-500 hover:rotate-0">
-                <FallbackIcon className="h-10 w-10 text-neutral-700" />
+                <FallbackIcon className="h-10 w-10 text-content-subtle" />
               </div>
             )}
           </div>

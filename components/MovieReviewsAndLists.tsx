@@ -10,6 +10,7 @@ import { renderRichText } from "@/lib/renderRichText";
 import type { MediaType } from "@/types";
 import EmptyState from "@/components/EmptyState";
 import CommentSection from "@/components/CommentSection";
+import SpoilerText from "@/components/SpoilerText";
 
 export default async function MovieReviewsAndLists({
   movieId,
@@ -105,9 +106,13 @@ export default async function MovieReviewsAndLists({
                       Spoiler
                     </span>
                   )}
-                  <p className={`mt-3 line-clamp-4 text-sm leading-6 text-content ${review.spoiler ? "select-none opacity-40 blur-sm" : ""}`}>
-                    {review.spoiler ? review.body : renderRichText(review.body)}
-                  </p>
+                  {review.spoiler ? (
+                    <SpoilerText text={review.body} />
+                  ) : (
+                    <p className="mt-3 line-clamp-4 text-sm leading-6 text-content">
+                      {renderRichText(review.body)}
+                    </p>
+                  )}
                   <CommentSection
                     parentType="review"
                     parentId={review._id.toString()}

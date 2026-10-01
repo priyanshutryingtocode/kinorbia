@@ -133,7 +133,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
               required
               minLength={1}
               maxLength={60}
-              className="kin-focus w-full rounded-sheet border border-rule bg-canvas px-4 py-3 text-content placeholder:text-neutral-600"
+              className="kin-focus w-full rounded-sheet border border-rule bg-canvas px-4 py-3 text-content placeholder:text-content-subtle"
             />
           </div>
 
@@ -147,7 +147,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
               onChange={(event) => setBio(event.target.value)}
               rows={4}
               maxLength={160}
-              className="kin-focus w-full resize-none rounded-sheet border border-rule bg-canvas px-4 py-3 text-content placeholder:text-neutral-600"
+              className="kin-focus w-full resize-none rounded-sheet border border-rule bg-canvas px-4 py-3 text-content placeholder:text-content-subtle"
               placeholder="Tell us about your movie taste..."
             />
             <p className="mt-1 text-right text-xs text-content-subtle">{bio.length}/160</p>

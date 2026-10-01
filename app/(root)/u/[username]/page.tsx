@@ -14,6 +14,7 @@ import ProfileHeader from "@/components/ProfileHeader";
 import ProfileMetricRail from "@/components/ProfileMetricRail";
 import ProfilePanel from "@/components/ProfilePanel";
 import SpoilerText from "@/components/SpoilerText";
+import { renderRichText } from "@/lib/renderRichText";
 import { mediaHref, mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
 import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
 import type { FavoriteMovie, MediaType } from "@/types";
@@ -183,7 +184,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                         className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-neutral-700">
+                      <div className="flex h-full items-center justify-center text-content-subtle">
                         <UserIcon className="h-8 w-8" />
                       </div>
                     )}
@@ -232,9 +233,11 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                       {review.spoiler ? (
                         <SpoilerText text={review.body} />
                       ) : (
-                        <p className="mt-2 line-clamp-4 text-sm leading-6 text-content-muted">
-                          {review.body}
-                        </p>
+                        // renderRichText, matching the review cards and the
+                        // activity feed rather than printing markdown source.
+                        <div className="mt-2 line-clamp-4 text-sm leading-6 text-content-muted">
+                          {renderRichText(review.body)}
+                        </div>
                       )}
                     </article>
                   );

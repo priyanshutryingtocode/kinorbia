@@ -43,6 +43,7 @@ export function useLoadMore<T, TArgs extends { page: number }>(
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Not memoized on purpose: this is only ever an onClick handler, so its
   // identity has no effect on rendering, and the action/args objects are
@@ -52,6 +53,7 @@ export function useLoadMore<T, TArgs extends { page: number }>(
       return;
     }
 
+    setError(null);
     setLoading(true);
     const requested = page + 1;
 
@@ -73,12 +75,17 @@ export function useLoadMore<T, TArgs extends { page: number }>(
       // extra page means `requested + 1` would re-read it.
       setPage(result.nextPage ?? requested);
       setHasMore(result.hasMore);
-    } catch (error) {
-      console.error("Failed to load more items:", error);
+    } catch (caught) {
+      // Previously logged and swallowed, which made a failed click look exactly
+      // like a click that did nothing: the button re-enabled, no items arrived,
+      // and nothing on screen said why. `page` is left untouched so retrying
+      // asks for the same page rather than skipping it.
+      console.error("Failed to load more items:", caught);
+      setError("Could not load more titles. Try again.");
     } finally {
       setLoading(false);
     }
   }
 
-  return { items, loading, hasMore, loadMore };
+  return { items, loading, hasMore, error, loadMore };
 }

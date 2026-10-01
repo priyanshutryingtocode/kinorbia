@@ -18,7 +18,7 @@ function CarouselPoster({ movie }: { movie: CarouselMovie }) {
   const poster = tmdbImage(movie.poster_path, "w500");
 
   if (!poster) {
-    return <ImageIcon className="h-10 w-10 text-neutral-700" aria-hidden="true" />;
+    return <ImageIcon className="h-10 w-10 text-content-subtle" aria-hidden="true" />;
   }
 
   return (

@@ -48,7 +48,7 @@ export default function PeopleList({
   const paginationClasses =
     "kin-focus inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-content-muted transition-colors hover:text-content";
   const disabledPaginationClasses =
-    "inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-neutral-700";
+    "inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-content-subtle";
 
   return (
     <div>

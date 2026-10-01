@@ -33,7 +33,7 @@ export default function MovieCard({
     />
   ) : (
     <div className="h-full bg-surface-raised flex items-center justify-center">
-      <Film className="text-neutral-600" />
+      <Film className="text-content-subtle" />
     </div>
   );
 

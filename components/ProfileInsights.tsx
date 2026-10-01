@@ -474,7 +474,7 @@ export default function ProfileInsights({
                             className="object-cover transition group-hover:scale-[1.03]"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-neutral-700" aria-hidden="true">
+                          <div className="flex h-full items-center justify-center text-content-subtle" aria-hidden="true">
                             <Film className="h-6 w-6" />
                           </div>
                         )}

@@ -44,6 +44,7 @@ export default function SignUpPage() {
 
   return (
     <AuthShell size="tall">
+      <h1 className="sr-only">Create your KinOrbia account</h1>
       <div className="w-full max-w-70 space-y-4">
         {registered ? (
           <div className="space-y-4">
@@ -73,14 +74,18 @@ export default function SignUpPage() {
 
             <div className="flex items-center gap-4 my-2">
               <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1" />
-              <span className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">Or</span>
+              <span className="text-content-subtle text-[10px] font-bold uppercase tracking-widest">Or</span>
               <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1" />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="relative group">
                 <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-red-400 transition-colors" />
+                <label htmlFor="signup-name" className="sr-only">
+                  Full name
+                </label>
                 <input
+                  id="signup-name"
                   type="text"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
@@ -93,7 +98,11 @@ export default function SignUpPage() {
 
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-red-400 transition-colors" />
+                <label htmlFor="signup-email" className="sr-only">
+                  Email address
+                </label>
                 <input
+                  id="signup-email"
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -106,7 +115,11 @@ export default function SignUpPage() {
 
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-red-400 transition-colors" />
+                <label htmlFor="signup-password" className="sr-only">
+                  Password
+                </label>
                 <input
+                  id="signup-password"
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}

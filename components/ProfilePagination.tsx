@@ -44,7 +44,7 @@ export default function ProfilePagination({
   const previousClass =
     "kin-focus inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-content-muted transition hover:text-content";
   const previousDisabledClass =
-    "inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-neutral-700";
+    "inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-content-subtle";
   const pageClass =
     "kin-focus inline-flex h-9 min-w-9 items-center justify-center border-b px-1 text-sm transition-colors";
 

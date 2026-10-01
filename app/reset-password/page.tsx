@@ -76,7 +76,11 @@ function ResetPasswordForm() {
     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
       <div className="relative">
         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-content-subtle" />
+        <label htmlFor="reset-password" className="sr-only">
+          New password
+        </label>
         <input
+          id="reset-password"
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
@@ -90,7 +94,11 @@ function ResetPasswordForm() {
 
       <div className="relative">
         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-content-subtle" />
+        <label htmlFor="reset-password-confirm" className="sr-only">
+          Confirm new password
+        </label>
         <input
+          id="reset-password-confirm"
           type="password"
           value={confirm}
           onChange={(event) => setConfirm(event.target.value)}

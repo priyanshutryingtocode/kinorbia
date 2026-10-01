@@ -19,7 +19,7 @@ export default function SearchLoadMore({
   action,
   args,
 }: SearchLoadMoreProps) {
-  const { items, loading, hasMore, loadMore } = useLoadMore(action, args);
+  const { items, loading, hasMore, error, loadMore } = useLoadMore(action, args);
 
   // Deliberately no `items.length === 0` guard here. On the first render
   // `items` is empty and `loading` is false, so such a guard would return null,
@@ -38,7 +38,7 @@ export default function SearchLoadMore({
       )}
 
       {hasMore && (
-        <div className="mt-10 flex justify-center">
+        <div className="mt-10 flex flex-col items-center gap-3">
           <SubmitButton
             type="button"
             variant="secondary"
@@ -48,6 +48,11 @@ export default function SearchLoadMore({
           >
             Load more results
           </SubmitButton>
+          {error && (
+            <p role="alert" className="text-xs text-accent-hover">
+              {error}
+            </p>
+          )}
         </div>
       )}
     </>

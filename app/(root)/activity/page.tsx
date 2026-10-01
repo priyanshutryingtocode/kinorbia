@@ -6,6 +6,7 @@ import RouteShell from "@/components/RouteShell";
 import PageHeader from "@/components/PageHeader";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
 import SpoilerText from "@/components/SpoilerText";
+import { renderRichText } from "@/lib/renderRichText";
 import FeedTabs from "@/components/FeedTabs";
 import EmptyState from "@/components/EmptyState";
 import { auth } from "@/auth";
@@ -194,9 +195,12 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
                       {item.review.spoiler ? (
                         <SpoilerText text={item.review.body} />
                       ) : (
-                        <p className="whitespace-pre-wrap break-words text-sm leading-6 text-content-muted">
-                          {item.review.body}
-                        </p>
+                        // renderRichText, so **bold**, *italic* and [links](url)
+                        // render here as they do on the review cards instead of
+                        // showing their asterisks and brackets.
+                        <div className="whitespace-pre-wrap break-words text-sm leading-6 text-content-muted">
+                          {renderRichText(item.review.body)}
+                        </div>
                       )}
                     </div>
                   </article>

@@ -38,6 +38,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell>
+      <h1 className="sr-only">Sign in to KinOrbia</h1>
       <div className="w-full max-w-70 space-y-5">
         <button
           type="button"
@@ -50,14 +51,18 @@ export default function LoginPage() {
 
         <div className="flex items-center gap-4 my-2">
           <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1" />
-          <span className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">Or</span>
+          <span className="text-content-subtle text-[10px] font-bold uppercase tracking-widest">Or</span>
           <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative group">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-red-400 transition-colors" />
+            <label htmlFor="login-email" className="sr-only">
+              Email address
+            </label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -79,7 +84,11 @@ export default function LoginPage() {
 
           <div className="relative group">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-red-400 transition-colors" />
+            <label htmlFor="login-password" className="sr-only">
+              Password
+            </label>
             <input
+              id="login-password"
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}

@@ -44,7 +44,7 @@ export default function ProfileHeader({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-neutral-600">
+              <div className="flex h-full w-full items-center justify-center text-content-subtle">
                 <UserIcon className="h-8 w-8 sm:h-9 sm:w-9" aria-hidden="true" />
               </div>
             )}

@@ -6,7 +6,7 @@ import dbConnect from "@/lib/dbConnect";
 import { escapeRegExp, firstValue, parsePage } from "@/lib/searchParams";
 import User from "@/models/User";
 import PeopleList from "@/components/PeopleList";
-import PageContainer from "@/components/PageContainer";
+import RouteShell from "@/components/RouteShell";
 
 const PEOPLE_PER_PAGE = 24;
 
@@ -124,38 +124,38 @@ export default async function PeopleFollowPage({
   const path = `/u/${encodeURIComponent(username)}/${mode}`;
 
   return (
-    <div className="pb-20 pt-6 sm:pt-8">
-      <PageContainer width="standard">
-        <Link
-          href={`/u/${encodeURIComponent(username)}`}
-          className="kin-focus group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-content-muted transition-colors hover:text-gold"
+    // RouteShell rather than the same padding typed out again, so the shell
+    // stays identical to the followers/following `loading.tsx` files.
+    <RouteShell spacing="extended" width="standard">
+      <Link
+        href={`/u/${encodeURIComponent(username)}`}
+        className="kin-focus group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-content-muted transition-colors hover:text-gold"
+      >
+        <span
+          className="text-red-400 transition-transform group-hover:-translate-x-0.5"
+          aria-hidden="true"
         >
-          <span
-            className="text-red-400 transition-transform group-hover:-translate-x-0.5"
-            aria-hidden="true"
-          >
-            ←
-          </span>
-          Back to profile
-        </Link>
-        <header className="mb-6 mt-5 border-b border-rule pb-5">
-          <p className="kin-overline text-gold/80">@{username}</p>
-          <h1 className="mt-2 font-display text-3xl font-medium leading-none text-content sm:text-4xl">
-            {copy.heading}
-          </h1>
-        </header>
-        <PeopleList
-          people={people}
-          isAuthenticated={Boolean(currentEmail)}
-          path={path}
-          query={query}
-          page={page}
-          totalCount={totalCount}
-          totalPages={totalPages}
-          emptyTitle={copy.emptyTitle}
-          emptyDescription={copy.emptyDescription}
-        />
-      </PageContainer>
-    </div>
+          ←
+        </span>
+        Back to profile
+      </Link>
+      <header className="mb-6 mt-5 border-b border-rule pb-5">
+        <p className="kin-overline text-gold/80">@{username}</p>
+        <h1 className="mt-2 font-display text-3xl font-medium leading-none text-content sm:text-4xl">
+          {copy.heading}
+        </h1>
+      </header>
+      <PeopleList
+        people={people}
+        isAuthenticated={Boolean(currentEmail)}
+        path={path}
+        query={query}
+        page={page}
+        totalCount={totalCount}
+        totalPages={totalPages}
+        emptyTitle={copy.emptyTitle}
+        emptyDescription={copy.emptyDescription}
+      />
+    </RouteShell>
   );
 }

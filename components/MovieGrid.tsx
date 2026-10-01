@@ -49,7 +49,7 @@ export default function MovieGrid({
   const [seed] = useState(initialItems);
   const seedKeys = useMemo(() => seed.map(keyOf), [seed]);
 
-  const { items: appended, loading, hasMore, loadMore } = useLoadMore(action, args, {
+  const { items: appended, loading, hasMore, error, loadMore } = useLoadMore(action, args, {
     keyOf,
     seedKeys,
   });
@@ -65,7 +65,7 @@ export default function MovieGrid({
       </div>
 
       {hasMore && (
-        <div className="mt-10 flex justify-center">
+        <div className="mt-10 flex flex-col items-center gap-3">
           <SubmitButton
             type="button"
             variant="secondary"
@@ -75,6 +75,11 @@ export default function MovieGrid({
           >
             Load more
           </SubmitButton>
+          {error && (
+            <p role="alert" className="text-xs text-accent-hover">
+              {error}
+            </p>
+          )}
         </div>
       )}
     </>

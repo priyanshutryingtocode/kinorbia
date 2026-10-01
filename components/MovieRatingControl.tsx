@@ -105,7 +105,7 @@ return (
             const fillPercent = Math.max(0, Math.min(1, draftStars - (star - 1))) * 100;
 
             return (
-              <span key={star} className="relative h-6 w-6 text-neutral-700">
+              <span key={star} className="relative h-6 w-6 text-content-subtle">
                 <Star className="h-6 w-6 fill-current" />
                 <span
                   className="absolute inset-y-0 left-0 overflow-hidden text-highlight"
