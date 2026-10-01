@@ -325,7 +325,20 @@ html {
     animation: shell-panel-enter var(--duration-panel) var(--ease-cinematic);
   }
 
-  .kin-skeleton {
+  /* Two poster grids, because both were copied by hand and had to be kept in sync
+   by hand too. `poster-grid` is the browse grid; `poster-grid-dense` is the
+   search grid, which packs one more column in with tighter gaps. A load-more
+   click adds exactly 20 titles and 20 divides 2, 4 and 5, so the column counts
+   here are what stops the final row coming up short. */
+.poster-grid {
+  @apply grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5;
+}
+
+.poster-grid-dense {
+  @apply grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6;
+}
+
+.kin-skeleton {
     @apply animate-pulse bg-content/10;
     border-radius: var(--radius-sheet);
   }

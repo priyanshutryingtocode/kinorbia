@@ -53,7 +53,7 @@ export default function MovieGrid({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
+      <div className="poster-grid">
         {items.map((movie, index) => (
           <MovieCard key={keyOf(movie)} movie={movie} index={index} />
         ))}

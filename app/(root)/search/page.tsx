@@ -257,7 +257,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             description={`${movies.length} ${movies.length === 1 ? "result" : "results"}`}
             className="mt-8"
           />
-          <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <ul className="mt-5 poster-grid-dense">
             {movies.map((movie) => (
               <SearchResultCard
                 key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`}

@@ -3,9 +3,10 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Chrome, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import AuthShell from "@/components/AuthShell";
+import AuthSocialBlock from "@/components/AuthSocialBlock";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,20 +41,7 @@ export default function LoginPage() {
     <AuthShell>
       <h1 className="sr-only">Sign in to KinOrbia</h1>
       <div className="w-full max-w-70 space-y-5">
-        <button
-          type="button"
-          onClick={() => signIn("google", { callbackUrl: "/" })}
-          className="w-full flex items-center justify-center gap-3 bg-glass hover:bg-glass-hover border border-rule rounded-control py-3.5 px-4 transition-colors duration-150 group"
-        >
-          <Chrome className="w-5 h-5 text-content-muted group-hover:text-content transition-colors" />
-          <span className="text-sm font-medium text-content group-hover:text-content transition-colors">Continue with Google</span>
-        </button>
-
-        <div className="flex items-center gap-4 my-2">
-          <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1" />
-          <span className="text-content-subtle text-[10px] font-bold uppercase tracking-widest">Or</span>
-          <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent flex-1" />
-        </div>
+        <AuthSocialBlock verb="Continue" />
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative group">
