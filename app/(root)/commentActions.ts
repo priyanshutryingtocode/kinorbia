@@ -1,13 +1,12 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { resolveActionArgs, withState, type ActionState } from "@/lib/actionState";
 import dbConnect from "@/lib/dbConnect";
 import Comment from "@/models/Comment";
 import MovieList from "@/models/MovieList";
 import Notification from "@/models/Notification";
 import Review from "@/models/Review";
-import { requireUser, getString } from "@/lib/actions";
+import { requireUser, getString, revalidateRoute } from "@/lib/actions";
 import { rateLimit } from "@/lib/rateLimit";
 import { isObjectId } from "@/lib/objectId";
 import { normalizeMediaType } from "@/lib/media";
@@ -90,9 +89,7 @@ export async function createComment(stateOrFormData: ActionState | FormData, for
     }
   }
 
-  if (path) {
-    revalidatePath(path);
-  }
+  revalidateRoute(path);
   return withState(state, "success", "Comment posted.");
 }
 
@@ -143,8 +140,6 @@ export async function deleteComment(stateOrFormData: ActionState | FormData, for
     return withState(state, "error", "Your comment could not be deleted. Please try again.");
   }
 
-  if (path) {
-    revalidatePath(path);
-  }
+  revalidateRoute(path);
   return withState(state, "success", "Comment deleted.");
 }

@@ -5,7 +5,7 @@ import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import Notification from "@/models/Notification";
 import Review from "@/models/Review";
-import { requireUser, getString } from "@/lib/actions";
+import { requireUser, getString, revalidateRoute } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
 import { normalizeMediaType } from "@/lib/media";
 
@@ -18,7 +18,7 @@ export async function toggleSocialAction(formData: FormData) {
   const type = getString(formData, "type");
   const id = getString(formData, "id");
   const action = getString(formData, "action");
-  const path = getString(formData, "path") || (type === "list" ? "/lists" : "/reviews");
+  const path = getString(formData, "path");
 
   if (!id || !isObjectId(id) || !["review", "list"].includes(type) || !["like", "save"].includes(action)) {
     return;
@@ -91,7 +91,10 @@ export async function toggleSocialAction(formData: FormData) {
     return;
   }
 
-  revalidatePath(path);
+  // The caller tells us which surface it was triggered from; the helper checks
+  // that against the routes this app actually owns.
+  revalidateRoute(path);
+
   if (type === "list") {
     revalidatePath("/lists");
     revalidatePath(`/lists/${id}`);

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import dbConnect from "@/lib/dbConnect";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
-import { requireUser, getString } from "@/lib/actions";
+import { requireUser, getString, revalidateRoute } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
 import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
 
@@ -121,7 +121,9 @@ export async function toggleFollow(_prevState: FollowState, formData: FormData):
   addUserPaths(relevantPaths, target.username);
 
   for (const path of relevantPaths) {
-    revalidatePath(path);
+    // Entries are either derived from the two usernames or supplied by the
+    // caller, so both go through the same check rather than trusting the Set.
+    revalidateRoute(path);
   }
   revalidatePath("/activity");
 }
