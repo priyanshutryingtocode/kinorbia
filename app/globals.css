@@ -120,16 +120,16 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --canvas: #f7f7f7;
-  --surface: #eeeeee;
+  --canvas: #faf8f6;
+  --surface: #f2eeeb;
   --surface-raised: #ffffff;
 
   --content: #171717;
   --content-muted: #525252;
   --content-subtle: #5f5f5f;
 
-  --rule: rgba(0, 0, 0, 0.1);
-  --rule-strong: rgba(0, 0, 0, 0.18);
+  --rule: rgba(0, 0, 0, 0.14);
+  --rule-strong: rgba(0, 0, 0, 0.26);
 
   --accent: #b91c1c;
   --accent-hover: #991b1b;
@@ -163,13 +163,13 @@
   --orb-halo: rgba(220, 38, 38, 0.28);
   --orb-glow: rgba(220, 38, 38, 0.34);
   --orb-glow-inner: rgba(220, 38, 38, 0.18);
-  --elevation-card: 0 18px 45px -34px rgba(15, 23, 42, 0.1);
-  --elevation-card-hover: 0 24px 60px -42px rgba(185, 28, 28, 0.22);
-  --elevation-float: 0 24px 80px -48px rgba(15, 23, 42, 0.14);
-  --elevation-poster: 0 28px 80px -44px rgba(15, 23, 42, 0.16);
+  --elevation-card: 0 18px 45px -34px rgba(28, 20, 18, 0.16);
+  --elevation-card-hover: 0 24px 60px -42px rgba(185, 28, 28, 0.3);
+  --elevation-float: 0 24px 80px -48px rgba(28, 20, 18, 0.2);
+  --elevation-poster: 0 28px 80px -44px rgba(28, 20, 18, 0.24);
   --elevation-orb-rim: inset 0 0 60px 15px rgba(0, 0, 0, 0.8), inset 0 4px 10px rgba(255, 255, 255, 0.1);
-  --elevation-filter: 0 18px 55px -42px rgba(15, 23, 42, 0.12);
-  --elevation-glow: 0 12px 28px -18px rgba(15, 23, 42, 0.22);
+  --elevation-filter: 0 18px 55px -42px rgba(28, 20, 18, 0.18);
+  --elevation-glow: 0 12px 28px -18px rgba(28, 20, 18, 0.3);
   /* Grain at the dark theme's opacity reads as dirt once the ground is light. */
   --grain-opacity: 0.018;
 }
