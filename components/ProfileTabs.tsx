@@ -1,4 +1,4 @@
-import Link from "next/link";
+import LinkTabs from "@/components/LinkTabs";
 
 export const PROFILE_TABS = [
   { key: "overview", label: "Overview" },
@@ -23,6 +23,12 @@ function tabHref(tab: ProfileTab, year?: number) {
   return `/profile?${params.toString()}`;
 }
 
+// A thin wrapper over LinkTabs, the way FeedTabs already is. This used to be a
+// third hand-rolled copy of the tab bar, and it had drifted: it coloured the
+// active tab `text-red-100` where LinkTabs uses `text-content`, and it hand-rolled
+// a `focus-visible:ring-1 ring-inset` indicator instead of the `kin-focus`
+// token, so the profile tabs had a visibly different focus ring from every
+// other tab bar in the app.
 export default function ProfileTabs({
   current,
   year,
@@ -31,26 +37,15 @@ export default function ProfileTabs({
   year?: number;
 }) {
   return (
-    <nav aria-label="Profile sections" className="overflow-x-auto">
-      <div className="flex flex-wrap items-stretch border-b border-rule sm:flex-nowrap sm:min-w-max">
-        {PROFILE_TABS.map((tab) => {
-          const active = tab.key === current;
-          return (
-            <Link
-              key={tab.key}
-              href={tabHref(tab.key, year)}
-              aria-current={active ? "page" : undefined}
-              className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent/80 sm:px-4 sm:text-sm ${
-                active
-                  ? "border-accent text-red-100"
-                  : "border-transparent text-content-muted hover:border-rule-strong hover:text-content"
-              }`}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+    <LinkTabs
+      ariaLabel="Profile sections"
+      activeItem={current}
+      wrap
+      items={PROFILE_TABS.map((tab) => ({
+        key: tab.key,
+        label: tab.label,
+        href: tabHref(tab.key, year),
+      }))}
+    />
   );
 }

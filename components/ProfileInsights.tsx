@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import TmdbPosterImage from "@/components/TmdbPosterImage";
 import Link from "next/link";
+import LinkTabs from "@/components/LinkTabs";
 import { BarChart3, Clapperboard, Film, Star, TrendingUp, type LucideIcon } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import ProfileCommunityComparison from "@/components/ProfileCommunityComparison";
@@ -43,6 +44,10 @@ function InsightHeading({
     </>
   );
 }
+
+// `activeItem` is a string, so "Overall" needs a key that cannot collide with a
+// year. `selectedYear` is a number or undefined, so this never does.
+const OVERALL_KEY = "overall";
 
 function yearHref(year?: number) {
   if (!year) {
@@ -294,35 +299,21 @@ export default function ProfileInsights({
   return (
     <div className="space-y-0">
       {years.length > 0 && (
-        <nav aria-label="Insight year" className="overflow-x-auto border-b border-rule">
-          <div className="flex flex-wrap items-stretch sm:min-w-max sm:flex-nowrap">
-            <Link
-              href={yearHref()}
-              aria-current={!selectedYear ? "page" : undefined}
-              className={`kin-focus -mb-px whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold tracking-wide transition-colors ${
-                !selectedYear
-                  ? "border-accent text-red-100"
-                  : "border-transparent text-content-muted hover:border-rule-strong hover:text-content"
-              }`}
-            >
-              Overall
-            </Link>
-            {years.map((year) => (
-              <Link
-                key={year}
-                href={yearHref(year)}
-                aria-current={selectedYear === year ? "page" : undefined}
-                className={`kin-focus -mb-px whitespace-nowrap border-b-2 px-3 py-2 text-xs font-semibold tracking-wide transition-colors ${
-                  selectedYear === year
-                    ? "border-accent text-red-100"
-                    : "border-transparent text-content-muted hover:border-rule-strong hover:text-content"
-                }`}
-              >
-                {year}
-              </Link>
-            ))}
-          </div>
-        </nav>
+        // Was a third hand-rolled tab bar, with the <Link> written out twice --
+        // once for "Overall", once per year -- and drifting the same way the
+        // profile tabs did. LinkTabs takes the items as data.
+        <LinkTabs
+          ariaLabel="Insight year"
+          activeItem={selectedYear === undefined ? OVERALL_KEY : String(selectedYear)}
+          items={[
+            { key: OVERALL_KEY, label: "Overall", href: yearHref() },
+            ...years.map((year) => ({
+              key: String(year),
+              label: String(year),
+              href: yearHref(year),
+            })),
+          ]}
+        />
       )}
 
       {!hasData ? (
