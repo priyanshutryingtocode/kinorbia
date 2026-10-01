@@ -21,15 +21,27 @@ type AuthShellProps = {
 
 export default function AuthShell({ children }: AuthShellProps) {
   return (
-    <div className="relative grid min-h-svh w-full place-items-center overflow-hidden bg-canvas p-6 lg:p-10">
-      {/* Full-bleed and cropped by the viewport, sitting behind the card. Faint
-          enough that the form stays the focus: the strokes are --rule and
-          --content-subtle, not solid colours. */}
+    // `scrollbar-gutter: stable` on <html> reserves the scrollbar width on every
+    // page, so `place-items-center` centred the card in a box ~15px narrower than
+    // the visible page and it sat right of the optical centre by that much. The
+    // gutter is declared on <html> and this element is the page root, so resetting
+    // it to `auto` here restores full width for centring without touching the
+    // other 17 routes. Scoped deliberately: on a short viewport where the card
+    // does overflow, the scrollbar appearing will shift this layout by its width.
+    <div className="relative grid min-h-svh w-full place-items-center overflow-hidden bg-canvas p-6 [scrollbar-gutter:auto] lg:p-10">
+      {/* Full-bleed behind the card, faint enough that the form stays the focus:
+          the strokes are --rule and --content-subtle, not solid colours.
+
+          Sized against the *smaller* of width and height. It was previously
+          `min(46rem, 120vw)`, which scaled on width only, so on a short viewport
+          the dashed ring reached 105% of the viewport height and the circle was
+          sliced top and bottom. That read as an accident rather than a crop.
+          `svh` rather than `vh` so mobile browser chrome cannot reintroduce it. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-70"
+        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-60"
       >
-        <div className="aspect-square w-[min(46rem,120vw)]">
+        <div className="aspect-square w-[min(44rem,92vw,92svh)]">
           <AuthOrb />
         </div>
       </div>
@@ -37,7 +49,7 @@ export default function AuthShell({ children }: AuthShellProps) {
       <div className="relative z-10 flex w-full max-w-md flex-col items-center">
         <Link
           href="/"
-          className="group mb-7 flex items-center gap-2 transition-transform hover:scale-105"
+          className="group mb-6 flex items-center gap-2 transition-transform hover:scale-105"
         >
           <Film className="h-8 w-8 text-accent-hover" />
           <span className="text-3xl font-bold text-content">

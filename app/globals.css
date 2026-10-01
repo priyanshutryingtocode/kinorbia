@@ -33,6 +33,11 @@
      #ffffff in light. These pair per theme instead, clearing 4.5:1 on all
      three surfaces in both. Checked by scripts/checkContrast.mjs. */
   --danger: #ef4444;
+  /* Success icons, paired per theme for the same reason as --danger: no single
+     green clears the 3.0 icon threshold on all three surfaces in both themes.
+     #4ade80 is 1.51:1 on the light --surface. Used at icon size only, never for
+     body text. */
+  --success: #22c55e;
   --highlight: #d4a574;
   --highlight-soft: rgba(212, 165, 116, 0.14);
 
@@ -129,6 +134,7 @@
   --accent: #b91c1c;
   --accent-hover: #991b1b;
   --danger: #b91c1c;
+  --success: #15803d;
   --highlight: #8a5f2b;
   --highlight-soft: rgba(138, 95, 43, 0.12);
 
@@ -185,6 +191,7 @@
   --color-highlight-vivid: var(--highlight-vivid);
   --color-accent-bright: var(--accent-bright);
   --color-danger: var(--danger);
+  --color-success: var(--success);
   --color-on-highlight: var(--on-highlight);
   --color-on-accent: var(--on-accent);
   --color-on-scrim: var(--on-scrim);

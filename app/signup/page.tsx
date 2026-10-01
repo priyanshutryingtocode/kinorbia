@@ -45,10 +45,10 @@ export default function SignUpPage() {
   return (
     <AuthShell>
       <h1 className="sr-only">Create your KinOrbia account</h1>
-      <div className="w-full max-w-70 space-y-4">
+      <div className="w-full max-w-70 space-y-3.5">
         {registered ? (
-          <div className="space-y-4">
-            <CheckCircle2 className="w-10 h-10 mx-auto text-green-400" />
+          <div className="space-y-4 text-center">
+            <CheckCircle2 className="mx-auto h-10 w-10 text-success" />
             <h2 className="font-display text-xl font-medium leading-tight text-content">Account created</h2>
             <p className="text-sm text-content">
               You can sign in now with <span className="font-semibold text-content">{email}</span>.
@@ -65,7 +65,7 @@ export default function SignUpPage() {
           <>
             <AuthSocialBlock verb="Sign up" />
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               <div className="relative group">
                 <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-highlight transition-colors" />
                 <label htmlFor="signup-name" className="sr-only">
@@ -137,7 +137,7 @@ export default function SignUpPage() {
         )}
       </div>
 
-      <p className="mt-8 text-xs text-content-subtle">
+      <p className="mt-6 text-xs text-content-subtle">
         Already have an account? <Link href="/login" className="text-highlight font-medium hover:text-danger hover:underline transition-colors">Sign in</Link>
       </p>
     </AuthShell>

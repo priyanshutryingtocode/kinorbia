@@ -112,7 +112,7 @@ for (const file of ROOTS.flatMap(walk)) {
 // Checking --on-accent against --canvas would flag every value ever chosen,
 // since a light foreground on a light canvas is supposed to be unreadable.
 const BODY_TOKENS = ["--content", "--content-muted", "--content-subtle", "--danger"];
-const LARGE_TOKENS = ["--accent", "--accent-hover", "--highlight"];
+const LARGE_TOKENS = ["--accent", "--accent-hover", "--highlight", "--success"];
 const SURFACES = ["--canvas", "--surface", "--surface-raised"];
 
 // The darkest scrim a label is actually placed on, composited over a mid-grey

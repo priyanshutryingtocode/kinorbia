@@ -40,10 +40,10 @@ export default function LoginPage() {
   return (
     <AuthShell>
       <h1 className="sr-only">Sign in to KinOrbia</h1>
-      <div className="w-full max-w-70 space-y-5">
+      <div className="w-full max-w-70 space-y-3.5">
         <AuthSocialBlock verb="Continue" />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div className="relative group">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-highlight transition-colors" />
             <label htmlFor="login-email" className="sr-only">
@@ -61,7 +61,12 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="flex items-center justify-end -mt-1">
+          {/* No negative margin here. It used to carry `-mt-1`, which pulled this
+              row 4px off the card's rhythm and left a 10px gap above against a
+              14px gap below. It is a password affordance sitting between the email
+              and password fields, so uniform spacing reads as deliberate rather
+              than as a nudge. */}
+          <div className="flex items-center justify-end">
             <Link
               href="/forgot-password"
               className="text-[11px] font-medium text-content-subtle hover:text-highlight transition"
@@ -104,7 +109,7 @@ export default function LoginPage() {
         </form>
       </div>
 
-      <p className="mt-8 text-xs text-content-subtle">
+      <p className="mt-6 text-xs text-content-subtle">
         Need an account? <Link href="/signup" className="text-highlight font-medium hover:text-danger hover:underline transition-colors">Sign up</Link>
       </p>
     </AuthShell>

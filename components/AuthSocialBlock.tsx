@@ -10,9 +10,16 @@ import { signIn } from "next-auth/react";
 //
 // `verb` is the whole of the difference: "Continue" reads as "Continue with
 // Google", "Sign up" as "Sign up with Google".
+//
+// Wrapped in a single element, and the divider's `my-2` removed. It used to
+// return a bare fragment, so the divider carried a vertical margin while sitting
+// inside the caller's `space-y-*` parent -- the two combined to give 19px above
+// the rule and 13px below it, and neither matched the rest of the card. One
+// wrapper with one spacing scale means the caller controls the gap between this
+// block and the form, and this block controls the gap within itself.
 export default function AuthSocialBlock({ verb }: { verb: string }) {
   return (
-    <>
+    <div className="space-y-3.5">
       <button
         type="button"
         onClick={() => signIn("google", { callbackUrl: "/" })}
@@ -24,11 +31,11 @@ export default function AuthSocialBlock({ verb }: { verb: string }) {
         </span>
       </button>
 
-      <div className="flex items-center gap-4 my-2">
+      <div className="flex items-center gap-4">
         <div className="h-px bg-linear-to-r from-transparent via-rule to-transparent flex-1" />
         <span className="text-content-subtle text-[10px] font-bold uppercase tracking-widest">Or</span>
         <div className="h-px bg-linear-to-r from-transparent via-rule to-transparent flex-1" />
       </div>
-    </>
+    </div>
   );
 }
