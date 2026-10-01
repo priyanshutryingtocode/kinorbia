@@ -83,7 +83,7 @@ export default async function MediaDetailPage({
       </div>
 
       <PageContainer width="frame" className="relative pt-28 sm:pt-32">
-        <div className="relative grid gap-8 lg:grid-cols-[minmax(260px,360px)_1fr] lg:gap-12">
+        <div className="relative grid gap-8 lg:grid-cols-[minmax(260px,340px)_1fr] lg:gap-12 xl:grid-cols-[minmax(300px,400px)_1fr] xl:gap-16">
           <div className="mx-auto w-full max-w-67.5 sm:max-w-82.5 lg:max-w-none">
             {poster ? (
               <TmdbPosterImage

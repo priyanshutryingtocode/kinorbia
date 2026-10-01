@@ -144,7 +144,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
         <fieldset className="mt-5">
           <legend className="kin-label mb-3">Filters</legend>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <div className="kin-field">
               <label htmlFor="search-year" className="kin-label">
                 {isTv ? "First air year" : "Release year"}
@@ -257,7 +257,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             description={`${movies.length} ${movies.length === 1 ? "result" : "results"}`}
             className="mt-8"
           />
-          <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {movies.map((movie) => (
               <SearchResultCard
                 key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`}

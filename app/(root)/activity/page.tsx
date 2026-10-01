@@ -143,9 +143,9 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
               return (
                 <li
                   key={`review-${item.review._id}`}
-                  className="kin-editorial-row gap-4 transition-colors hover:bg-surface/40"
+                  className="kin-editorial-row gap-4 transition-colors hover:bg-surface/40 sm:gap-6"
                 >
-                  <div className="relative h-24 w-16 shrink-0 overflow-hidden bg-surface-raised">
+                  <div className="relative h-24 w-16 shrink-0 overflow-hidden bg-surface-raised sm:h-32 sm:w-20 lg:h-40 lg:w-28">
                     {poster ? (
                       <TmdbPosterImage
                         src={poster}
@@ -213,9 +213,9 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
             return (
               <li
                 key={`list-${item.list._id}`}
-                className="kin-editorial-row gap-4 transition-colors hover:bg-surface/40"
+                className="kin-editorial-row gap-4 transition-colors hover:bg-surface/40 sm:gap-6"
               >
-                <div className="relative h-24 w-16 shrink-0 overflow-hidden bg-surface-raised">
+                <div className="relative h-24 w-16 shrink-0 overflow-hidden bg-surface-raised sm:h-32 sm:w-20 lg:h-40 lg:w-28">
                   {poster ? (
                     <TmdbPosterImage
                       src={poster}
