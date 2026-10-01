@@ -144,6 +144,32 @@ for (const [themeName, vars] of [["dark", dark], ["light", light]]) {
     }
   }
 
+  // The ink ramp. It is theme-independent -- a near-black ground in both themes
+  // -- so it is checked once, against both of its own surfaces. This is where
+  // the accents finally clear body-text AA in light mode: gold is 2.10:1 on the
+  // light canvas and 8.66:1 here.
+  const inkPairs = [
+    ["--ink-content", "--ink", AA_BODY],
+    ["--ink-muted", "--ink", AA_BODY],
+    ["--ink-subtle", "--ink", AA_BODY],
+    ["--ink-content", "--ink-raised", AA_BODY],
+    ["--ink-muted", "--ink-raised", AA_BODY],
+    ["--ink-subtle", "--ink-raised", AA_BODY],
+    ["--highlight-vivid", "--ink", AA_BODY],
+    ["--highlight-vivid", "--ink-raised", AA_BODY],
+    ["--accent-bright", "--ink", AA_BODY],
+    ["--accent-bright", "--ink-raised", AA_BODY],
+  ];
+
+  for (const [fg, bgToken, min] of inkPairs) {
+    const ratio = contrast(dark[fg], dark[bgToken]);
+    if (ratio < min) {
+      failures.push(
+        `ink: ${fg} (${dark[fg]}) is ${ratio.toFixed(2)}:1 on ${bgToken} (${dark[bgToken]}), below ${min}.`
+      );
+    }
+  }
+
   // Foregrounds on filled chips.
   const pairs = [
     ["--on-accent", "--accent", AA_BODY],
