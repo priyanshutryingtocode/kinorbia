@@ -61,6 +61,12 @@
   --orb-base-a: #0a0a0a;
   --orb-base-b: #171717;
   --orb-blend: screen;
+  /* The lighting model, as three tones. Theme-independent because the orb is dark
+     in both themes. Kept separate from --orb-glow, which belongs to the rotating
+     swirl, so the sphere's light can stop moving while the plasma keeps turning. */
+  --orb-specular: rgba(255, 246, 235, 0.5);
+  --orb-rim: rgba(220, 38, 38, 0.5);
+  --orb-key: rgba(255, 216, 190, 0.1);
   /* 0.95-alpha black on a near-white canvas reads as a bruise, so the light
      theme gets its own much lighter values rather than reusing these. */
   --elevation-card: 0 18px 45px -34px rgba(0, 0, 0, 0.95);
@@ -269,9 +275,20 @@ html {
 }
 
 @keyframes orb-spin {
-  0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(180deg) scale(1.02); }
-  100% { transform: rotate(360deg) scale(1); }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orb-bloom {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+/* Exposed as a utility so AuthShell can opt out under prefers-reduced-motion.
+   The blanket rule in the reduced-motion block would freeze it at the first
+   frame regardless; this variant is what actually removes it. */
+@utility animate-orb-bloom {
+  animation: orb-bloom 7s ease-in-out infinite;
 }
 
 @keyframes shell-panel-enter {
@@ -294,13 +311,40 @@ html {
   }
 }
 
-.orb-plasma {
+/* Two layers, because they must move differently.
+ *
+ * A sphere reads as solid only if its light source stays put. Bundling the
+ * shading and the swirl under one rotation sent the highlight travelling around
+ * the rim, which reads as a spinning flat disc rather than a ball. So `.orb-swirl`
+ * turns and `.orb-shading` does not.
+ */
+.orb-swirl {
   background:
     radial-gradient(circle at 50% 50%, var(--orb-glow-inner) 0%, transparent 60%),
     conic-gradient(from 0deg at 50% 50%, transparent 0deg, var(--orb-glow) 180deg, transparent 360deg),
     linear-gradient(45deg, var(--orb-base-a) 0%, var(--orb-base-b) 100%);
   background-blend-mode: var(--orb-blend);
-  animation: orb-spin 20s linear infinite;
+  animation: orb-spin 22s linear infinite;
+}
+
+/* Static. Four stacked cues, first listed sitting on top, ordered so each one
+ * stays visible rather than being buried:
+ *
+ *   specular    a tight highlight at the light -- the strongest single cue
+ *   rim light   a thin bright arc on the dark edge, which is what separates a
+ *               lit sphere from a lit circle
+ *   terminator  the lit side falling off into shadow
+ *   ambient key a broad, soft lift from the same point as the specular
+ *
+ * The light sits at 33% 27%, not centred. Centred is what made the previous
+ * version flat: a light directly behind the viewer gives no shape at all.
+ */
+.orb-shading {
+  background:
+    radial-gradient(circle at 31% 26%, var(--orb-specular) 0%, transparent 8%),
+    radial-gradient(circle at 74% 78%, transparent 72%, var(--orb-rim) 82%, transparent 91%),
+    radial-gradient(circle at 33% 27%, transparent 46%, rgba(0, 0, 0, 0.72) 88%),
+    radial-gradient(circle at 33% 27%, var(--orb-key) 0%, transparent 62%);
 }
 
 .film-grain::before {

@@ -29,8 +29,17 @@ export default function AuthShell({ children, size = "default" }: AuthShellProps
             : "relative w-full max-w-130 aspect-square"
         }
       >
+        {/* The halo breathes, and it sits behind the disc rather than on it.
+            Scaling the disc itself would grow it ~15px per side while the
+            `inset-1` shading stayed put, exposing a ring of flat bg-ink around
+            the sphere -- the exact flat edge the lighting exists to remove. */}
+        <div className="absolute inset-0 rounded-full bg-accent/25 blur-[90px] animate-orb-bloom motion-reduce:animate-none" />
+        {/* Silhouette, plus the tight glow. Static, so the shading stays aligned. */}
         <div className="absolute inset-0 rounded-full bg-ink shadow-[0_0_100px_-20px_rgba(220,38,38,0.55)]" />
-        <div className="absolute inset-1 rounded-full orb-plasma overflow-hidden opacity-80" />
+        {/* The swirl turns, the shading does not. See the two classes in
+            globals.css for why that split is the whole trick. */}
+        <div className="absolute inset-1 rounded-full orb-swirl overflow-hidden" />
+        <div className="absolute inset-1 rounded-full orb-shading" />
         <div className="absolute inset-0 rounded-full shadow-orb-rim border border-ink-rule" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center p-10 z-10 text-center backdrop-blur-sm rounded-full">
