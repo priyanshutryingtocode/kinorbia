@@ -1,7 +1,7 @@
 import Link from "next/link";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
-import { Film, Star } from "lucide-react";
-import { mediaHref, tmdbImage } from "@/lib/media";
+import PosterImage from "@/components/PosterImage";
+import { Star } from "lucide-react";
+import { mediaHref } from "@/lib/media";
 import type { MovieSummary } from "@/types";
 
 // Not to be merged with SearchResultCard, the inline posters in
@@ -30,21 +30,17 @@ export default function MovieCard({
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
   const href = mediaHref(movie.mediaType, movie.id);
   const isEager = loading ? loading === "eager" : index !== undefined && index < 3;
-  const poster = tmdbImage(movie.poster_path, "w500");
-  const posterElement = poster ? (
-    <TmdbPosterImage
-      src={poster}
+  // Was a <Film> with no size class, so a missing poster rendered at lucide's
+  // 24px default while every other surface used 28-40px.
+  const posterElement = (
+    <PosterImage
+      path={movie.poster_path}
+      width="w500"
       alt={movie.title}
-      fill
-      loading={isEager ? "eager" : undefined}
-      fetchPriority={isEager ? "high" : undefined}
+      eager={isEager}
       sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
       className="object-cover transition duration-500 group-hover:saturate-110"
     />
-  ) : (
-    <div className="h-full bg-surface-raised flex items-center justify-center">
-      <Film className="text-content-subtle" />
-    </div>
   );
 
   return (

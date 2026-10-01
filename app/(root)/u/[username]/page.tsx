@@ -1,8 +1,7 @@
-import TmdbPosterImage from "@/components/TmdbPosterImage";
+import PosterImage from "@/components/PosterImage";
 import RouteShell from "@/components/RouteShell";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { User as UserIcon } from "lucide-react";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
@@ -15,7 +14,7 @@ import ProfileMetricRail from "@/components/ProfileMetricRail";
 import ProfilePanel from "@/components/ProfilePanel";
 import SpoilerText from "@/components/SpoilerText";
 import { renderRichText } from "@/lib/renderRichText";
-import { mediaHref, mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
+import { mediaHref, mediaKey, normalizeMediaType } from "@/lib/media";
 import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
 import type { FavoriteMovie, MediaType } from "@/types";
 
@@ -166,8 +165,6 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
           {favorites.length ? (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
               {favorites.map((movie) => {
-                const poster = tmdbImage(movie.posterPath, "w342");
-
                 return (
                   <Link
                     key={mediaKey(movie.mediaType, movie.movieId)}
@@ -175,19 +172,16 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                     className="kin-focus group relative block aspect-2/3 overflow-hidden rounded-sm border border-rule bg-canvas transition-colors hover:border-highlight/40"
                     aria-label={`${movie.title} (${normalizeMediaType(movie.mediaType) === "tv" ? "TV show" : "movie"})`}
                   >
-                    {poster ? (
-                      <TmdbPosterImage
-                        src={poster}
-                        alt=""
-                        fill
-                        sizes="(min-width: 768px) 16vw, 30vw"
-                        className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-content-subtle">
-                        <UserIcon className="h-8 w-8" />
-                      </div>
-                    )}
+                    {/* The fallback here was a UserIcon -- a person glyph where
+                        a film poster belongs -- and it carried no aria-hidden,
+                        unlike every other site. */}
+                    <PosterImage
+                      path={movie.posterPath}
+                      width="w342"
+                      alt=""
+                      sizes="(min-width: 768px) 16vw, 30vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                    />
                   </Link>
                 );
               })}

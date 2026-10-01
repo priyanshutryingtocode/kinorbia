@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Film } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { requireUserEmail } from "@/lib/actions";
 import CommentSection from "@/components/CommentSection";
 import EmptyState from "@/components/EmptyState";
@@ -9,10 +9,10 @@ import RouteShell from "@/components/RouteShell";
 import PageHeader from "@/components/PageHeader";
 import SectionHeader from "@/components/SectionHeader";
 import SocialActionButton from "@/components/SocialActionButton";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
+import PosterImage from "@/components/PosterImage";
 import VisibilityBadge from "@/components/VisibilityBadge";
 import dbConnect from "@/lib/dbConnect";
-import { formatDate, mediaHref, mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
+import { formatDate, mediaHref, mediaKey, normalizeMediaType } from "@/lib/media";
 import { isObjectId } from "@/lib/objectId";
 import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
@@ -30,7 +30,6 @@ type ListDetailPageProps = {
 };
 
 function ListPoster({ movie }: { movie: ListMovie }) {
-  const poster = tmdbImage(movie.posterPath, "w342");
   const mediaType = normalizeMediaType(movie.mediaType);
   const href = mediaHref(mediaType, movie.movieId);
   const year = movie.releaseDate?.slice(0, 4) || "Year unknown";
@@ -41,19 +40,13 @@ function ListPoster({ movie }: { movie: ListMovie }) {
       className="kin-focus group overflow-hidden rounded-control border border-rule bg-surface-raised transition-colors hover:border-highlight/40"
     >
       <div className="relative aspect-2/3 overflow-hidden bg-surface">
-        {poster ? (
-          <TmdbPosterImage
-            src={poster}
-            alt={movie.title}
-            fill
-            sizes="(min-width: 1536px) 16vw, (min-width: 1280px) 18vw, (min-width: 768px) 25vw, 45vw"
-            className="object-cover transition-opacity group-hover:opacity-85"
-          />
-        ) : (
-          <span className="flex h-full items-center justify-center text-content-subtle">
-            <Film className="h-7 w-7" aria-hidden="true" />
-          </span>
-        )}
+        <PosterImage
+          path={movie.posterPath}
+          width="w342"
+          alt={movie.title}
+          sizes="(min-width: 1536px) 16vw, (min-width: 1280px) 18vw, (min-width: 768px) 25vw, 45vw"
+          className="object-cover transition-opacity group-hover:opacity-85"
+        />
       </div>
       <div className="p-2.5">
         <h3 className="break-words text-sm font-medium leading-5 text-content [overflow-wrap:anywhere] transition-colors group-hover:text-highlight">

@@ -2,9 +2,9 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
-import { mediaHref, normalizeMediaType, tmdbImage } from "@/lib/media";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import PosterImage from "@/components/PosterImage";
+import { mediaHref, normalizeMediaType } from "@/lib/media";
 
 export interface CarouselMovie {
   id: number;
@@ -14,18 +14,16 @@ export interface CarouselMovie {
   mediaType?: "movie" | "tv";
 }
 
+// This had its own null branch returning a bare ImageIcon, which looked nothing
+// like the placeholder on the thirteen other surfaces. It did not need one: the
+// parent is `aspect-2/3 relative bg-surface-raised`, so the shared fallback's
+// `h-full w-full` fills the same box `TmdbPosterImage fill` occupied.
 function CarouselPoster({ movie }: { movie: CarouselMovie }) {
-  const poster = tmdbImage(movie.poster_path, "w500");
-
-  if (!poster) {
-    return <ImageIcon className="h-10 w-10 text-content-subtle" aria-hidden="true" />;
-  }
-
   return (
-    <TmdbPosterImage
-      src={poster}
+    <PosterImage
+      path={movie.poster_path}
+      width="w500"
       alt={movie.title}
-      fill
       sizes="(max-width: 768px) 144px, 192px"
       className="object-cover transition duration-500 group-hover/card:scale-[1.025] group-hover/card:saturate-110"
     />
