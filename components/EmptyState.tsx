@@ -11,6 +11,10 @@ type EmptyStateProps = {
   headingLevel?: 2 | 3 | 4;
 };
 
+// Only the full block goes ink. The compact variant is used inline inside lists
+// and feeds -- all ten call sites are in profile and u/[username] -- so putting
+// them on ink would scatter ten dark rectangles through two already-dense pages
+// and read as noise rather than emphasis.
 export default function EmptyState({
   title,
   description,
@@ -28,7 +32,7 @@ export default function EmptyState({
       className={`${
         compact
           ? "flex flex-col items-center justify-center gap-2.5 border-y border-rule bg-canvas/40 px-5 py-8 text-center"
-          : "flex flex-col items-center justify-center gap-3 rounded-sheet border border-rule bg-surface px-6 py-12 text-center"
+          : "flex flex-col items-center justify-center gap-3 rounded-sheet border border-ink-rule bg-ink px-6 py-12 text-center"
       } ${className}`}
     >
       {emptyIcon && (
@@ -37,14 +41,18 @@ export default function EmptyState({
           className={
             compact
               ? "p-1.5 text-content-subtle"
-              : "rounded-control bg-surface-raised p-2.5 text-highlight/80"
+              : "rounded-control bg-ink-raised p-2.5 text-highlight-vivid"
           }
         >
           {emptyIcon}
         </div>
       )}
-      <Heading className={`font-display font-medium text-content ${compact ? "text-base" : "text-lg"}`}>{title}</Heading>
-      {description && <p className="max-w-md text-sm leading-6 text-content-muted">{description}</p>}
+      <Heading className={`font-display font-medium ${compact ? "text-content text-base" : "text-ink-content text-lg"}`}>{title}</Heading>
+      {description && (
+        <p className={`max-w-md text-sm leading-6 ${compact ? "text-content-muted" : "text-ink-muted"}`}>
+          {description}
+        </p>
+      )}
       {children}
     </div>
   );
