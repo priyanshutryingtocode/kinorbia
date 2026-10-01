@@ -1,9 +1,9 @@
-import TmdbPosterImage from "@/components/TmdbPosterImage";
+import PosterImage from "@/components/PosterImage";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, Minus, Users } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { buildCommunityComparison } from "@/lib/community";
-import { mediaHref, tmdbImage } from "@/lib/media";
+import { mediaHref } from "@/lib/media";
 import type { FavoriteMovie } from "@/types";
 
 type ProfileCommunityComparisonProps = {
@@ -96,7 +96,6 @@ export default async function ProfileCommunityComparison({
           </thead>
           <tbody className="divide-y divide-rule">
             {community.items.map((item) => {
-              const poster = tmdbImage(item.posterPath, "w92");
               const communityRating = item.community.toFixed(1);
               const deltaLabel = item.delta > 0 ? "higher" : item.delta < 0 ? "lower" : "the same";
               const deltaClass =
@@ -106,11 +105,18 @@ export default async function ProfileCommunityComparison({
                 <tr key={`${item.mediaType}-${item.movieId}`}>
                   <th scope="row" className="py-3 pr-4 text-left font-normal">
                     <div className="flex min-w-0 items-center gap-3">
-                      {poster && (
-                        <div className="relative h-12 w-8 shrink-0 overflow-hidden bg-surface-raised">
-                          <TmdbPosterImage src={poster} alt="" fill sizes="32px" className="object-cover" />
-                        </div>
-                      )}
+                      {/* This rendered nothing when there was no poster, so a
+                          missing thumbnail silently collapsed the row and
+                          shifted every column beside it. */}
+                      <div className="relative h-12 w-8 shrink-0 overflow-hidden bg-surface-raised">
+                        <PosterImage
+                          path={item.posterPath}
+                          width="w92"
+                          alt=""
+                          sizes="32px"
+                          className="object-cover"
+                        />
+                      </div>
                       <div className="min-w-0">
                         <Link
                           href={mediaHref(item.mediaType, item.movieId)}

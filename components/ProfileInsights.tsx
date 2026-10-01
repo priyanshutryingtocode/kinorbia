@@ -1,13 +1,13 @@
 import { Suspense } from "react";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
+import PosterImage from "@/components/PosterImage";
 import Link from "next/link";
 import LinkTabs from "@/components/LinkTabs";
-import { BarChart3, Clapperboard, Film, Star, TrendingUp, type LucideIcon } from "lucide-react";
+import {BarChart3, Clapperboard, Film, Star, TrendingUp, type LucideIcon} from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import ProfileCommunityComparison from "@/components/ProfileCommunityComparison";
 import ProfileMetricRail from "@/components/ProfileMetricRail";
 import type { InsightsData } from "@/lib/insights";
-import { tmdbImage } from "@/lib/media";
+
 import type { FavoriteMovie } from "@/types";
 
 type ProfileInsightsProps = {
@@ -456,19 +456,18 @@ export default function ProfileInsights({
                       className="kin-focus group block min-w-0 border-b border-rule pb-3 transition-colors hover:border-highlight/50"
                     >
                       <div className="relative aspect-2/3 overflow-hidden bg-surface-raised">
-                        {tmdbImage(item.posterPath, "w185") ? (
-                          <TmdbPosterImage
-                            src={tmdbImage(item.posterPath, "w185") as string}
-                            alt={item.title}
-                            fill
-                            sizes="(min-width: 1024px) 18vw, (min-width: 640px) 30vw, 45vw"
-                            className="object-cover transition group-hover:scale-[1.03]"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-content-subtle" aria-hidden="true">
-                            <Film className="h-6 w-6" />
-                          </div>
-                        )}
+                        {/* Called tmdbImage twice in one expression and cast the second
+                            result with `as string`. That cast was suppressing a real null:
+                            tmdbImage rejects any host other than image.tmdb.org and re-sizes an
+                            already-absolute TMDB url, so the guard could pass and the src could
+                            still come back null. */}
+                        <PosterImage
+                          path={item.posterPath}
+                          width="w185"
+                          alt={item.title}
+                          sizes="(min-width: 1024px) 18vw, (min-width: 640px) 30vw, 45vw"
+                          className="object-cover transition group-hover:scale-[1.03]"
+                        />
                         <span className="absolute right-2 top-2 inline-flex items-center gap-1 bg-black/75 px-2 py-1 text-xs font-bold text-on-scrim">
                           <Star className="h-3 w-3 fill-current" aria-hidden="true" />
                           {(item.rating / 2).toFixed(1)}

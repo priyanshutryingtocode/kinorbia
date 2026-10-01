@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
+import PosterImage from "@/components/PosterImage";
 import RouteShell from "@/components/RouteShell";
 import SpoilerText from "@/components/SpoilerText";
 import { renderRichText } from "@/lib/renderRichText";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Download, ExternalLink, Film } from "lucide-react";
+import {Download, ExternalLink} from "lucide-react";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import { buildInsights, yearsFromJournal } from "@/lib/insights";
-import { formatDate, mediaHref, mediaKey, normalizeMediaType, tmdbImage } from "@/lib/media";
+import {formatDate, mediaHref, mediaKey, normalizeMediaType} from "@/lib/media";
 import { firstValue, parsePage, parseYear } from "@/lib/searchParams";
 import {
   getFavoritePage,
@@ -59,16 +59,17 @@ function parseTab(value: string | string[] | undefined): ProfileTab {
 }
 
 function JournalCard({ item }: { item: JournalItem }) {
-  const poster = tmdbImage(item.posterPath, "w342");
   const href = item.movieId ? mediaHref(item.mediaType, item.movieId) : null;
   const content = (
     <>
       <div className="relative aspect-2/3 bg-surface-raised">
-        {poster ? (
-          <TmdbPosterImage src={poster} alt={item.movieTitle} fill sizes="(min-width: 768px) 20vw, 45vw" className="object-cover" />
-        ) : (
-          <div className="flex h-full items-center justify-center text-content-subtle"><Film className="h-8 w-8" /></div>
-        )}
+        <PosterImage
+          path={item.posterPath}
+          width="w342"
+          alt={item.movieTitle}
+          sizes="(min-width: 768px) 20vw, 45vw"
+          className="object-cover"
+        />
       </div>
       <div className="p-3">
         <h3 className="truncate text-sm font-semibold text-content">{item.movieTitle}</h3>

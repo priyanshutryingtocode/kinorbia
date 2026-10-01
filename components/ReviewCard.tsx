@@ -1,6 +1,6 @@
-import { MessageSquare, Star } from "lucide-react";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
-import { tmdbImage } from "@/lib/media";
+import {Star} from "lucide-react";
+import PosterImage from "@/components/PosterImage";
+
 import { renderRichText } from "@/lib/renderRichText";
 import { usernameFor } from "@/lib/profileLinks";
 import type { ReviewItem } from "@/types";
@@ -31,7 +31,6 @@ export default function ReviewCard({
   path,
   usernames,
 }: ReviewCardProps) {
-  const posterUrl = tmdbImage(review.posterPath, "w342");
   const viewerEmail = currentUserEmail.toLowerCase();
   const body = review.spoiler ? (
     <SpoilerText text={review.body} />
@@ -44,19 +43,13 @@ export default function ReviewCard({
   return (
     <article className="flex min-w-0 items-start overflow-hidden rounded-sheet border border-rule bg-surface/65">
       <div className="relative aspect-2/3 w-20 shrink-0 bg-surface-raised sm:w-24">
-        {posterUrl ? (
-          <TmdbPosterImage
-            src={posterUrl}
-            alt={review.movieTitle}
-            fill
-            sizes="96px"
-            className="object-cover"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-content-subtle">
-            <MessageSquare className="h-7 w-7" aria-hidden="true" />
-          </div>
-        )}
+        <PosterImage
+          path={review.posterPath}
+          width="w342"
+          alt={review.movieTitle}
+          sizes="96px"
+          className="object-cover"
+        />
       </div>
       <div className="min-w-0 flex-1 p-4">
         <div className="flex items-start justify-between gap-3">

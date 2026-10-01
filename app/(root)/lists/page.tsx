@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronDown, Film, Plus } from "lucide-react";
+import {ChevronDown, Film, Plus} from "lucide-react";
 import { requireUserEmail } from "@/lib/actions";
 import ActionForm from "@/components/ActionForm";
 import EmptyState from "@/components/EmptyState";
@@ -12,11 +12,11 @@ import PageHeader from "@/components/PageHeader";
 import SectionHeader from "@/components/SectionHeader";
 import SocialActionButton from "@/components/SocialActionButton";
 import SubmitButton from "@/components/SubmitButton";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
+import PosterImage from "@/components/PosterImage";
 import VisibilityBadge from "@/components/VisibilityBadge";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import dbConnect from "@/lib/dbConnect";
-import { formatDate, mediaHref, mediaKey, tmdbImage } from "@/lib/media";
+import {formatDate, mediaHref, mediaKey} from "@/lib/media";
 import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
 import { serializeFavorites, serializeList, type RawFavoriteMovie, type RawMovieList } from "@/lib/serialize";
@@ -31,7 +31,6 @@ export const metadata: Metadata = {
 };
 
 function PosterPreview({ movie }: { movie: ListMovie }) {
-  const poster = tmdbImage(movie.posterPath, "w185");
   const href = mediaHref(movie.mediaType, movie.movieId);
 
   return (
@@ -40,19 +39,13 @@ function PosterPreview({ movie }: { movie: ListMovie }) {
       className="kin-focus group relative aspect-2/3 overflow-hidden rounded-control border border-rule bg-surface-raised transition-colors hover:border-highlight/40"
       aria-label={`Open ${movie.title}`}
     >
-      {poster ? (
-        <TmdbPosterImage
-          src={poster}
-          alt={movie.title}
-          fill
-          sizes="(min-width: 1024px) 64px, (min-width: 640px) 72px, 30vw"
-          className="object-cover transition-opacity group-hover:opacity-85"
-        />
-      ) : (
-        <span className="flex h-full items-center justify-center text-content-subtle">
-          <Film className="h-5 w-5" aria-hidden="true" />
-        </span>
-      )}
+      <PosterImage
+        path={movie.posterPath}
+        width="w185"
+        alt={movie.title}
+        sizes="(min-width: 1024px) 64px, (min-width: 640px) 72px, 30vw"
+        className="object-cover transition-opacity group-hover:opacity-85"
+      />
     </Link>
   );
 }

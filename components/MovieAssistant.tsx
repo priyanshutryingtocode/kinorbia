@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Bot, Film, Loader2, Send, Sparkles, X } from "lucide-react";
+import {Bot, Loader2, Send, Sparkles, X} from "lucide-react";
 import type { MovieSummary } from "@/types";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
-import { mediaHref, normalizeMediaType, tmdbImage } from "@/lib/media";
+import PosterImage from "@/components/PosterImage";
+import {mediaHref, normalizeMediaType} from "@/lib/media";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -60,21 +60,11 @@ function movieYear(movie: MovieSummary) {
 }
 
 function AssistantPoster({ movie }: { movie: MovieSummary }) {
-  const poster = tmdbImage(movie.poster_path, "w185");
-
-  if (!poster) {
-    return (
-      <div className="flex h-full items-center justify-center text-content-subtle">
-        <Film className="h-5 w-5" aria-hidden="true" />
-      </div>
-    );
-  }
-
   return (
-    <TmdbPosterImage
-      src={poster}
+    <PosterImage
+      path={movie.poster_path}
+      width="w185"
       alt={movie.title}
-      fill
       sizes="56px"
       className="object-cover"
     />

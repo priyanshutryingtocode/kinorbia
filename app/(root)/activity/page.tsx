@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { List, MessageSquare, Star } from "lucide-react";
+import {List, Star} from "lucide-react";
 import type { Metadata } from "next";
 import RouteShell from "@/components/RouteShell";
 import PageHeader from "@/components/PageHeader";
-import TmdbPosterImage from "@/components/TmdbPosterImage";
+import PosterImage from "@/components/PosterImage";
 import SpoilerText from "@/components/SpoilerText";
 import { renderRichText } from "@/lib/renderRichText";
 import FeedTabs from "@/components/FeedTabs";
@@ -18,7 +18,7 @@ import type { MediaType } from "@/types";
 import User from "@/models/User";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
-import { tmdbImage } from "@/lib/media";
+
 import { emailMatch } from "@/lib/emailMatch";
 
 export const dynamic = "force-dynamic";
@@ -137,7 +137,7 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
         <ol className="kin-editorial-list mt-8" aria-label="Activity feed">
           {items.map((item) => {
             if (item.kind === "review") {
-              const poster = tmdbImage(item.review.posterPath, "w185");
+              const posterPath = item.review.posterPath;
               const rating = lookupRating(ratingMaps, item.review);
 
               return (
@@ -146,19 +146,13 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
                   className="kin-editorial-row gap-4 transition-colors hover:bg-surface/40 sm:gap-6"
                 >
                   <div className="relative h-24 w-16 shrink-0 overflow-hidden bg-surface-raised sm:h-32 sm:w-20 lg:h-40 lg:w-28">
-                    {poster ? (
-                      <TmdbPosterImage
-                        src={poster}
-                        alt={item.review.movieTitle}
-                        fill
-                        sizes="64px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-content-subtle">
-                        <MessageSquare className="h-5 w-5" aria-hidden="true" />
-                      </div>
-                    )}
+                    <PosterImage
+                      path={posterPath}
+                      width="w185"
+                      alt={item.review.movieTitle}
+                      sizes="64px"
+                      className="object-cover"
+                    />
                   </div>
                   <article className="min-w-0 flex-1">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-subtle">
@@ -208,7 +202,7 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
               );
             }
 
-            const poster = tmdbImage(item.list.movies?.[0]?.posterPath, "w185");
+            const posterPath = item.list.movies?.[0]?.posterPath;
 
             return (
               <li
@@ -216,19 +210,13 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
                 className="kin-editorial-row gap-4 transition-colors hover:bg-surface/40 sm:gap-6"
               >
                 <div className="relative h-24 w-16 shrink-0 overflow-hidden bg-surface-raised sm:h-32 sm:w-20 lg:h-40 lg:w-28">
-                  {poster ? (
-                    <TmdbPosterImage
-                      src={poster}
-                      alt=""
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-highlight">
-                      <List className="h-5 w-5" aria-hidden="true" />
-                    </div>
-                  )}
+                  <PosterImage
+                    path={posterPath}
+                    width="w185"
+                    alt=""
+                    sizes="64px"
+                    className="object-cover"
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
                   {/* The byline sits outside the <Link> on purpose. It used to be
