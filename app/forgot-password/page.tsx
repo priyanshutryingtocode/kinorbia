@@ -75,7 +75,7 @@ export default function ForgotPasswordPage() {
                 placeholder="Email address"
                 required
                 autoComplete="email"
-                className="kin-input kin-input-ink kin-input-affix py-3.5"
+                className="kin-input kin-input-affix py-3.5"
               />
             </div>
 
