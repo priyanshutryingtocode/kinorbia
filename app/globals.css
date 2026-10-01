@@ -61,19 +61,17 @@
   --orb-base-a: #0a0a0a;
   --orb-base-b: #171717;
   --orb-blend: screen;
-  /* The lighting model, as three tones. Theme-independent because the orb is dark
-     in both themes. Kept separate from --orb-glow, which belongs to the rotating
-     swirl, so the sphere's light can stop moving while the plasma keeps turning. */
+  /* The sphere's one light tone, kept separate from --orb-glow, which belongs to
+     the rotating swirl, so the lighting can stop moving while the plasma keeps
+     turning. Theme-independent because the orb is dark in both themes. */
   --orb-specular: rgba(255, 246, 235, 0.5);
-  --orb-rim: rgba(220, 38, 38, 0.5);
-  --orb-key: rgba(255, 216, 190, 0.1);
   /* 0.95-alpha black on a near-white canvas reads as a bruise, so the light
      theme gets its own much lighter values rather than reusing these. */
   --elevation-card: 0 18px 45px -34px rgba(0, 0, 0, 0.95);
   --elevation-card-hover: 0 24px 60px -42px rgba(220, 38, 38, 0.45);
   --elevation-float: 0 24px 80px -48px rgba(0, 0, 0, 0.95);
   --elevation-poster: 0 28px 80px -44px rgba(0, 0, 0, 0.95);
-  --elevation-orb-rim: inset 0 0 60px 15px rgba(0, 0, 0, 0.8), inset 0 4px 10px rgba(255, 255, 255, 0.1);
+  --elevation-orb-rim: inset 0 0 35px 8px rgba(0, 0, 0, 0.8), inset 0 4px 10px rgba(255, 255, 255, 0.1);
   --elevation-filter: 0 18px 55px -42px rgba(0, 0, 0, 0.95);
   /* The glow around the active genre chip, which sits on bg-content. Inverts,
      because bg-content does. */
@@ -173,7 +171,7 @@
   --elevation-card-hover: 0 24px 60px -42px rgba(185, 28, 28, 0.3);
   --elevation-float: 0 24px 80px -48px rgba(28, 20, 18, 0.2);
   --elevation-poster: 0 28px 80px -44px rgba(28, 20, 18, 0.24);
-  --elevation-orb-rim: inset 0 0 60px 15px rgba(0, 0, 0, 0.8), inset 0 4px 10px rgba(255, 255, 255, 0.1);
+  --elevation-orb-rim: inset 0 0 35px 8px rgba(0, 0, 0, 0.8), inset 0 4px 10px rgba(255, 255, 255, 0.1);
   --elevation-filter: 0 18px 55px -42px rgba(28, 20, 18, 0.18);
   --elevation-glow: 0 12px 28px -18px rgba(28, 20, 18, 0.3);
   /* Grain at the dark theme's opacity reads as dirt once the ground is light. */
@@ -327,24 +325,43 @@ html {
   animation: orb-spin 22s linear infinite;
 }
 
-/* Static. Four stacked cues, first listed sitting on top, ordered so each one
- * stays visible rather than being buried:
+/* Static, and the half that makes the swirl read as a ball rather than a disc.
  *
- *   specular    a tight highlight at the light -- the strongest single cue
- *   rim light   a thin bright arc on the dark edge, which is what separates a
- *               lit sphere from a lit circle
- *   terminator  the lit side falling off into shadow
- *   ambient key a broad, soft lift from the same point as the specular
+ * Every gradient here is sized `farthest-corner`, which is measured from the
+ * *corner* of the box, not from the centre of the circle. So percentages here
+ * are not percentages of the orb:
  *
- * The light sits at 33% 27%, not centred. Centred is what made the previous
- * version flat: a light directly behind the viewer gives no shape at all.
+ *   the shape is `rounded-full`, a circle of radius 0.5W inscribed in a square
+ *   a radial at 50% 50% has a farthest-corner radius of sqrt(0.5^2 + 0.5^2)
+ *     = 0.7071W, so 0.500W -- the visible edge -- is at 70.7%
+ *
+ * 71% is therefore the number that matters: a stop past it is invisible, a
+ * stop short of it leaves a lighter gap between the shadow and the edge.
+ *
+ * Two gradients, both now correct:
+ *
+ *   specular    tight highlight at 31% 26%. Ends at 0.081W against a nearest
+ *               edge of 0.194W, so it can never be clipped.
+ *   terminator  the falloff into shadow, re-centred on 50% 50% so its full
+ *               dark lands exactly ON the visible edge at 71%.
+ *
+ * The rim light and the ambient key that used to be here are gone. Centred at
+ * 74% 78% the rim ring ran from 0.774W to 0.978W while the shape stopped at
+ * 0.869W, so its outer half was sliced off into a hard crescent; the ambient
+ * key died at 0.627W against a 0.900W edge, leaving a third faint ring. Both
+ * also duplicated work that `--elevation-orb-rim` and the terminator already
+ * do. Edge definition now lives in that inset shadow alone, tightened to
+ * 35px/8px so it reads as an edge rather than a second rim.
  */
 .orb-shading {
   background:
     radial-gradient(circle at 31% 26%, var(--orb-specular) 0%, transparent 8%),
-    radial-gradient(circle at 74% 78%, transparent 72%, var(--orb-rim) 82%, transparent 91%),
-    radial-gradient(circle at 33% 27%, transparent 46%, rgba(0, 0, 0, 0.72) 88%),
-    radial-gradient(circle at 33% 27%, var(--orb-key) 0%, transparent 62%);
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 10%,
+      rgba(0, 0, 0, 0.5) 48%,
+      rgba(0, 0, 0, 0.88) 71%
+    );
 }
 
 .film-grain::before {
