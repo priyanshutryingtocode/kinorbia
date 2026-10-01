@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:contrast": "node scripts/checkContrast.mjs",
+    "check:unused": "node scripts/checkUnusedExports.mjs",
     "reset:db": "node --env-file=.env.local scripts/resetDb.mjs",
     "seed:data": "node --env-file=.env.local scripts/seedData.mjs",
     "backfill:verified": "node --env-file=.env.local scripts/backfillVerified.mjs"

@@ -63,7 +63,7 @@ type ResultList<T> = { results?: T[] };
 type MediaPath = "movie" | "tv";
 
 // TMDB rejects anything past page 500.
-export const MAX_TMDB_PAGE = 500;
+const MAX_TMDB_PAGE = 500;
 
 // TMDB's page size. The browse actions need it as the target for a "load more":
 // it is the one number that divides the 2, 4 and 5 column browse grids exactly,

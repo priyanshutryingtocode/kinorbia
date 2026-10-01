@@ -37,7 +37,7 @@ type JournalHistoryRecord = {
   movieId?: string;
 };
 
-export type ProfileIdentity = {
+type ProfileIdentity = {
   _id: { toString: () => string };
   name: string;
   email: string;

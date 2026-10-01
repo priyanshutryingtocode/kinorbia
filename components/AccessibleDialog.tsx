@@ -21,9 +21,7 @@ type AccessibleDialogProps = {
   panelClassName?: string;
 };
 
-// Split out so `panelClassName` can replace it wholesale, and so both this file
-// and `TrailerButton` name the same default.
-export const DIALOG_PANEL_CLASS =
+const DIALOG_PANEL_CLASS =
   "shell-panel-enter relative max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-overlay border border-rule bg-canvas p-6 shadow-2xl focus:outline-none";
 
 function getFocusableElements(container: HTMLElement) {

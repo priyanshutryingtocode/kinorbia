@@ -7,7 +7,7 @@ export type Theme = "light" | "dark";
 // The key the inline script in app/layout.tsx reads, and the one it falls back
 // to `prefers-color-scheme` when absent. Duplicated there because that script
 // runs before this module exists; the two must not drift.
-export const THEME_STORAGE_KEY = "kinorbia-theme";
+const THEME_STORAGE_KEY = "kinorbia-theme";
 
 const listeners = new Set<() => void>();
 
@@ -65,7 +65,7 @@ function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
 }
 
-export function setTheme(theme: Theme) {
+function setTheme(theme: Theme) {
   applyTheme(theme);
 
   try {
@@ -85,5 +85,9 @@ export function useTheme() {
     setTheme(readTheme() === "light" ? "dark" : "light");
   }, []);
 
-  return { theme, setTheme, toggleTheme };
+  // Only `toggleTheme` is consumed. `setTheme` is kept module-private rather
+  // than offered as part of the hook's surface: nothing reads it, and an
+  // exported-but-unused setter is exactly what checkUnusedExports exists to
+  // catch.
+  return { theme, toggleTheme };
 }

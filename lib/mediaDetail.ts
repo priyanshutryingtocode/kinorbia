@@ -22,7 +22,7 @@ export type DetailChip = {
   accent?: boolean;
 };
 
-export type DetailCrew = {
+type DetailCrew = {
   label: string;
   names: string;
 };
@@ -31,7 +31,7 @@ export type DetailCrew = {
 // structural prop type rather than sharing a named one, so this is the common
 // denominator. `id` is a string here, where MovieSummary allows a number,
 // because the TMDB ids reach these controls as route params.
-export type DetailSummary = {
+type DetailSummary = {
   id: string;
   title: string;
   poster_path: string | null;
@@ -69,7 +69,7 @@ export function detailYear(date: string | undefined): string {
   return date ? date.split("-")[0] : "TBA";
 }
 
-export function ratingChip(voteAverage: number | undefined): DetailChip {
+function ratingChip(voteAverage: number | undefined): DetailChip {
   return {
     key: "rating",
     icon: "star-filled",
@@ -77,11 +77,11 @@ export function ratingChip(voteAverage: number | undefined): DetailChip {
   };
 }
 
-export function releaseDateChip(releaseDate: string | undefined): DetailChip {
+function releaseDateChip(releaseDate: string | undefined): DetailChip {
   return { key: "release-date", icon: "calendar", label: releaseDate || "Release date TBA" };
 }
 
-export function yourRatingChip(personalRating: number): DetailChip | null {
+function yourRatingChip(personalRating: number): DetailChip | null {
   if (personalRating <= 0) {
     return null;
   }

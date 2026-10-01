@@ -29,7 +29,7 @@ npm i -D mongodb
 Locally this is a non-issue, because a normal `npm install` includes
 devDependencies.
 
-## `checkContrast.mjs` is not an admin script
+## The two check scripts are not admin scripts
 
 The other three need a live database. This one reads `app/globals.css` and the
 component tree and needs neither a URI nor any dependency, so it takes no
@@ -37,6 +37,7 @@ component tree and needs neither a URI nor any dependency, so it takes no
 
 ```bash
 npm run check:contrast
+npm run check:unused
 ```
 
 It exists because of a specific failure. `text-neutral-700` is a Tailwind grey
@@ -46,7 +47,15 @@ pager buttons, and every poster-fallback icon invisible — none of which is
 obvious in review. The script rejects those greys outright, checks every
 declared `--color-*` against all three surfaces of both themes, verifies each
 one actually resolves, and checks the two raw-palette filled chips that also
-carry accent text. Worth running in CI alongside `tsc`, `eslint`, and `build`.
+carry accent text. `checkUnusedExports.mjs` covers a gap the other three cannot: `tsc --noUnusedLocals` and
+`eslint` both pass with an unused export, because an export is by definition "used" as far as the
+compiler is concerned. Ten had accumulated, five of them added by the refactors that introduced them —
+including `DIALOG_PANEL_CLASS`, exported from `AccessibleDialog` under a comment saying
+`TrailerButton` named the same default, which it never did. It found two more on its first run, and
+then found its own blind spot: `auth.ts` sits at the repo root rather than under a directory, so a scan
+of `app`, `components`, and `lib` alone reported its only two consumers as unused.
+
+Worth running in CI alongside `tsc`, `eslint`, and `build`.
 
 ## What each one does
 
