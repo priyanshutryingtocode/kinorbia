@@ -61,17 +61,19 @@
   --orb-base-a: #0a0a0a;
   --orb-base-b: #171717;
   --orb-blend: screen;
-  /* The sphere's one light tone, kept separate from --orb-glow, which belongs to
-     the rotating swirl, so the lighting can stop moving while the plasma keeps
-     turning. Theme-independent because the orb is dark in both themes. */
-  --orb-specular: rgba(255, 246, 235, 0.5);
+  /* The sphere's lighting lives in `.orb-shading` rather than in tokens here,
+     because it needs a ramp -- a tight specular core falling off through a
+     mid tone -- and a single colour cannot express that. What is kept separate
+     is the rule that the lighting never rotates: --orb-glow belongs to the
+     swirl, and .orb-shading has no animation at all. Theme-independent because
+     the orb is dark in both themes. */
   /* 0.95-alpha black on a near-white canvas reads as a bruise, so the light
      theme gets its own much lighter values rather than reusing these. */
   --elevation-card: 0 18px 45px -34px rgba(0, 0, 0, 0.95);
   --elevation-card-hover: 0 24px 60px -42px rgba(220, 38, 38, 0.45);
   --elevation-float: 0 24px 80px -48px rgba(0, 0, 0, 0.95);
   --elevation-poster: 0 28px 80px -44px rgba(0, 0, 0, 0.95);
-  --elevation-orb-rim: inset 0 0 35px 8px rgba(0, 0, 0, 0.8), inset 0 4px 10px rgba(255, 255, 255, 0.1);
+  --elevation-orb-rim: inset 0 0 35px 8px rgba(0, 0, 0, 0.8);
   --elevation-filter: 0 18px 55px -42px rgba(0, 0, 0, 0.95);
   /* The glow around the active genre chip, which sits on bg-content. Inverts,
      because bg-content does. */
@@ -171,7 +173,7 @@
   --elevation-card-hover: 0 24px 60px -42px rgba(185, 28, 28, 0.3);
   --elevation-float: 0 24px 80px -48px rgba(28, 20, 18, 0.2);
   --elevation-poster: 0 28px 80px -44px rgba(28, 20, 18, 0.24);
-  --elevation-orb-rim: inset 0 0 35px 8px rgba(0, 0, 0, 0.8), inset 0 4px 10px rgba(255, 255, 255, 0.1);
+  --elevation-orb-rim: inset 0 0 35px 8px rgba(0, 0, 0, 0.8);
   --elevation-filter: 0 18px 55px -42px rgba(28, 20, 18, 0.18);
   --elevation-glow: 0 12px 28px -18px rgba(28, 20, 18, 0.3);
   /* Grain at the dark theme's opacity reads as dirt once the ground is light. */
@@ -327,40 +329,45 @@ html {
 
 /* Static, and the half that makes the swirl read as a ball rather than a disc.
  *
- * Every gradient here is sized `farthest-corner`, which is measured from the
- * *corner* of the box, not from the centre of the circle. So percentages here
- * are not percentages of the orb:
+ * Both gradients are keyed to the LIGHT at 30-34% 26-30%, never to the centre
+ * of the box. That is the whole difference between a sphere and a disc: a
+ * terminator has to run perpendicular to the light, so a centred one -- which
+ * darkens equally in all four directions -- is a vignette and describes no
+ * shape at all. Measured at equal distance from the centre, these stops give
+ * 0.06 black toward the light and 0.71 away from it.
  *
- *   the shape is `rounded-full`, a circle of radius 0.5W inscribed in a square
- *   a radial at 50% 50% has a farthest-corner radius of sqrt(0.5^2 + 0.5^2)
- *     = 0.7071W, so 0.500W -- the visible edge -- is at 70.7%
+ * The size keywords are what keep this from clipping, and they are chosen per
+ * gradient rather than by hand-tuned stops:
  *
- * 71% is therefore the number that matters: a stop past it is invisible, a
- * stop short of it leaves a lighter gap between the shadow and the edge.
+ *   the shape is `rounded-full`: a circle of radius 0.5W in a square
  *
- * Two gradients, both now correct:
+ *   specular    `closest-side`, so 100% is the nearest edge, 0.260W from the
+ *               light. It is fully faded by 58% = 0.151W, against a visible
+ *               edge at 0.188W. It cannot be clipped by construction.
+ *   terminator  `farthest-side`, so 100% is 0.700W. The lit edge sits at
+ *               0.244W (35% along, still bright) and the far edge at 0.756W
+ *               (108%, clamps to full shadow), which is the falloff we want.
  *
- *   specular    tight highlight at 31% 26%. Ends at 0.081W against a nearest
- *               edge of 0.194W, so it can never be clipped.
- *   terminator  the falloff into shadow, re-centred on 50% 50% so its full
- *               dark lands exactly ON the visible edge at 71%.
- *
- * The rim light and the ambient key that used to be here are gone. Centred at
- * 74% 78% the rim ring ran from 0.774W to 0.978W while the shape stopped at
- * 0.869W, so its outer half was sliced off into a hard crescent; the ambient
- * key died at 0.627W against a 0.900W edge, leaving a third faint ring. Both
- * also duplicated work that `--elevation-orb-rim` and the terminator already
- * do. Edge definition now lives in that inset shadow alone, tightened to
- * 35px/8px so it reads as an edge rather than a second rim.
+ * A previous version used the default `farthest-corner`, which measures to
+ * the box *corner* and put every percentage out by a factor of about 1.4 --
+ * that is what sliced the old rim light into a crescent. `farthest-side` and
+ * `closest-side` are measured along the axes, so the numbers above mean what
+ * they look like and the clipped-crescent class of bug cannot recur.
  */
 .orb-shading {
   background:
-    radial-gradient(circle at 31% 26%, var(--orb-specular) 0%, transparent 8%),
     radial-gradient(
-      circle at 50% 50%,
-      transparent 10%,
-      rgba(0, 0, 0, 0.5) 48%,
-      rgba(0, 0, 0, 0.88) 71%
+      circle closest-side at 30% 26%,
+      rgba(255, 246, 235, 0.62) 0%,
+      rgba(255, 246, 235, 0.16) 22%,
+      transparent 58%
+    ),
+    radial-gradient(
+      circle farthest-side at 34% 30%,
+      transparent 0%,
+      transparent 25%,
+      rgba(0, 0, 0, 0.55) 70%,
+      rgba(0, 0, 0, 0.92) 100%
     );
 }
 
