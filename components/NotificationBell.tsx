@@ -10,10 +10,10 @@ import { useDismiss } from "@/lib/useDismiss";
 import type { NotificationItem } from "@/types";
 
 const ICONS: Record<NotificationItem["type"], React.ReactNode> = {
-  like: <Heart className="h-4 w-4 text-red-400" aria-hidden="true" />,
-  save: <Bookmark className="h-4 w-4 text-blue-400" aria-hidden="true" />,
-  comment: <MessageSquare className="h-4 w-4 text-green-400" aria-hidden="true" />,
-  follow: <UserPlus className="h-4 w-4 text-purple-400" aria-hidden="true" />,
+  like: <Heart className="h-4 w-4 text-accent-text" aria-hidden="true" />,
+  save: <Bookmark className="h-4 w-4 text-info" aria-hidden="true" />,
+  comment: <MessageSquare className="h-4 w-4 text-success" aria-hidden="true" />,
+  follow: <UserPlus className="h-4 w-4 text-highlight" aria-hidden="true" />,
 };
 
 function messageFor(item: NotificationItem) {

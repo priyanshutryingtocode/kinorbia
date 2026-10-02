@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import EmptyState from "./EmptyState";
 import PagerEdge from "./PagerEdge";
+import { PAGER_EDGE_CLASS, PAGER_EDGE_DISABLED_CLASS } from "@/lib/uiClasses";
 import PersonCard, { type Person } from "./PersonCard";
 
 const PEOPLE_PER_PAGE = 24;
@@ -45,10 +46,8 @@ export default function PeopleList({
   const lastResult = Math.min(page * PEOPLE_PER_PAGE, totalCount);
   const hasPrevious = page > 1;
   const hasNext = page < totalPages;
-  const paginationClasses =
-    "kin-focus inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-content-muted transition-colors hover:text-content";
-  const disabledPaginationClasses =
-    "inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-content-subtle";
+  const paginationClasses = PAGER_EDGE_CLASS;
+  const disabledPaginationClasses = PAGER_EDGE_DISABLED_CLASS;
 
   return (
     <div>

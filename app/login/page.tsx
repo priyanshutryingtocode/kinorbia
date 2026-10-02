@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Mail, Lock, Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import AuthShell from "@/components/AuthShell";
+import { AUTH_INPUT_ICON_CLASS, AUTH_SUBMIT_CLASS } from "@/lib/uiClasses";
 import AuthSocialBlock from "@/components/AuthSocialBlock";
 
 export default function LoginPage() {
@@ -40,12 +41,12 @@ export default function LoginPage() {
   return (
     <AuthShell>
       <h1 className="sr-only">Sign in to KinOrbia</h1>
-      <div className="w-full max-w-64 space-y-3.5">
+      <div className="mx-auto w-full max-w-64 space-y-3.5">
         <AuthSocialBlock verb="Continue" />
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div className="relative group">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-highlight transition-colors" />
+            <Mail className={AUTH_INPUT_ICON_CLASS} />
             <label htmlFor="login-email" className="sr-only">
               Email address
             </label>
@@ -76,7 +77,7 @@ export default function LoginPage() {
           </div>
 
           <div className="relative group">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-highlight transition-colors" />
+            <Lock className={AUTH_INPUT_ICON_CLASS} />
             <label htmlFor="login-password" className="sr-only">
               Password
             </label>
@@ -101,7 +102,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-accent hover:bg-accent-hover disabled:opacity-70 disabled:hover:bg-accent text-on-accent font-semibold text-sm py-3.5 rounded-control transition-colors duration-300 flex items-center justify-center gap-2"
+            className={AUTH_SUBMIT_CLASS}
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             Sign In

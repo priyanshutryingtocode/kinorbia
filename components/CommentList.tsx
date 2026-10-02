@@ -45,7 +45,7 @@ export default function CommentList({ comments, currentUserEmail, path }: Commen
                     <SubmitButton
                       pendingLabel="..."
                       variant="quiet"
-                      className="min-h-8 px-2 text-content-subtle hover:text-red-300"
+                      className="min-h-8 px-2 text-content-subtle hover:text-danger"
                       aria-label={`Delete comment by ${comment.userName}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />

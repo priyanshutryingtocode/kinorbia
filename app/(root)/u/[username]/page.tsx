@@ -14,7 +14,7 @@ import ProfileMetricRail from "@/components/ProfileMetricRail";
 import ProfilePanel from "@/components/ProfilePanel";
 import SpoilerText from "@/components/SpoilerText";
 import { renderRichText } from "@/lib/renderRichText";
-import { mediaHref, mediaKey, normalizeMediaType } from "@/lib/media";
+import { mediaHref, mediaKey, normalizeMediaType, starsLabel } from "@/lib/media";
 import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
 import type { FavoriteMovie, MediaType } from "@/types";
 
@@ -220,7 +220,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                         </h3>
                         {rating > 0 && (
                           <span className="shrink-0 text-sm font-semibold text-highlight">
-                            {(rating / 2).toFixed(1)} ★
+                            {starsLabel(rating)} ★
                           </span>
                         )}
                       </div>

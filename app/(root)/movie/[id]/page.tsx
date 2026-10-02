@@ -14,10 +14,10 @@ import {
   crewPanel,
   detailChips,
   detailSummary,
-  detailYear,
   runtimeChip,
   topCast,
 } from "@/lib/mediaDetail";
+import { yearOf } from "@/lib/media";
 import { getPersonalMediaStatus } from "@/lib/profileData";
 
 async function getMovieDetails(id: string): Promise<TmdbMovieDetails> {
@@ -46,7 +46,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const movie = await getMovieDetails(id);
-  const year = movie.release_date ? movie.release_date.split("-")[0] : "";
+  const year = yearOf(movie.release_date, "");
 
   return {
     title: `${movie.title}${year ? ` (${year})` : ""}`,
@@ -78,7 +78,7 @@ export default async function MoviePage({ params }: Props) {
         tagline: movie.tagline,
         overview: movie.overview || "No overview is available for this movie yet.",
         kindLabel: "Film",
-        releaseYear: detailYear(movie.release_date),
+        releaseYear: yearOf(movie.release_date, "TBA"),
         releaseDate: movie.release_date,
         posterPath: movie.poster_path,
         backdropPath: movie.backdrop_path,
@@ -89,7 +89,10 @@ export default async function MoviePage({ params }: Props) {
           mediumChip: runtimeChip(movie.runtime),
         }),
         cast: topCast(credits.cast),
-        // TMDB returns the crew for a film; a show has no equivalent panel.
+        // crewByJob is an exact match on TMDB's `job`, so this pair catches the
+        // plain "Director" and "Producer" credits only -- every Executive and
+        // Co-Producer on the film is omitted. Left as-is for now; widening it
+        // changes what every movie page shows, so it wants its own change.
         crew: [
           crewPanel("Director", crewByJob(credits.crew, "Director")),
           crewPanel("Producer", crewByJob(credits.crew, "Producer")),

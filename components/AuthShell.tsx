@@ -68,7 +68,14 @@ export default function AuthShell({ children }: AuthShellProps) {
           cramped. At these values the gap is 32px -- square against the padding,
           which is what makes it read as deliberate rather than as slack. The
           previous pair was 448px and 280px, giving a 52px gap, 1.62x the
-          padding. */}
+          padding.
+
+          The card is a plain block box, so that "gap" is only realised by the
+          pages' inner column carrying `mx-auto`. It did not, and a clamped
+          block child sits flush left: 32px of visible padding on the left
+          against 64px on the right, which read as the form being off-centre.
+          `mx-auto` is a no-op on narrow viewports where 256px already fills the
+          content box. */}
       <div className="relative z-10 flex w-full max-w-sm flex-col items-center">
         <Link
           href="/"
@@ -76,13 +83,17 @@ export default function AuthShell({ children }: AuthShellProps) {
         >
           <Film className="h-8 w-8 text-accent-hover" />
           <span className="text-3xl font-bold text-content">
-            Kin<span className="text-highlight">Orbia</span>
+            Kin<span className="text-wordmark">Orbia</span>
           </span>
         </Link>
 
-        {/* Opaque enough to read against the orb lines behind it, blurred so the
-            strokes soften as they pass under rather than competing. */}
-        <div className="w-full rounded-overlay border border-rule bg-surface-raised/85 p-7 shadow-float backdrop-blur-md lg:p-8">
+        {/* Opaque rather than /85. The card's separation from the page is set by
+            its fill, not by its alpha: over the lightened body, /85 measures
+            1.091:1 and /100 only 1.108:1, so the alpha was buying almost nothing.
+            1.108 is the same ratio every ordinary card in the app sits at, and
+            the border plus shadow-float carry the edge from there. The backdrop
+            blur stays, which is what the glass effect actually needs. */}
+        <div className="w-full rounded-overlay border border-rule bg-surface-raised p-7 shadow-float backdrop-blur-md lg:p-8">
           {children}
         </div>
       </div>

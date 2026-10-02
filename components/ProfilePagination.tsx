@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PagerEdge from "@/components/PagerEdge";
+import { PAGER_EDGE_CLASS, PAGER_EDGE_DISABLED_CLASS } from "@/lib/uiClasses";
 
 type ProfilePaginationProps = {
   tab: string;
@@ -12,8 +13,9 @@ type ProfilePaginationProps = {
 // Numbered pages plus a "Showing X-Y of Z" range, where PeopleList offers only
 // previous/next and a "Page X of Y" count. Those are different affordances, so
 // they are deliberately not one component even though they share PagerEdge --
-// and this still uses `text-red-100` for the current page, the same colour drift
-// the tab bars had. Left alone when they were unified, since this is a pager.
+// and this used to colour the current page `text-red-100`, the drift the tab
+// bars had. That is now `text-accent-text` like everything else; the note stayed
+// because the two pagers are still deliberately separate.
 //
 // `tab` is always one of the four paginated tabs. The "overview" and "insights"
 // branches this used to have were unreachable, because those tabs render no
@@ -47,10 +49,8 @@ export default function ProfilePagination({
   const first = (page - 1) * pageSize + 1;
   const last = Math.min(page * pageSize, total);
   const pages = visiblePages(page, totalPages);
-  const previousClass =
-    "kin-focus inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-content-muted transition hover:text-content";
-  const previousDisabledClass =
-    "inline-flex min-h-9 items-center gap-1.5 px-1.5 text-xs font-medium text-content-subtle";
+  const previousClass = PAGER_EDGE_CLASS;
+  const previousDisabledClass = PAGER_EDGE_DISABLED_CLASS;
   const pageClass =
     "kin-focus inline-flex h-9 min-w-9 items-center justify-center border-b px-1 text-sm transition-colors";
 
@@ -79,7 +79,7 @@ export default function ProfilePagination({
               aria-current={active ? "page" : undefined}
               className={`${pageClass} ${
                 active
-                  ? "border-accent/80 font-semibold text-red-100"
+                  ? "border-accent/80 font-semibold text-accent-text"
                   : "border-transparent font-normal text-content-subtle hover:border-rule-strong hover:text-content"
               }`}
             >

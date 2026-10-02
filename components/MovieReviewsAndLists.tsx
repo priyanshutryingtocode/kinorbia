@@ -2,7 +2,7 @@ import Link from "next/link";
 import dbConnect from "@/lib/dbConnect";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
-import { mediaEquals, mediaHref } from "@/lib/media";
+import { mediaEquals, mediaHref, starsLabel } from "@/lib/media";
 import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
 import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
@@ -98,7 +98,7 @@ export default async function MovieReviewsAndLists({
                       />
                     </p>
                     {reviewRating > 0 && (
-                      <span className="text-sm font-bold text-highlight">{(reviewRating / 2).toFixed(1)} stars</span>
+                      <span className="text-sm font-bold text-highlight">{starsLabel(reviewRating)} stars</span>
                     )}
                   </div>
                   {review.spoiler && (

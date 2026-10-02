@@ -4,6 +4,7 @@ import { useCallback, useState, type ComponentType, type SVGProps } from "react"
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
+import { useSignInGuard } from "@/lib/useSignInGuard";
 
 type MediaToggleMessages = {
   signIn: string;
@@ -35,6 +36,7 @@ export function useMediaToggle({
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { showToast } = useToast();
+  const signInGuard = useSignInGuard();
 
   const locked = lockWhenActive && active;
 
@@ -52,9 +54,7 @@ export function useMediaToggle({
         body: JSON.stringify(payload),
       });
 
-      if (res.status === 401) {
-        showToast(messages.signIn, "info");
-        router.push("/login");
+      if (signInGuard(res, messages.signIn)) {
         return;
       }
 
@@ -72,7 +72,7 @@ export function useMediaToggle({
     } finally {
       setLoading(false);
     }
-  }, [endpoint, locked, messages, payload, readActive, router, showToast]);
+  }, [endpoint, locked, messages, payload, readActive, router, showToast, signInGuard]);
 
   return { active, loading, locked, toggle };
 }

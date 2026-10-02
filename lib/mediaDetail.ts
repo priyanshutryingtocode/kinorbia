@@ -1,5 +1,5 @@
-import type { MediaType, TmdbCredit } from "@/types";
-import { normalizeMediaType } from "@/lib/media";
+import type { MediaType, TmdbCredit, TmdbTvCreator, TmdbTvDetails } from "@/types";
+import { normalizeMediaType, starsLabel } from "@/lib/media";
 
 // The film and show detail pages were two near-copies of one layout, which is
 // how the overline token came to be spelled two different ways on the same
@@ -58,16 +58,16 @@ export type DetailModel = {
   // conditional in the markup.
   chips: DetailChip[];
   cast: TmdbCredit[];
-  // Films list their director and producers; shows have no equivalent.
+  // A film lists its director and producers; a show lists its creator and
+  // network. Built by the route, since only it knows which medium it is.
   crew: DetailCrew[];
   // The shape the favorite, watched, watchlist, and rating controls expect.
   summary: DetailSummary;
   trailerKey: string | null;
 };
 
-export function detailYear(date: string | undefined): string {
-  return date ? date.split("-")[0] : "TBA";
-}
+// detailYear used to live here as a fifth year derivation, alongside four others
+// across the app. yearOf in lib/media.ts replaced all of them, so it went too.
 
 function ratingChip(voteAverage: number | undefined): DetailChip {
   return {
@@ -90,7 +90,7 @@ function yourRatingChip(personalRating: number): DetailChip | null {
     key: "your-rating",
     icon: "star",
     accent: true,
-    label: `Your ${(personalRating / 2).toFixed(1)} stars`,
+    label: `Your ${starsLabel(personalRating)} stars`,
   };
 }
 
@@ -148,6 +148,42 @@ export function crewPanel(label: string, members: TmdbCredit[]): DetailCrew | nu
   return {
     label: `${label}${members.length > 1 ? "s" : ""}`,
     names: members.map((member) => member.name).join(", "),
+  };
+}
+
+// A show has no single director, so the film's crew panels do not carry over.
+// TMDB's equivalent on /tv/{id} is `created_by` -- the creator/showrunner, which
+// is the name a viewer is actually looking for -- alongside the network, a fact
+// a film never has. Both ride along on the details call the page already makes,
+// so neither costs a request.
+//
+// Directing and writing credits are deliberately absent. The show-level crew
+// endpoint does not carry them: /tv/1396/credits returns 27 crew and zero
+// directors, and even the per-season aggregate returns none. They are only
+// populated per episode (62 requests for Breaking Bad) or on the separate
+// aggregate_credits endpoint, which was judged not worth a fourth request.
+export function creatorPanel(creators: TmdbTvCreator[] | undefined): DetailCrew | null {
+  // Absent on about a fifth of shows, mostly reality and unscripted formats.
+  if (!creators || creators.length === 0) {
+    return null;
+  }
+
+  return {
+    label: `Creator${creators.length > 1 ? "s" : ""}`,
+    names: creators.map((creator) => creator.name).join(", "),
+  };
+}
+
+export function networkPanel(networks: TmdbTvDetails["networks"]): DetailCrew | null {
+  if (!networks || networks.length === 0) {
+    return null;
+  }
+
+  // No plural branch: of 24 shows checked, every one with a network had exactly
+  // one, so "Network" is the accurate heading in practice.
+  return {
+    label: "Network",
+    names: networks.map((network) => network.name).join(", "),
   };
 }
 

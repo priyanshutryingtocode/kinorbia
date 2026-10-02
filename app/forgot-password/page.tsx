@@ -3,6 +3,8 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { Mail, Loader2, CheckCircle2, ArrowLeft } from "lucide-react";
+import AuthShell from "@/components/AuthShell";
+import { AUTH_SUBMIT_CLASS } from "@/lib/uiClasses";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -38,8 +40,11 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-canvas p-6 text-content">
-      <div className="w-full max-w-md rounded-overlay border border-rule bg-surface-raised/50 p-8">
+    <AuthShell>
+      {/* Same `mx-auto w-full max-w-64` column as login and signup. The card is
+          `max-w-sm`, so without `mx-auto` this copy would sit flush left against
+          32px of padding with 64px opposite it. */}
+      <div className="mx-auto w-full max-w-64">
         <Link
           href="/login"
           className="mb-6 inline-flex items-center gap-2 text-sm text-content-muted transition hover:text-content"
@@ -54,8 +59,8 @@ export default function ForgotPasswordPage() {
         </p>
 
         {sent ? (
-          <div className="mt-6 flex flex-col items-start gap-3 rounded-sheet border border-emerald-500/20 bg-emerald-500/10 p-4">
-            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+          <div className="mt-6 flex flex-col items-start gap-3 rounded-sheet border-success/20 bg-success/10 p-4">
+            <CheckCircle2 className="h-6 w-6 text-success" />
             <p className="text-sm text-content">
               If an account exists for that email, a reset link has been sent. Check your inbox.
             </p>
@@ -80,7 +85,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             {error && (
-              <p className="text-xs text-red-300 bg-accent-hover/10 border border-accent/20 rounded-sheet px-3 py-2">
+              <p className="text-xs text-danger bg-accent-hover/10 border-accent/20 rounded-sheet px-3 py-2">
                 {error}
               </p>
             )}
@@ -88,9 +93,9 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-accent hover:bg-accent-hover disabled:opacity-70 text-on-accent font-semibold text-sm py-3.5 rounded-control flex items-center justify-center gap-2 transition"
+              className={AUTH_SUBMIT_CLASS}
             >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               Send reset link
             </button>
           </form>
@@ -98,11 +103,11 @@ export default function ForgotPasswordPage() {
 
         <p className="mt-6 text-xs text-content-subtle">
           Remembered it?{" "}
-          <Link href="/login" className="text-red-400 font-medium hover:underline">
+          <Link href="/login" className="text-highlight font-medium hover:text-danger hover:underline transition-colors">
             Sign in
           </Link>
         </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }

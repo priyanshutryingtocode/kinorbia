@@ -25,7 +25,7 @@ const variantClasses: Record<SubmitButtonVariant, string> = {
   primary: "border-transparent bg-accent text-on-accent hover:bg-accent-hover",
   secondary:
     "border-rule-strong bg-surface-raised text-content hover:border-highlight/35 hover:bg-surface hover:text-highlight",
-  danger: "border-accent/35 bg-accent/5 text-red-200 hover:bg-accent/10",
+  danger: "border-accent/35 bg-accent/5 text-danger hover:bg-accent/10",
   quiet: "border-transparent bg-transparent text-content-muted hover:bg-surface-raised hover:text-content",
 };
 

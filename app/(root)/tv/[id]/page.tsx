@@ -10,12 +10,14 @@ import {
   pickMainTrailer,
 } from "@/lib/tmdb";
 import {
+  creatorPanel,
   detailChips,
   detailSummary,
-  detailYear,
+  networkPanel,
   seasonsChip,
   topCast,
 } from "@/lib/mediaDetail";
+import { yearOf } from "@/lib/media";
 import { getPersonalMediaStatus } from "@/lib/profileData";
 
 async function getTvDetails(id: string): Promise<TmdbTvDetails> {
@@ -44,7 +46,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const tv = await getTvDetails(id);
-  const year = tv.first_air_date ? tv.first_air_date.split("-")[0] : "";
+  const year = yearOf(tv.first_air_date, "");
 
   return {
     title: `${tv.name}${year ? ` (${year})` : ""}`,
@@ -76,7 +78,7 @@ export default async function TvPage({ params }: Props) {
         tagline: tv.tagline,
         overview: tv.overview || "No overview is available for this show yet.",
         kindLabel: "Series",
-        releaseYear: detailYear(tv.first_air_date),
+        releaseYear: yearOf(tv.first_air_date, "TBA"),
         releaseDate: tv.first_air_date,
         posterPath: tv.poster_path,
         backdropPath: tv.backdrop_path,
@@ -87,7 +89,15 @@ export default async function TvPage({ params }: Props) {
           mediumChip: seasonsChip(tv.number_of_seasons),
         }),
         cast: topCast(credits.cast),
-        crew: [],
+        // This used to be a bare `crew: []`, on the stated reasoning that a show
+        // has no equivalent of a film's director. The payload disagrees:
+        // `created_by` and `networks` both arrive on the `tv` fetch above, and
+        // each is dropped independently, since a few shows carry a network with
+        // no creator. See creatorPanel for why there are no director or writer
+        // panels.
+        crew: [creatorPanel(tv.created_by), networkPanel(tv.networks)].filter(
+          (panel) => panel !== null
+        ),
         summary: detailSummary({
           id: tv.id,
           title: tv.name,

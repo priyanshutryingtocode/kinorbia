@@ -1,11 +1,10 @@
-import PageContainer from "@/components/PageContainer";
+import RouteShell from "@/components/RouteShell";
 import Skeleton from "@/components/Skeleton";
 import SkeletonRegion from "@/components/SkeletonRegion";
 
 export default function Loading() {
   return (
-    <div className="bg-canvas pt-6 pb-16 sm:pt-8">
-      <PageContainer width="standard">
+    <RouteShell spacing="standard" width="standard">
         <SkeletonRegion label="Loading about page">
           <div className="border-t border-rule pt-5">
             <Skeleton className="mb-2 h-3 w-16" />
@@ -29,7 +28,6 @@ export default function Loading() {
             </div>
           </div>
         </SkeletonRegion>
-      </PageContainer>
-    </div>
+    </RouteShell>
   );
 }

@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import {Bot, Loader2, Send, Sparkles, X} from "lucide-react";
 import type { MovieSummary } from "@/types";
 import PosterImage from "@/components/PosterImage";
-import {mediaHref, normalizeMediaType} from "@/lib/media";
+import {mediaHref, normalizeMediaType, yearOf} from "@/lib/media";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -53,10 +53,6 @@ function saveHistory(messages: ChatMessage[]) {
   } catch {
     // ignore quota errors
   }
-}
-
-function movieYear(movie: MovieSummary) {
-  return movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
 }
 
 function AssistantPoster({ movie }: { movie: MovieSummary }) {
@@ -164,11 +160,11 @@ export default function MovieAssistant() {
           id="movie-assistant-panel"
           role="region"
           aria-labelledby="movie-assistant-heading"
-          className="premium-surface mb-4 flex max-h-[min(38rem,calc(100dvh-var(--shell-header-height)-6rem))] w-[calc(100vw-2.5rem)] max-w-md flex-col overflow-hidden rounded-overlay text-content ring-1 ring-white/5"
+          className="premium-surface mb-4 flex max-h-[min(38rem,calc(100dvh-var(--shell-header-height)-6rem))] w-[calc(100vw-2.5rem)] max-w-md flex-col overflow-hidden rounded-overlay text-content ring-1 ring-rule/50"
         >
           <div className="flex shrink-0 items-center justify-between border-b border-rule bg-glass px-4 py-3">
             <div className="flex items-center gap-3">
-              <div className="rounded-sheet border border-accent/20 bg-accent-hover/12 p-2 text-red-300 shadow-[0_0_28px_rgba(220,38,38,0.12)]">
+              <div className="rounded-sheet border border-accent/20 bg-accent-hover/12 p-2 text-accent-text shadow-[0_0_28px_color-mix(in_srgb,var(--accent)_12%,transparent)]">
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>
@@ -197,7 +193,7 @@ export default function MovieAssistant() {
                 <div
                   className={`inline-block max-w-[85%] rounded-overlay px-4 py-3 text-sm leading-relaxed ${
                     message.role === "user"
-                      ? "bg-accent text-on-accent shadow-[0_14px_32px_-22px_rgba(220,38,38,0.9)]"
+                      ? "bg-accent text-on-accent shadow-float"
                       : "border border-rule bg-glass-hover text-content"
                   }`}
                 >
@@ -219,7 +215,7 @@ export default function MovieAssistant() {
                         <div className="min-w-0 py-1">
                           <p className="truncate text-sm font-bold text-content">{movie.title}</p>
                           <p className="mt-1 text-xs text-content-subtle">
-                            {movieYear(movie)} - TMDB {movie.vote_average.toFixed(1)}
+                            {yearOf(movie.release_date)} - TMDB {movie.vote_average.toFixed(1)}
                           </p>
                         </div>
                       </Link>
@@ -231,7 +227,7 @@ export default function MovieAssistant() {
 
             {loading && (
               <div className="flex items-center gap-2 text-sm text-content-muted">
-                <Loader2 className="h-4 w-4 animate-spin text-red-400" />
+                <Loader2 className="h-4 w-4 animate-spin text-accent-text" />
                 Thinking through the watchlist...
               </div>
             )}

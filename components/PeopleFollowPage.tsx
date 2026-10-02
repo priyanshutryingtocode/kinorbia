@@ -132,7 +132,7 @@ export default async function PeopleFollowPage({
         className="kin-focus group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-content-muted transition-colors hover:text-highlight"
       >
         <span
-          className="text-red-400 transition-transform group-hover:-translate-x-0.5"
+          className="transition-transform group-hover:-translate-x-0.5"
           aria-hidden="true"
         >
           ←
@@ -140,7 +140,7 @@ export default async function PeopleFollowPage({
         Back to profile
       </Link>
       <header className="mb-6 mt-5 border-b border-rule pb-5">
-        <p className="kin-overline text-highlight/80">@{username}</p>
+        <p className="kin-overline text-highlight-muted/80">@{username}</p>
         <h1 className="mt-2 font-display text-3xl font-medium leading-none text-content sm:text-4xl">
           {copy.heading}
         </h1>

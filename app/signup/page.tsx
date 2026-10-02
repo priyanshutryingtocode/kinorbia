@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { Mail, Lock, User as UserIcon, Loader2, CheckCircle2 } from "lucide-react";
 import AuthShell from "@/components/AuthShell";
+import { AUTH_INPUT_ICON_CLASS, AUTH_SUBMIT_CLASS } from "@/lib/uiClasses";
 import AuthSocialBlock from "@/components/AuthSocialBlock";
 
 export default function SignUpPage() {
@@ -45,7 +46,7 @@ export default function SignUpPage() {
   return (
     <AuthShell>
       <h1 className="sr-only">Create your KinOrbia account</h1>
-      <div className="w-full max-w-64 space-y-3.5">
+      <div className="mx-auto w-full max-w-64 space-y-3.5">
         {registered ? (
           <div className="space-y-4 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-success" />
@@ -67,7 +68,7 @@ export default function SignUpPage() {
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div className="relative group">
-                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-highlight transition-colors" />
+                <UserIcon className={AUTH_INPUT_ICON_CLASS} />
                 <label htmlFor="signup-name" className="sr-only">
                   Full name
                 </label>
@@ -84,7 +85,7 @@ export default function SignUpPage() {
               </div>
 
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-highlight transition-colors" />
+                <Mail className={AUTH_INPUT_ICON_CLASS} />
                 <label htmlFor="signup-email" className="sr-only">
                   Email address
                 </label>
@@ -101,7 +102,7 @@ export default function SignUpPage() {
               </div>
 
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-subtle group-focus-within:text-highlight transition-colors" />
+                <Lock className={AUTH_INPUT_ICON_CLASS} />
                 <label htmlFor="signup-password" className="sr-only">
                   Password
                 </label>
@@ -127,7 +128,7 @@ export default function SignUpPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-accent hover:bg-accent-hover disabled:opacity-70 disabled:hover:bg-accent text-on-accent font-semibold text-sm py-3.5 rounded-control transition-colors duration-300 flex items-center justify-center gap-2"
+                className={AUTH_SUBMIT_CLASS}
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 Create Account

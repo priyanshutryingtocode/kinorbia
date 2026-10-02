@@ -2,6 +2,7 @@ import {Star} from "lucide-react";
 import PosterImage from "@/components/PosterImage";
 
 import { renderRichText } from "@/lib/renderRichText";
+import { starsLabel } from "@/lib/media";
 import { usernameFor } from "@/lib/profileLinks";
 import type { ReviewItem } from "@/types";
 import ManageReviewForm from "./ManageReviewForm";
@@ -71,7 +72,7 @@ export default function ReviewCard({
           {rating > 0 && (
             <span className="inline-flex items-center gap-1 font-semibold text-highlight" aria-label={`${rating} out of 10`}>
               <Star className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-              {(rating / 2).toFixed(1)}
+              {starsLabel(rating)}
             </span>
           )}
         </div>

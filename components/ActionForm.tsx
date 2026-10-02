@@ -61,7 +61,7 @@ export default function ActionForm({ action, className = "", children, successMe
           aria-live={state.status === "error" ? "assertive" : "polite"}
           className={`mt-2 rounded-control border px-3 py-2 text-xs leading-5 ${
             state.status === "error"
-              ? "border-accent/35 bg-accent/10 text-red-200"
+              ? "border-accent/35 bg-accent/10 text-accent-text"
               : "border-highlight/25 bg-highlight-soft text-highlight"
           }`}
         >

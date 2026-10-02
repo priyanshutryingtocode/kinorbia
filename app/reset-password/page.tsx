@@ -3,8 +3,10 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Lock, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, CheckCircle2 } from "lucide-react";
 import { Suspense } from "react";
+import AuthShell from "@/components/AuthShell";
+import { AUTH_SUBMIT_CLASS } from "@/lib/uiClasses";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -60,12 +62,12 @@ function ResetPasswordForm() {
 
   if (done) {
     return (
-      <div className="mt-6 flex flex-col items-start gap-3 rounded-sheet border border-emerald-500/20 bg-emerald-500/10 p-4">
-        <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+      <div className="mt-6 flex flex-col items-start gap-3 rounded-sheet border-success/20 bg-success/10 p-4">
+        <CheckCircle2 className="h-6 w-6 text-success" />
         <p className="text-sm text-content">
           Your password has been updated. You can now sign in.
         </p>
-        <Link href="/login" className="text-sm font-bold text-red-400 hover:underline">
+        <Link href="/login" className="text-sm font-bold text-highlight hover:text-danger hover:underline transition-colors">
           Sign in
         </Link>
       </div>
@@ -111,7 +113,7 @@ function ResetPasswordForm() {
       </div>
 
       {error && (
-        <p className="text-xs text-red-300 bg-accent-hover/10 border border-accent/20 rounded-sheet px-3 py-2">
+        <p className="text-xs text-danger bg-accent-hover/10 border-accent/20 rounded-sheet px-3 py-2">
           {error}
         </p>
       )}
@@ -119,7 +121,7 @@ function ResetPasswordForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-accent hover:bg-accent-hover disabled:opacity-70 text-on-accent font-semibold text-sm py-3.5 rounded-control flex items-center justify-center gap-2 transition"
+        className={AUTH_SUBMIT_CLASS}
       >
         {loading && <Loader2 className="h-4 w-4 animate-spin" />}
         Set new password
@@ -130,14 +132,28 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-canvas p-6 text-content">
-      <div className="w-full max-w-md rounded-overlay border border-rule bg-surface-raised/50 p-8">
+    <AuthShell>
+      {/* Same `mx-auto w-full max-w-64` column as login and signup, wrapping the
+          heading and the form together so `ResetPasswordForm`'s `mt-6` still
+          measures from the subtitle. */}
+      <div className="mx-auto w-full max-w-64">
+        {/* Same lead-in as forgot-password. Without it the card offered only the
+            wordmark above it, which goes home rather than back to the form the
+            link was opened from. */}
+        <Link
+          href="/login"
+          className="mb-6 inline-flex items-center gap-2 text-sm text-content-muted transition hover:text-content"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to sign in
+        </Link>
+
         <h1 className="font-display text-2xl font-medium leading-tight text-content">Choose a new password</h1>
         <p className="mt-2 text-sm text-content-muted">Enter and confirm your new password below.</p>
         <Suspense fallback={null}>
           <ResetPasswordForm />
         </Suspense>
       </div>
-    </div>
+    </AuthShell>
   );
 }

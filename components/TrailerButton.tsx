@@ -27,7 +27,7 @@ export default function TrailerButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="kin-focus group flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-red-300 transition-all hover:border-accent/60 hover:bg-accent/20 hover:text-content"
+        className="kin-focus group flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-accent-text transition-all hover:border-accent/60 hover:bg-accent/20 hover:text-content"
         aria-label={`Play trailer for ${title}`}
       >
         <Play className="h-5 w-5 fill-current transition-transform group-active:scale-75" aria-hidden="true" />
@@ -49,11 +49,11 @@ export default function TrailerButton({
         <div className="relative rounded-overlay border border-rule bg-canvas/90 p-3 shadow-float backdrop-blur-xl sm:p-4">
           <div className="flex items-center justify-between gap-4 px-1 pb-3">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-accent/20 bg-accent/10 text-red-300">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-accent/20 bg-accent/10 text-accent-text">
                 <Play className="h-4 w-4 fill-current" aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <p className="kin-overline text-red-400">Trailer</p>
+                <p className="kin-overline text-accent-text">Trailer</p>
                 <p id={titleId} className="truncate text-sm font-bold text-content">
                   {title}
                 </p>

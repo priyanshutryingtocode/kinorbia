@@ -45,11 +45,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             className="flex items-start gap-3 rounded-control border border-rule bg-canvas/90 px-4 py-3 text-sm text-content shadow-float backdrop-blur-xl"
           >
             {toast.type === "success" ? (
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
             ) : toast.type === "error" ? (
-              <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+              <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
             ) : (
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
             )}
             <span className="leading-relaxed text-content">{toast.message}</span>
           </div>

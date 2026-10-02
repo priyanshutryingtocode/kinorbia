@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import MovieCard from "@/components/MovieCard";
-import SubmitButton from "@/components/SubmitButton";
+import LoadMoreButton from "@/components/LoadMoreButton";
 import { useLoadMore, type LoadMorePage } from "@/lib/useLoadMore";
 import { mediaKey } from "@/lib/media";
 import type { MovieSummary } from "@/types";
@@ -59,24 +59,13 @@ export default function MovieGrid({
         ))}
       </div>
 
-      {hasMore && (
-        <div className="mt-10 flex flex-col items-center gap-3">
-          <SubmitButton
-            type="button"
-            variant="secondary"
-            loading={loading}
-            pendingLabel="Loading..."
-            onClick={loadMore}
-          >
-            Load more
-          </SubmitButton>
-          {error && (
-            <p role="alert" className="text-xs text-accent-hover">
-              {error}
-            </p>
-          )}
-        </div>
-      )}
+      <LoadMoreButton
+        loading={loading}
+        hasMore={hasMore}
+        error={error}
+        onLoadMore={loadMore}
+        label="Load more"
+      />
     </>
   );
 }

@@ -54,7 +54,7 @@ export default function ProfileHeader({
               <h1 className="break-words font-display text-3xl font-medium leading-tight text-content sm:text-4xl">
                 {name}
               </h1>
-              {username && <p className="kin-overline break-all text-highlight/80">@{username}</p>}
+              {username && <p className="kin-overline break-all text-highlight-muted/80">@{username}</p>}
             </div>
             {bio ? (
               <p className="mt-2.5 max-w-2xl text-sm leading-6 text-content-muted">{bio}</p>

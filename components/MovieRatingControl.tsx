@@ -5,6 +5,7 @@ import { Eye, Loader2, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./ToastProvider";
 import { normalizeMediaType } from "@/lib/media";
+import { useSignInGuard } from "@/lib/useSignInGuard";
 
 type MovieRatingControlProps = {
   movie: {
@@ -28,6 +29,7 @@ export default function MovieRatingControl({ movie, initialRating, isWatched }: 
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { showToast } = useToast();
+  const signInGuard = useSignInGuard();
   const savedStars = rating > 0 ? rating / 2 : 0;
   const stars = [1, 2, 3, 4, 5];
 
@@ -51,9 +53,7 @@ export default function MovieRatingControl({ movie, initialRating, isWatched }: 
         }),
       });
 
-      if (res.status === 401) {
-        showToast("Sign in to rate movies.", "info");
-        router.push("/login");
+      if (signInGuard(res, "Sign in to rate movies.")) {
         return;
       }
 

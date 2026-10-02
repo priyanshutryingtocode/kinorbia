@@ -94,7 +94,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
           <button
             type="button"
             onClick={handleShare}
-            className="kin-focus inline-flex items-center gap-2 rounded-sm border border-accent/25 bg-accent-hover/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:border-accent/40 hover:bg-accent-hover/15 hover:text-content"
+            className="kin-focus inline-flex items-center gap-2 rounded-sm border border-accent/25 bg-accent-hover/10 px-3 py-1.5 text-xs font-semibold text-accent-text transition hover:border-accent/40 hover:bg-accent-hover/15 hover:text-content"
           >
             {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Share2 className="h-4 w-4" aria-hidden="true" />}
             {copied ? "Copied" : "Share"}
@@ -154,7 +154,7 @@ export default function ProfileActions({ user }: { user: UserData }) {
           </div>
 
           {error && (
-            <p role="alert" className="rounded-sheet border border-accent/20 bg-accent-hover/10 px-3 py-2 text-sm text-red-200">
+            <p role="alert" className="rounded-sheet border border-accent/20 bg-accent-hover/10 px-3 py-2 text-sm text-danger">
               {error}
             </p>
           )}

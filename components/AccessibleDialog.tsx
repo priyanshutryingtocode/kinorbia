@@ -102,7 +102,7 @@ export default function AccessibleDialog({
 
   return (
     <div className="shell-overlay p-4">
-      <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" aria-hidden="true" onMouseDown={() => onCloseRef.current()} />
+      <div className="absolute inset-0 bg-scrim/85 backdrop-blur-sm" aria-hidden="true" onMouseDown={() => onCloseRef.current()} />
       <div
         ref={panelRef}
         role="dialog"

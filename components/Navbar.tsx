@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
 import { useDismiss } from "@/lib/useDismiss";
+import { ICON_BUTTON_CLASS } from "@/lib/uiClasses";
 
 const NAV_LINKS = [
   { name: "Movies", href: "/" },
@@ -103,7 +104,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
   }, [closeMobile, closeAccount]);
 
   return (
-    <header className="shell-header" data-mobile-open={mobileOpen ? "true" : undefined}>
+    <header className="shell-header kin-ink-band" data-mobile-open={mobileOpen ? "true" : undefined}>
       <nav aria-label="Primary navigation" className="shell-row">
         <Link
           href="/"
@@ -125,7 +126,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
               aria-current={isActive(link.href) ? "page" : undefined}
               className={`kin-focus rounded-control px-3 py-2 text-sm font-medium transition-colors ${
                 isActive(link.href)
-                  ? "bg-accent/10 text-red-200 ring-1 ring-accent/25"
+                  ? "bg-accent/10 text-accent-text ring-1 ring-accent/25"
                   : "text-content-muted hover:bg-glass-strong hover:text-content"
               }`}
             >
@@ -140,7 +141,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
           <Link
             href="/search"
             onClick={() => setMobileOpen(false)}
-            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-glass text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
+            className={ICON_BUTTON_CLASS}
             aria-label="Search films"
           >
             <Search className="h-5 w-5" aria-hidden="true" />
@@ -194,7 +195,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
                       <button
                         type="button"
                         onClick={() => signOut({ callbackUrl: "/" })}
-                        className="kin-focus-inset flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-red-400 transition hover:bg-accent/10 hover:text-red-300"
+                        className="kin-focus-inset flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-danger transition hover:bg-accent/10 hover:text-accent-text"
                       >
                         <LogOut className="h-4 w-4" aria-hidden="true" />
                         Sign Out
@@ -208,7 +209,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}
-              className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-glass text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
+              className={ICON_BUTTON_CLASS}
               aria-label="Sign in"
             >
               <User className="h-5 w-5" aria-hidden="true" />
@@ -219,7 +220,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
             ref={mobileButtonRef}
             type="button"
             onClick={toggleMobile}
-            className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-glass text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content lg:hidden"
+            className={`${ICON_BUTTON_CLASS} lg:hidden`}
             aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={mobileOpen}
             aria-controls="mobile-navigation"
@@ -241,7 +242,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
                   aria-current={isActive(link.href) ? "page" : undefined}
                   className={`rounded-control px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive(link.href)
-                      ? "bg-accent/10 text-red-200 ring-1 ring-accent/25"
+                      ? "bg-accent/10 text-accent-text ring-1 ring-accent/25"
                       : "text-content-muted hover:bg-glass-strong hover:text-content"
                   }`}
                 >
@@ -266,7 +267,7 @@ function NavbarShell({ pathname }: { pathname: string }) {
                       setMobileOpen(false);
                       signOut({ callbackUrl: "/" });
                     }}
-                    className="flex items-center gap-2 rounded-control px-3 py-2.5 text-left text-sm font-medium text-red-400 transition hover:bg-accent/10 hover:text-red-300"
+                    className="flex items-center gap-2 rounded-control px-3 py-2.5 text-left text-sm font-medium text-danger transition hover:bg-accent/10 hover:text-accent-text"
                   >
                     <LogOut className="h-4 w-4" aria-hidden="true" />
                     Sign Out

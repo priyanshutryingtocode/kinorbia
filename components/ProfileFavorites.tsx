@@ -69,10 +69,10 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
 
   if (initialFavorites.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 rounded-sm border-y border-dashed border-rule bg-white/[0.02] px-6 py-10 text-center text-content-subtle">
+      <div className="flex flex-col items-center justify-center gap-4 rounded-sm border-y border-dashed border-rule bg-glass px-6 py-10 text-center text-content-subtle">
         <Film className="h-12 w-12 opacity-30" aria-hidden="true" />
         <p>You have not added any favorites yet.</p>
-        <Link href="/" className="kin-focus rounded-sm text-sm font-semibold text-red-300 transition hover:text-red-200">
+        <Link href="/" className="kin-focus rounded-sm text-sm font-semibold text-accent-text transition">
           Browse movies and shows
         </Link>
       </div>
@@ -151,7 +151,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
             </div>
 
             {error && (
-              <p role="alert" className="mt-4 rounded-sheet border border-accent/20 bg-accent-hover/10 px-3 py-2 text-sm text-red-200">
+              <p role="alert" className="mt-4 rounded-sheet border border-accent/20 bg-accent-hover/10 px-3 py-2 text-sm text-danger">
                 {error}
               </p>
             )}

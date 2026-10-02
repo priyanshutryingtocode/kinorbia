@@ -37,7 +37,7 @@ export default function FollowButton({
         {isFollowing ? "Following" : "Follow"}
       </SubmitButton>
       {state?.error && (
-        <p className="kin-focus max-w-56 text-right text-[11px] leading-4 text-amber-300/90">
+        <p className="kin-focus max-w-56 text-right text-[11px] leading-4 text-danger">
           {state.error}
         </p>
       )}

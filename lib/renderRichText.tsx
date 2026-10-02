@@ -30,7 +30,7 @@ export function renderRichText(text: string): React.ReactNode[] {
           href={match[2]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-red-400 underline hover:text-red-300"
+          className="text-accent-text underline hover:decoration-2"
         >
           {match[1] || match[2]}
         </a>

@@ -7,6 +7,7 @@ import PageHeader from "@/components/PageHeader";
 import PosterImage from "@/components/PosterImage";
 import SpoilerText from "@/components/SpoilerText";
 import { renderRichText } from "@/lib/renderRichText";
+import { starsLabel } from "@/lib/media";
 import FeedTabs from "@/components/FeedTabs";
 import EmptyState from "@/components/EmptyState";
 import { auth } from "@/auth";
@@ -173,7 +174,7 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
                           aria-label={`${rating} out of 10`}
                         >
                           <Star className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-                          {(rating / 2).toFixed(1)} stars
+                          {starsLabel(rating)} stars
                         </span>
                       )}
                     </div>

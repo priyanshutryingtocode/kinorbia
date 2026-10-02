@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import ProfileCommunityComparison from "@/components/ProfileCommunityComparison";
 import ProfileMetricRail from "@/components/ProfileMetricRail";
 import type { InsightsData } from "@/lib/insights";
+import { starsLabel } from "@/lib/media";
 
 import type { FavoriteMovie } from "@/types";
 
@@ -18,7 +19,7 @@ type ProfileInsightsProps = {
   userEmail: string;
 };
 
-const EYEBROW_CLASS = "kin-overline text-highlight/80";
+const EYEBROW_CLASS = "kin-overline text-highlight-muted/80";
 const HEADING_CLASS = "mt-2 flex items-center gap-2 font-display text-2xl font-medium text-content";
 
 function InsightHeading({
@@ -77,6 +78,13 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
   const areaId = `${chartId}-area`;
   const summary = data.monthly.map((point) => `${point.key}: ${point.count}`).join(", ");
 
+  // Every colour below is a `var(--color-*)` reference rather than a literal.
+  // The chart used to hardcode the dark theme's values: the point fill was
+  // #0a0a0a, which is --canvas in dark, so in light mode each data point was a
+  // black disc; the tooltip was a near-black #171717 box; and the #737373 axis
+  // labels measured about 3.4:1 on --surface-raised, under AA at 11px. None of it
+  // responded to data-theme. SVG presentation attributes accept var(), so the
+  // tokens reach the drawing without a class.
   return (
     <figure aria-labelledby={headingId}>
       <div
@@ -104,10 +112,10 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
                   x2={width - paddingX}
                   y1={y}
                   y2={y}
-                  stroke="rgba(255,255,255,0.08)"
+                  stroke="var(--color-rule)"
                   strokeDasharray="4 6"
                 />
-                <text x={paddingX - 8} y={y + 4} textAnchor="end" fill="#737373" fontSize="11">
+                <text x={paddingX - 8} y={y + 4} textAnchor="end" fill="var(--color-content-subtle)" fontSize="11">
                   {Math.round(max * ratio)}
                 </text>
               </g>
@@ -117,7 +125,7 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
           <path
             d={line}
             fill="none"
-            stroke="#ef4444"
+            stroke="var(--color-accent)"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -130,8 +138,8 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
                 cx={point.x}
                 cy={point.y}
                 r="8"
-                fill="#0a0a0a"
-                stroke="#f87171"
+                fill="var(--color-canvas)"
+                stroke="var(--color-accent-text)"
                 strokeWidth="3"
                 aria-hidden="true"
               />
@@ -142,14 +150,14 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
                   width="64"
                   height="26"
                   rx="8"
-                  fill="#171717"
-                  stroke="rgba(255,255,255,0.12)"
+                  fill="var(--color-surface-raised)"
+                  stroke="var(--color-rule-strong)"
                 />
                 <text
                   x={Math.min(width - 46, Math.max(36, point.x))}
                   y={Math.max(19, point.y - 21)}
                   textAnchor="middle"
-                  fill="#fff"
+                  fill="var(--color-content)"
                   fontSize="12"
                   fontWeight="700"
                 >
@@ -160,7 +168,7 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
                 x={point.x}
                 y={height - 12}
                 textAnchor="middle"
-                fill="#737373"
+                fill="var(--color-content-subtle)"
                 fontSize="11"
                 aria-hidden="true"
               >
@@ -170,8 +178,8 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
           ))}
           <defs>
             <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ef4444" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+              <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
             </linearGradient>
           </defs>
         </svg>
@@ -255,7 +263,7 @@ function MediaSplit({ data }: { data: InsightsData }) {
           <p className="mt-1 text-xs uppercase tracking-wider text-content-muted">Movies · {Math.round(moviePercent)}%</p>
         </div>
         <div className="py-3 pl-4 sm:pl-6">
-          <p className="font-display text-2xl font-medium leading-none text-red-200">{data.showsWatched}</p>
+          <p className="font-display text-2xl font-medium leading-none text-accent-text">{data.showsWatched}</p>
           <p className="mt-1 text-xs uppercase tracking-wider text-content-muted">Shows · {Math.round(100 - moviePercent)}%</p>
         </div>
       </div>
@@ -323,7 +331,7 @@ export default function ProfileInsights({
             title={selectedYear ? `No activity recorded for ${selectedYear}` : "Your insights start here"}
             description={selectedYear ? "Choose another year or return to overall insights." : "Log a watch or rate a favorite to build your personal statistics."}
           >
-            <Link href={selectedYear ? "/profile?tab=insights" : "/"} className="kin-focus rounded-sm text-sm font-semibold text-red-300 hover:text-red-200">
+            <Link href={selectedYear ? "/profile?tab=insights" : "/"} className="kin-focus rounded-sm text-sm font-semibold text-accent-text">
               {selectedYear ? "View overall insights" : "Browse titles"}
             </Link>
           </EmptyState>
@@ -367,7 +375,7 @@ export default function ProfileInsights({
                     eyebrow="Watch rhythm"
                     title="Monthly activity"
                     icon={BarChart3}
-                    iconClassName="h-5 w-5 text-red-300"
+                    iconClassName="h-5 w-5 text-accent-text"
                   />
                 </div>
                 {insights.bestMonthLabel && (
@@ -399,7 +407,7 @@ export default function ProfileInsights({
                   eyebrow="Your library"
                   title="Movies vs shows"
                   icon={Clapperboard}
-                  iconClassName="h-5 w-5 text-red-300"
+                  iconClassName="h-5 w-5 text-accent-text"
                 />
                 <div className="mt-6">
                   <MediaSplit data={insights} />
@@ -468,9 +476,9 @@ export default function ProfileInsights({
                           sizes="(min-width: 1024px) 18vw, (min-width: 640px) 30vw, 45vw"
                           className="object-cover transition group-hover:scale-[1.03]"
                         />
-                        <span className="absolute right-2 top-2 inline-flex items-center gap-1 bg-black/75 px-2 py-1 text-xs font-bold text-on-scrim">
+                        <span className="absolute right-2 top-2 inline-flex items-center gap-1 bg-scrim/75 px-2 py-1 text-xs font-bold text-on-scrim">
                           <Star className="h-3 w-3 fill-current" aria-hidden="true" />
-                          {(item.rating / 2).toFixed(1)}
+                          {starsLabel(item.rating)}
                         </span>
                       </div>
                       <p className="mt-3 truncate text-sm font-medium text-content">{item.title}</p>

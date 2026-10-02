@@ -2,6 +2,7 @@
 
 import { Moon, Sun } from "lucide-react";
 import { useTheme, type Theme } from "@/lib/theme";
+import { ICON_BUTTON_CLASS } from "@/lib/uiClasses";
 
 // Sits in the Navbar next to the search and account controls and matches their
 // 40px square icon-button shape, so the header row keeps its rhythm.
@@ -21,7 +22,7 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="kin-focus flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-glass text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
+      className={ICON_BUTTON_CLASS}
       aria-label={label}
       title={label}
     >

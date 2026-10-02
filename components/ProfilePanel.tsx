@@ -34,7 +34,7 @@ export default function ProfilePanel({
               className="kin-focus group inline-flex w-fit items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-content-muted transition hover:text-highlight"
             >
               {action.label}
-              <span className="text-red-400 transition-transform group-hover:translate-x-0.5" aria-hidden="true">
+              <span className="transition-transform group-hover:translate-x-0.5" aria-hidden="true">
                 →
               </span>
             </Link>
@@ -42,7 +42,7 @@ export default function ProfilePanel({
         }
         wrapActions={false}
         rowClassName="mb-5 flex flex-col gap-3 border-t border-rule pt-5 sm:flex-row sm:items-end sm:justify-between"
-        eyebrowClassName="kin-overline mb-1.5 text-highlight/80"
+        eyebrowClassName="kin-overline mb-1.5 text-highlight-muted/80"
         titleClassName="font-display text-2xl font-medium leading-tight text-content md:text-3xl"
         descriptionTag="p"
         descriptionClassName="mt-2 max-w-2xl text-sm leading-6 text-content-muted"

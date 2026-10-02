@@ -69,6 +69,15 @@ export type TmdbMovieCredits = {
   crew: TmdbCredit[];
 };
 
+// /tv/{id} lists its creator separately from the crew endpoint. Not a TmdbCredit:
+// this entry has no `job` or `department`, because a creator is the author's
+// credit rather than a production role.
+export type TmdbTvCreator = {
+  id: number;
+  name: string;
+  profile_path: string | null;
+};
+
 export type TmdbTvDetails = {
   id: number | string;
   name: string;
@@ -81,6 +90,9 @@ export type TmdbTvDetails = {
   genres?: { id: number; name: string }[];
   networks?: { id: number; name: string }[];
   number_of_seasons?: number;
+  // Absent on roughly a fifth of shows, mostly reality and unscripted formats,
+  // so every consumer has to treat it as optional. Checked against 24 titles.
+  created_by?: TmdbTvCreator[];
 };
 
 export type TmdbTvCredits = {

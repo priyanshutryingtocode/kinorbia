@@ -18,7 +18,7 @@ import type { DetailChip, DetailIcon, DetailModel } from "@/lib/mediaDetail";
 // this file is markup only and the two route files are thin adapters.
 
 const CHIP_CLASS =
-  "flex items-center gap-2 rounded-full border border-rule bg-black/30 px-3 py-1.5 backdrop-blur-md";
+  "flex items-center gap-2 rounded-full border border-rule bg-scrim/30 px-3 py-1.5 backdrop-blur-md";
 const ACCENT_CHIP_CLASS =
   "flex items-center gap-2 rounded-full border border-highlight/20 bg-highlight/10 px-3 py-1.5 text-highlight";
 

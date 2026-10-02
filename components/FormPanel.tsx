@@ -33,7 +33,7 @@ export default function FormPanel({
             titleTag="h2"
             description={description}
             rowClassName=""
-            eyebrowClassName="kin-overline mb-1.5 text-highlight/80"
+            eyebrowClassName="kin-overline mb-1.5 text-highlight-muted/80"
             titleClassName="font-display text-lg font-medium leading-tight text-content"
             descriptionClassName="mt-2 text-sm leading-6 text-content-muted"
           />

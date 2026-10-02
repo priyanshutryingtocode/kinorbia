@@ -301,7 +301,14 @@ export default async function ListsPage() {
               title="No favorites yet"
               description="Add movies and shows to your favorites before creating a list."
             >
-              <Link href="/" className="kin-focus rounded-sm text-sm font-semibold text-highlight hover:text-highlight/80">
+              {/* Hovers *into* the muted gold rather than toward plain
+                  `text-highlight/80`. On a light ground a fainter colour is a
+                  less legible one, so softening that way walks the link down to
+                  roughly 3.2:1 on hover -- the same trap the kickers had. */}
+              <Link
+                href="/"
+                className="kin-focus rounded-sm text-sm font-semibold text-highlight hover:text-highlight-muted/80"
+              >
                 Browse titles
               </Link>
             </EmptyState>

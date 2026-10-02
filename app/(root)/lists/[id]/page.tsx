@@ -12,7 +12,7 @@ import SocialActionButton from "@/components/SocialActionButton";
 import PosterImage from "@/components/PosterImage";
 import VisibilityBadge from "@/components/VisibilityBadge";
 import dbConnect from "@/lib/dbConnect";
-import { formatDate, mediaHref, mediaKey, normalizeMediaType } from "@/lib/media";
+import { formatDate, mediaHref, mediaKey, normalizeMediaType, yearOf } from "@/lib/media";
 import { isObjectId } from "@/lib/objectId";
 import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
@@ -32,7 +32,7 @@ type ListDetailPageProps = {
 function ListPoster({ movie }: { movie: ListMovie }) {
   const mediaType = normalizeMediaType(movie.mediaType);
   const href = mediaHref(mediaType, movie.movieId);
-  const year = movie.releaseDate?.slice(0, 4) || "Year unknown";
+  const year = yearOf(movie.releaseDate, "Year unknown");
 
   return (
     <Link

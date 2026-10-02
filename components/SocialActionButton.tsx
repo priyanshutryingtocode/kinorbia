@@ -43,7 +43,7 @@ export default function SocialActionButton({
         className={`min-h-8 gap-1.5 rounded-control border px-2.5 py-1.5 text-xs ${
           active
             ? action === "like"
-              ? "border-accent/30 bg-accent/10 text-red-300 hover:text-red-200"
+              ? "border-accent/30 bg-accent/10 text-accent-text hover:text-content"
               : "border-highlight/30 bg-highlight-soft text-highlight hover:text-highlight"
             : "border-rule text-content-subtle hover:text-content"
         }`}

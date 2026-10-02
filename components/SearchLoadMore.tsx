@@ -1,6 +1,6 @@
 "use client";
 
-import SubmitButton from "@/components/SubmitButton";
+import LoadMoreButton from "@/components/LoadMoreButton";
 import SearchResultCard from "@/components/SearchResultCard";
 import { useLoadMore } from "@/lib/useLoadMore";
 import type { SearchFilters, SearchPage } from "@/lib/search";
@@ -37,24 +37,13 @@ export default function SearchLoadMore({
         </ul>
       )}
 
-      {hasMore && (
-        <div className="mt-10 flex flex-col items-center gap-3">
-          <SubmitButton
-            type="button"
-            variant="secondary"
-            loading={loading}
-            pendingLabel="Loading..."
-            onClick={loadMore}
-          >
-            Load more results
-          </SubmitButton>
-          {error && (
-            <p role="alert" className="text-xs text-accent-hover">
-              {error}
-            </p>
-          )}
-        </div>
-      )}
+      <LoadMoreButton
+        loading={loading}
+        hasMore={hasMore}
+        error={error}
+        onLoadMore={loadMore}
+        label="Load more results"
+      />
     </>
   );
 }

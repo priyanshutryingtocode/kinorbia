@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
-import { mediaKey } from "@/lib/media";
+import { mediaKey, yearOf } from "@/lib/media";
 import type { FavoriteMovie } from "@/types";
 
 const PAGE_SIZE = 50;
@@ -53,7 +53,7 @@ export default function MoviePicker({
 
     return movies.filter((movie) => {
       const type = movie.mediaType === "tv" ? "series" : "movie";
-      const year = movie.releaseDate?.slice(0, 4) ?? "";
+      const year = yearOf(movie.releaseDate, "");
       return `${movie.title} ${year} ${type}`.toLocaleLowerCase().includes(query);
     });
   }, [movies, query]);
@@ -129,7 +129,7 @@ export default function MoviePicker({
               const isSelected = selected.has(value);
               const checkboxId = `${pickerId}-${value}`;
               const mediaLabel = movie.mediaType === "tv" ? "Series" : "Movie";
-              const year = movie.releaseDate?.slice(0, 4) || "Year unknown";
+              const year = yearOf(movie.releaseDate, "Year unknown");
 
               return (
                 <label

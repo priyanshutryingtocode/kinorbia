@@ -48,7 +48,7 @@ export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonPr
       active={active}
       loading={loading}
       disabled={loading}
-      activeClassName="border-accent bg-accent text-on-accent shadow-[0_14px_30px_-18px_rgba(220,38,38,0.9)]"
+      activeClassName="border-accent bg-accent text-on-accent shadow-float"
       icon={Heart}
       label={active ? "Remove from favorites" : "Add to favorites"}
       onClick={toggle}
