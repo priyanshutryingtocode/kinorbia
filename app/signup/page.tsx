@@ -45,7 +45,7 @@ export default function SignUpPage() {
   return (
     <AuthShell>
       <h1 className="sr-only">Create your KinOrbia account</h1>
-      <div className="w-full max-w-70 space-y-3.5">
+      <div className="w-full max-w-64 space-y-3.5">
         {registered ? (
           <div className="space-y-4 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-success" />

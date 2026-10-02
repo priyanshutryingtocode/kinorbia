@@ -40,7 +40,7 @@ export default function LoginPage() {
   return (
     <AuthShell>
       <h1 className="sr-only">Sign in to KinOrbia</h1>
-      <div className="w-full max-w-70 space-y-3.5">
+      <div className="w-full max-w-64 space-y-3.5">
         <AuthSocialBlock verb="Continue" />
 
         <form onSubmit={handleSubmit} className="space-y-3.5">

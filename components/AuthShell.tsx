@@ -21,14 +21,30 @@ type AuthShellProps = {
 
 export default function AuthShell({ children }: AuthShellProps) {
   return (
-    // `scrollbar-gutter: stable` on <html> reserves the scrollbar width on every
-    // page, so `place-items-center` centred the card in a box ~15px narrower than
-    // the visible page and it sat right of the optical centre by that much. The
-    // gutter is declared on <html> and this element is the page root, so resetting
-    // it to `auto` here restores full width for centring without touching the
-    // other 17 routes. Scoped deliberately: on a short viewport where the card
-    // does overflow, the scrollbar appearing will shift this layout by its width.
-    <div className="relative grid min-h-svh w-full place-items-center overflow-hidden bg-canvas p-6 [scrollbar-gutter:auto] lg:p-10">
+    // Centring has to escape the scrollbar gutter, and it took three attempts to get
+    // right. Recorded here so the next person does not re-derive it:
+    //
+    // `scrollbar-gutter: stable` on <html> (globals.css) reserves the scrollbar
+    // width on the RIGHT of the content box. This element fills body, so with
+    // `w-full` it was 762px wide inside a 777px viewport and the card sat 7.5px
+    // left of the true centre.
+    //
+    // Attempt 1, `scrollbar-gutter: auto` here: no effect. The property is not
+    // inherited and only applies to scroll containers; this element has
+    // `overflow-hidden` and therefore no scrollbar.
+    //
+    // Attempt 2, full viewport width with a compensating negative margin-left: also
+    // no effect. The two errors cancel exactly -- the wider box is shifted left by
+    // half the gutter it just gained, landing back on 381px. It looked plausible
+    // and was wrong. (Described in words rather than written as a literal class,
+    // because Tailwind scans raw text and would keep generating the rule.)
+    //
+    // What works is `w-[100dvw]` alone, no margin. The gutter is reserved on the
+    // right, so this element already begins at x=0; giving it the full viewport
+    // width puts its centre exactly on the true centre. Zero magic, and it
+    // collapses to the same thing on mobile where the gutter is a 0-width
+    // overlay. `overflow-hidden` on this same element contains the overhang.
+    <div className="relative grid min-h-svh w-[100dvw] place-items-center overflow-hidden bg-canvas p-6 lg:p-10">
       {/* Full-bleed behind the card, faint enough that the form stays the focus:
           the strokes are --rule and --content-subtle, not solid colours.
 
@@ -46,7 +62,14 @@ export default function AuthShell({ children }: AuthShellProps) {
         </div>
       </div>
 
-      <div className="relative z-10 flex w-full max-w-md flex-col items-center">
+      {/* max-w-sm (384px) rather than max-w-md, with the pages' inner column at
+          max-w-64 (256px). The two move together on purpose: narrowing the card
+          alone would leave a 20px gap beside 32px of padding, which reads
+          cramped. At these values the gap is 32px -- square against the padding,
+          which is what makes it read as deliberate rather than as slack. The
+          previous pair was 448px and 280px, giving a 52px gap, 1.62x the
+          padding. */}
+      <div className="relative z-10 flex w-full max-w-sm flex-col items-center">
         <Link
           href="/"
           className="group mb-6 flex items-center gap-2 transition-transform hover:scale-105"
