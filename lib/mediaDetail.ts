@@ -31,7 +31,7 @@ type DetailCrew = {
 // structural prop type rather than sharing a named one, so this is the common
 // denominator. `id` is a string here, where MovieSummary allows a number,
 // because the TMDB ids reach these controls as route params.
-type DetailSummary = {
+export type DetailSummary = {
   id: string;
   title: string;
   poster_path: string | null;

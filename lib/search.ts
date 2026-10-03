@@ -19,6 +19,33 @@ export type SearchFilters = {
 
 export type SearchPage = { results: MovieSummary[]; hasMore: boolean };
 
+// "Is there enough here to search?" -- one implementation, because the page and
+// this function previously each spelled it out and carried a comment asking the
+// reader to keep them in sync by hand. `sort` is deliberately included: the page
+// always sends one (defaulting to popularity), so a sort-only visit is a real
+// search, and excluding it here showed "No results" instead of fetching
+// anything. Accepts the whole filter object rather than eight arguments, so a
+// filter added later is picked up by both call sites automatically.
+export function hasAnyFilter(filters: {
+  query?: string;
+  year?: string;
+  genre?: string;
+  minRating?: number;
+  maxRuntime?: string;
+  language?: string;
+  sort?: string;
+}): boolean {
+  return Boolean(
+    filters.query ||
+      filters.year ||
+      filters.genre ||
+      filters.minRating ||
+      filters.maxRuntime ||
+      filters.language ||
+      filters.sort
+  );
+}
+
 // The rating/genre/language filters TMDB's search endpoint cannot express, so
 // they are applied here after the fetch.
 //
@@ -52,11 +79,9 @@ export async function fetchSearchResults(filters: SearchFilters, page: number): 
   const languageParam = language ? `&with_original_language=${encodeURIComponent(language)}` : "";
   const sortParam = sort ? `&sort_by=${encodeURIComponent(sort)}` : "&sort_by=popularity.desc";
 
-  // Must stay in sync with the page's `hasNoFilters`: both decide "is there
-  // enough here to search?". `sort` is included because the page always sends
-  // one (defaulting to popularity), so excluding it would make a sort-only
-  // visit return nothing and show "No results" instead of a real search.
-  if (!query && !year && !genre && !minRating && !maxRuntime && !language && !sort) {
+  if (hasAnyFilter({ query, year, genre, minRating, maxRuntime, language, sort })) {
+    // Nothing to search for.
+  } else {
     return { results: [], hasMore: false };
   }
 

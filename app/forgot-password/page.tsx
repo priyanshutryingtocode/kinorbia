@@ -2,9 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { Mail, Loader2, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Mail, CheckCircle2, ArrowLeft } from "lucide-react";
 import AuthShell from "@/components/AuthShell";
-import { AUTH_SUBMIT_CLASS } from "@/lib/uiClasses";
+import AuthField, { AuthError, AuthSubmit } from "@/components/AuthField";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -67,37 +67,22 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-content-subtle" />
-              <label htmlFor="forgot-email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="forgot-email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="Email address"
-                required
-                autoComplete="email"
-                className="kin-input kin-input-affix py-3.5"
-              />
-            </div>
+            {/* This field was one of the three whose wrapper had no `group`, so its
+                icon never lit up on focus. One component cannot drift that way. */}
+            <AuthField
+              id="forgot-email"
+              icon={Mail}
+              label="Email address"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="Email address"
+              autoComplete="email"
+            />
 
-            {error && (
-              <p className="text-xs text-danger bg-accent-hover/10 border-accent/20 rounded-sheet px-3 py-2">
-                {error}
-              </p>
-            )}
+            <AuthError message={error} />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={AUTH_SUBMIT_CLASS}
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Send reset link
-            </button>
+            <AuthSubmit loading={loading}>Send reset link</AuthSubmit>
           </form>
         )}
 

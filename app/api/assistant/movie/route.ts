@@ -6,7 +6,7 @@ import JournalEntry from "@/models/JournalEntry";
 import Conversation, { MAX_CONVERSATION_MESSAGES } from "@/models/Conversation";
 import { assistantPromptSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
-import { searchMovies, getRecommendationMovies, searchTv, getTvRecommendations } from "@/lib/tmdb";
+import { searchMovies, searchTv, getRecommendations } from "@/lib/tmdb";
 import type { FavoriteMovie, MovieSummary } from "@/types";
 
 type Role = "user" | "assistant";
@@ -210,8 +210,7 @@ async function searchTmdbTitle(title: string, mediaType: "movie" | "tv" = "movie
 }
 
 async function getTmdbRecommendations(id: string, mediaType: "movie" | "tv" = "movie") {
-  const data =
-    mediaType === "tv" ? await getTvRecommendations(id) : await getRecommendationMovies(id);
+  const data = await getRecommendations(id, mediaType);
   return (data?.results || []).slice(0, 6);
 }
 

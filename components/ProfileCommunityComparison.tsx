@@ -52,7 +52,7 @@ export default async function ProfileCommunityComparison({
     <section aria-labelledby="community-heading" className="py-8">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="kin-overline text-highlight-muted/80">Shared taste</p>
+          <p className="kin-overline text-highlight-muted">Shared taste</p>
           <h3 id="community-heading" className="flex items-center gap-2 font-display text-2xl font-medium text-content">
             <Users className="h-5 w-5 text-highlight" aria-hidden="true" />
             You vs the community

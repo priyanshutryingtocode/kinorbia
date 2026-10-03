@@ -15,6 +15,29 @@ import { dedupeFavorites } from "@/lib/reviewRatings";
 import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
 import type { ListMovie } from "@/types";
 
+// The six favorite fields `toListMovie` reads, in one place. This projection and
+// its structural type were written out twice in this file, and the field list is
+// long enough that dropping one from a copy fails silently -- `toListMovie` would
+// just see undefined. `watchlist` is deliberately not selected; it used to be
+// transferred in full and never read here.
+type ListFavorite = {
+  movieId: string;
+  mediaType?: string;
+  title: string;
+  posterPath: string | null;
+  voteAverage: number;
+  releaseDate?: string;
+};
+
+function loadFavoritesForList(email: string) {
+  return User.findOne({ email })
+    .select(
+      "favorites.movieId favorites.mediaType favorites.title favorites.posterPath favorites.voteAverage favorites.releaseDate"
+    )
+    .lean<{ favorites?: ListFavorite[] } | null>();
+}
+
+
 function selectedKeysFrom(formData: FormData) {
   return new Set(
     formData
@@ -98,20 +121,7 @@ export async function createMovieList(
 
     // `toListMovie` reads six fields per favorite; `watchlist` is never touched
     // here but was previously transferred in full.
-    const user = await User.findOne({ email })
-      .select(
-        "favorites.movieId favorites.mediaType favorites.title favorites.posterPath favorites.voteAverage favorites.releaseDate"
-      )
-      .lean<{
-        favorites?: {
-          movieId: string;
-          mediaType?: string;
-          title: string;
-          posterPath: string | null;
-          voteAverage: number;
-          releaseDate?: string;
-        }[];
-      } | null>();
+    const user = await loadFavoritesForList(email);
     const favorites = dedupeFavorites(user?.favorites || []);
     const selectedMovies = favorites
       .filter((movie) => selectedKeys.has(mediaKey(movie.mediaType, movie.movieId)))
@@ -170,20 +180,7 @@ export async function updateMovieList(
     }
 
     const [user, existing] = await Promise.all([
-      User.findOne({ email })
-        .select(
-          "favorites.movieId favorites.mediaType favorites.title favorites.posterPath favorites.voteAverage favorites.releaseDate"
-        )
-        .lean<{
-          favorites?: {
-            movieId: string;
-            mediaType?: string;
-            title: string;
-            posterPath: string | null;
-            voteAverage: number;
-            releaseDate?: string;
-          }[];
-        } | null>(),
+      loadFavoritesForList(email),
       MovieList.findOne({ _id: listId, userEmail: email })
         .select("movies")
         .lean<{ movies?: ListMovie[] } | null>(),

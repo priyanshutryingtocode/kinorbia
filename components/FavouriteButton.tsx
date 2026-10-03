@@ -1,6 +1,7 @@
 "use client";
 
 import { Heart } from "lucide-react";
+import type { DetailSummary } from "@/lib/mediaDetail";
 import { MediaToggleButton, useMediaToggle } from "@/components/MediaToggle";
 import { normalizeMediaType } from "@/lib/media";
 
@@ -11,18 +12,8 @@ const MESSAGES = {
   removed: "Removed from favorites.",
 };
 
-type MovieRef = {
-  id: string;
-  title: string;
-  poster_path: string | null;
-  vote_average: number;
-  release_date?: string;
-  mediaType?: "movie" | "tv";
-  genre_ids?: number[];
-};
-
 interface FavButtonProps {
-  movie: MovieRef;
+  movie: DetailSummary;
   initialIsFavorite: boolean;
 }
 

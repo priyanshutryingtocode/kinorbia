@@ -29,6 +29,13 @@ export const PROFILE_PAGE_SIZES = {
   lists: 9,
 } as const;
 
+// The people-directory page size, here for the same reason: PeopleFollowPage
+// queries with it and PeopleList computes its "Showing X-Y of Z" range from it,
+// and they each used to declare their own copy of the same 24. Nothing tied the
+// two together, so changing one silently produced a wrong range against the
+// right page size.
+export const PEOPLE_PAGE_SIZE = 24;
+
 type JournalHistoryRecord = {
   _id: { toString: () => string };
   movieTitle: string;
@@ -37,7 +44,7 @@ type JournalHistoryRecord = {
   movieId?: string;
 };
 
-type ProfileIdentity = {
+export type ProfileIdentity = {
   _id: { toString: () => string };
   name: string;
   email: string;
@@ -77,7 +84,7 @@ type InsightsSource = {
   journal: JournalHistoryRecord[];
 };
 
-type PersonalMediaStatus = {
+export type PersonalMediaStatus = {
   isFavorite: boolean;
   personalRating: number;
   isWatchlisted: boolean;
@@ -115,10 +122,29 @@ export async function getPersonalMediaStatus(
   const matches = (item: { movieId?: string; mediaType?: string }) =>
     item.movieId === id && normalizeMediaType(item.mediaType) === mediaType;
 
-  const favorite = user?.favorites?.find(matches);
+  // The *last* matching copy, not the first. Both read paths -- dedupeFavorites
+  // and uniqueMediaItems -- keep the last, and dedupeFavorites changed from
+  // first to last deliberately; this used to use `.find()`, which is the
+  // opposite, so on a legacy row holding duplicates the detail page showed a
+  // different personalRating than /profile and /reviews did for the same title.
+  const favorite = user?.favorites
+    ? [...user.favorites].reverse().find(matches)
+    : undefined;
 
   const journalEntry = await JournalEntry.findOne({
-    userEmail: email,
+    // emailMatch, not the raw session value. This matters here specifically
+    // because the detail pages pass `session?.user?.email` straight from auth()
+    // rather than going through lib/session.ts, which is what lowercases it --
+    // so unlike every withAuthedUser route, `email` here can still carry the
+    // casing NextAuth put in the token. Querying JournalEntry exactly while
+    // querying User through emailMatch one line above meant the same account
+    // could be told it had not watched something it had.
+    //
+    // Note this is not a drop-in fix for the ~40 other `userEmail: email`
+    // queries: those go through withAuthedUser, so their email is already
+    // lowercase and emailMatch returns a single-element $in that matches
+    // exactly what the raw query already did. See lib/emailMatch.ts.
+    userEmail: emailMatch(email),
     movieId: id,
     mediaType: mediaEquals(mediaType),
   })

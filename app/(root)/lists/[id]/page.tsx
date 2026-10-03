@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { ArrowLeft } from "lucide-react";
-import { requireUserEmail } from "@/lib/actions";
 import CommentSection from "@/components/CommentSection";
 import EmptyState from "@/components/EmptyState";
 import RouteShell from "@/components/RouteShell";
@@ -14,6 +14,7 @@ import VisibilityBadge from "@/components/VisibilityBadge";
 import dbConnect from "@/lib/dbConnect";
 import { formatDate, mediaHref, mediaKey, normalizeMediaType, yearOf } from "@/lib/media";
 import { isObjectId } from "@/lib/objectId";
+import { visibleTo } from "@/lib/visibility";
 import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
 import { serializeList, type RawMovieList } from "@/lib/serialize";
@@ -61,7 +62,14 @@ function ListPoster({ movie }: { movie: ListMovie }) {
 }
 
 export default async function ListDetailPage({ params }: ListDetailPageProps) {
-  const currentUserEmail = await requireUserEmail();
+  // Nullable, not `requireUserEmail()`. The query below treats a public list as
+  // readable by anyone, and the page renders its discussion for one -- but this
+  // used to redirect anonymous visitors to /login before the lookup even ran, so
+  // a public list linked from the public activity feed, or from the "In Lists"
+  // row on a public film page, was unreachable without an account. `activity` and
+  // `u/[username]` already resolve the session this way for the same reason.
+  const session = await auth();
+  const currentUserEmail = session?.user?.email ?? null;
 
   const { id } = await params;
   if (!isObjectId(id)) {
@@ -71,11 +79,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
   await dbConnect();
   const rawList = await MovieList.findOne({
     _id: id,
-    $or: [
-      { visibility: "public" },
-      { visibility: { $exists: false } },
-      { userEmail: currentUserEmail },
-    ],
+    ...visibleTo(currentUserEmail),
   }).lean<RawMovieList | null>();
 
   if (!rawList) {
@@ -124,7 +128,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
                   id={list._id}
                   action="like"
                   count={list.likedBy?.length || 0}
-                  active={Boolean(list.likedBy?.includes(currentUserEmail))}
+                  active={Boolean(currentUserEmail && list.likedBy?.includes(currentUserEmail))}
                   path={`/lists/${list._id}`}
                 />
                 <SocialActionButton
@@ -132,7 +136,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
                   id={list._id}
                   action="save"
                   count={list.savedBy?.length || 0}
-                  active={Boolean(list.savedBy?.includes(currentUserEmail))}
+                  active={Boolean(currentUserEmail && list.savedBy?.includes(currentUserEmail))}
                   path={`/lists/${list._id}`}
                 />
               </>

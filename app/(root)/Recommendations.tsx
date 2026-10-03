@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import MovieCard, { type MovieProp } from "@/components/MovieCard";
-import { getRecommendationMovies, getTvRecommendations } from "@/lib/tmdb";
+import { getRecommendations } from "@/lib/tmdb";
 import type { MediaType } from "@/types";
 import { emailMatch } from "@/lib/emailMatch";
 
@@ -54,10 +54,7 @@ export default async function Recommendations({ mediaType }: { mediaType: MediaT
 
   // The page's media type picks the endpoint, so a show never seeds the movies
   // panel or the reverse.
-  const data =
-    mediaType === "tv"
-      ? await getTvRecommendations(favorite.movieId)
-      : await getRecommendationMovies(favorite.movieId);
+  const data = await getRecommendations(favorite.movieId, mediaType);
 
   const recommendations: MovieProp[] = (data?.results || []).slice(0, 5);
   if (recommendations.length === 0) return null;

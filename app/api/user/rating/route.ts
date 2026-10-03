@@ -39,8 +39,25 @@ export const POST = withAuthedUser(
       );
     }
 
-    // Update metadata of an existing favorite in place. The positional
-    // projection matches the exact (movieId, mediaType) pair.
+    // Update metadata of an existing favorite in place.
+    //
+    // Two things are deliberate here, and both are easy to undo by accident.
+    //
+    // 1. The `$elemMatch` stays in the *filter* even though the write uses
+    //    arrayFilters. With arrayFilters alone, `matchedCount` counts documents
+    //    matching the filter rather than array elements, so it would always be 1
+    //    and the "no favorite yet" branch below would be unreachable -- rating a
+    //    title for the first time would silently do nothing.
+    //
+    // 2. The write targets every matching element via `$[f]`, not the
+    //    positional `$`. `$` resolves to the *first* match, while both read
+    //    paths deliberately keep the *last* (see dedupeFavorites, which changed
+    //    from first to last for exactly this reason). So on a legacy row holding
+    //    duplicate (movieId, mediaType) entries -- only rows predating the unique
+    //    index can contain them -- the rating was written to a copy no read path
+    //    looks at, and the user saw "Rated 8.0 stars" with nothing stored
+    //    anywhere it could be read back. Updating all copies removes the
+    //    disagreement instead of depending on which one wins.
     const updateFavorite = await User.updateOne(
       {
         email,
@@ -53,17 +70,25 @@ export const POST = withAuthedUser(
       },
       {
         $set: {
-          "favorites.$.personalRating": clampedRating,
-          "favorites.$.title": body.movieTitle,
-          ...(body.posterPath ? { "favorites.$.posterPath": body.posterPath } : {}),
+          "favorites.$[f].personalRating": clampedRating,
+          "favorites.$[f].title": body.movieTitle,
+          ...(body.posterPath ? { "favorites.$[f].posterPath": body.posterPath } : {}),
           // Truthiness, matching the two lines around it. This used to be
           // `!== undefined`, which was always true: `movieRefSchema` gives
           // voteAverage a `.default(0)`, so an absent field arrives as 0 rather
           // than undefined. Any client that omits it -- ProfileFavorites does --
           // therefore overwrote a stored TMDB rating with 0.
-          ...(body.voteAverage ? { "favorites.$.voteAverage": body.voteAverage } : {}),
-          ...(body.releaseDate ? { "favorites.$.releaseDate": body.releaseDate } : {}),
+          ...(body.voteAverage ? { "favorites.$[f].voteAverage": body.voteAverage } : {}),
+          ...(body.releaseDate ? { "favorites.$[f].releaseDate": body.releaseDate } : {}),
         },
+      },
+      {
+        arrayFilters: [
+          {
+            "f.movieId": normalizedMovieId,
+            "f.mediaType": mediaEquals(normalizedMediaType),
+          },
+        ],
       }
     );
 

@@ -63,11 +63,16 @@ export type TmdbVideo = {
   published_at?: string;
 };
 
-export type TmdbMovieCredits = {
+export type TmdbCredits = {
   id: number;
   cast: TmdbCredit[];
   crew: TmdbCredit[];
 };
+
+// The movie and TV credit endpoints return the same shape -- the difference
+// between them is that /tv lists its creator separately (see TmdbTvCreator
+// below), not that the credits differ. These two were byte-identical types.
+export type TmdbMovieCredits = TmdbCredits;
 
 // /tv/{id} lists its creator separately from the crew endpoint. Not a TmdbCredit:
 // this entry has no `job` or `department`, because a creator is the author's
@@ -95,11 +100,7 @@ export type TmdbTvDetails = {
   created_by?: TmdbTvCreator[];
 };
 
-export type TmdbTvCredits = {
-  id: number;
-  cast: TmdbCredit[];
-  crew: TmdbCredit[];
-};
+export type TmdbTvCredits = TmdbCredits;
 
 export type ReviewItem = {
   _id: string;

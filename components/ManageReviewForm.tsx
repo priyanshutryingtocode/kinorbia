@@ -2,10 +2,10 @@ import { updateReview, deleteReview } from "@/app/(root)/reviews/actions";
 import type { ReviewItem } from "@/types";
 import ActionForm from "./ActionForm";
 import SubmitButton from "./SubmitButton";
+import VisibilityField from "./VisibilityField";
 
 export default function ManageReviewForm({ review }: { review: ReviewItem }) {
   const bodyId = `review-body-${review._id}`;
-  const visibilityId = `review-visibility-${review._id}`;
 
   return (
     <details className="mt-4 border-t border-rule pt-3">
@@ -28,20 +28,12 @@ export default function ManageReviewForm({ review }: { review: ReviewItem }) {
             className="kin-input resize-y"
           />
         </div>
-        <div className="kin-field">
-          <label htmlFor={visibilityId} className="kin-label">
-            Visibility
-          </label>
-          <select
-            id={visibilityId}
-            name="visibility"
-            defaultValue={review.visibility}
-            className="kin-input"
-          >
-            <option value="public">Public</option>
-            <option value="private">Private</option>
-          </select>
-        </div>
+        {/* Was a hand-rolled <select>, while the lists and reviews forms both use
+            VisibilityField. Note this changes the control: that component renders
+            two radios in a fieldset, not a dropdown. Both post name="visibility",
+            so the action is unaffected, and every form now sets visibility the
+            same way. */}
+        <VisibilityField legendClassName="kin-label" fieldsetClassName="kin-field" visibility={review.visibility} />
         <label className="kin-choice">
           <input type="checkbox" name="spoiler" defaultChecked={review.spoiler} />
           Contains spoilers

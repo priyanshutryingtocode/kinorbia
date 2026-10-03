@@ -7,8 +7,7 @@ import { escapeRegExp, firstValue, parsePage } from "@/lib/searchParams";
 import User from "@/models/User";
 import PeopleList from "@/components/PeopleList";
 import RouteShell from "@/components/RouteShell";
-
-const PEOPLE_PER_PAGE = 24;
+import { PEOPLE_PAGE_SIZE } from "@/lib/profileData";
 
 const COPY = {
   followers: {
@@ -98,13 +97,13 @@ export default async function PeopleFollowPage({
           .lean<ViewerUser | null>()
       : Promise.resolve(null),
   ]);
-  const { page, totalPages } = pageBounds(totalCount, requestedPage, PEOPLE_PER_PAGE);
+  const { page, totalPages } = pageBounds(totalCount, requestedPage, PEOPLE_PAGE_SIZE);
   const records = totalCount
     ? await User.find(peopleFilter)
         .select("_id email name username image")
         .sort({ name: 1, username: 1, _id: 1 })
-        .skip((page - 1) * PEOPLE_PER_PAGE)
-        .limit(PEOPLE_PER_PAGE)
+        .skip((page - 1) * PEOPLE_PAGE_SIZE)
+        .limit(PEOPLE_PAGE_SIZE)
         .lean<PersonRecord[]>()
     : [];
   const following = new Set(
@@ -140,7 +139,7 @@ export default async function PeopleFollowPage({
         Back to profile
       </Link>
       <header className="mb-6 mt-5 border-b border-rule pb-5">
-        <p className="kin-overline text-highlight-muted/80">@{username}</p>
+        <p className="kin-overline text-highlight-muted">@{username}</p>
         <h1 className="mt-2 font-display text-3xl font-medium leading-none text-content sm:text-4xl">
           {copy.heading}
         </h1>

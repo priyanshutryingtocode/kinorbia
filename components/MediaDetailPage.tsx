@@ -12,15 +12,28 @@ import SimilarMedia from "@/components/SimilarMedia";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import { tmdbImage } from "@/lib/media";
 import type { DetailChip, DetailIcon, DetailModel } from "@/lib/mediaDetail";
+import type { PersonalMediaStatus } from "@/lib/profileData";
 
 // The one detail layout, shared by /movie/[id] and /tv/[id]. Everything that
 // differs between a film and a show arrives already resolved on the model, so
 // this file is markup only and the two route files are thin adapters.
 
+// The hero is a pale ground in light mode, and these two chips each failed on it
+// in opposite directions. The plain one was bg-scrim/30 -- 30% black barely
+// darkens a silver page, so white text measured 2.11:1 over bright artwork. The
+// accent one was bg-highlight/10 with dark text, a 10% graphite tint that left it
+// at 3.31:1 over dark artwork. At bg-scrim/60 the chip is reliably dark whatever
+// is behind it: worst case over the brightest possible backdrop is 5.69:1 for the
+// label and 3.93:1 for the gold star, and both improve as the artwork darkens.
 const CHIP_CLASS =
-  "flex items-center gap-2 rounded-full border border-rule bg-scrim/30 px-3 py-1.5 backdrop-blur-md";
+  "flex items-center gap-2 rounded-full border border-rule bg-scrim/60 px-3 py-1.5 backdrop-blur-md";
+// The viewer's own rating, so it has to read as different from the plain chips
+// beside it. It no longer does that with its background -- both chips are dark
+// now, because neither could carry its own tint -- but with a gold border and a
+// gold filled star. Gold text was tried here and fails: on the brightest artwork
+// it measures 3.28:1, under the 4.5 a label needs.
 const ACCENT_CHIP_CLASS =
-  "flex items-center gap-2 rounded-full border border-highlight/20 bg-highlight/10 px-3 py-1.5 text-highlight";
+  "flex items-center gap-2 rounded-full border border-highlight-vivid/40 bg-scrim/60 px-3 py-1.5";
 
 const ICONS: Record<DetailIcon, typeof Star> = {
   star: Star,
@@ -33,11 +46,18 @@ const ICONS: Record<DetailIcon, typeof Star> = {
 function Chip({ chip }: { chip: DetailChip }) {
   const Icon = ICONS[chip.icon];
   // The accent chip is the viewer's own rating, so its star is filled from the
-  // current text colour rather than the highlight gold used for TMDB's score.
+  // current text colour -- which is what tells the two chips apart, along with
+  // the accent chip's gold border. Making that star gold too would leave it
+  // identical to TMDB's score star, which is the one thing this chip exists to
+  // avoid.
+  //
+  // Gold stays on the score star, where it is an icon held to the 3:1 non-text
+  // threshold rather than 4.5:1. It used to be `highlight`, which is dark
+  // graphite in light mode and disappeared against the chip.
   const iconClass = chip.accent
     ? "h-4 w-4 fill-current"
     : chip.icon === "star-filled"
-      ? "h-4 w-4 fill-highlight text-highlight"
+      ? "h-4 w-4 fill-highlight-vivid text-highlight-vivid"
       : "h-4 w-4 text-on-scrim-muted";
 
   return (
@@ -53,12 +73,10 @@ export default async function MediaDetailPage({
   personal,
 }: {
   model: DetailModel;
-  personal: {
-    isFavorite: boolean;
-    personalRating: number;
-    isWatchlisted: boolean;
-    isWatched: boolean;
-  };
+  // The type getPersonalMediaStatus returns and both detail routes pass. It was
+  // re-declared here, so a field added to the status would leave this prop type
+  // silently narrower than the value actually handed to it.
+  personal: PersonalMediaStatus;
 }) {
   const { summary } = model;
   const backdrop = tmdbImage(model.backdropPath, "w1280");
@@ -67,7 +85,7 @@ export default async function MediaDetailPage({
 
   return (
     <div className="relative overflow-hidden pb-20 text-content">
-      <div className="absolute inset-x-0 top-0 h-[55svh] opacity-50 sm:h-[70svh] lg:h-svh">
+      <div className="kin-hero-backdrop absolute inset-x-0 top-0 h-[55svh] sm:h-[70svh] lg:h-svh">
         {backdrop && (
           <TmdbPosterImage
             src={backdrop}

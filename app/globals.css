@@ -31,6 +31,14 @@
 
   --rule: rgba(255, 255, 255, 0.1);
   --rule-strong: rgba(255, 255, 255, 0.2);
+  /* The edge on a floating surface that sits ON the page -- the account menu, the
+     mobile nav panel, the assistant. --rule is a hairline for *dividing* things
+     and is nowhere near strong enough to define a panel that has to read as
+     detached: at 0.2 white it is 1.77:1 against this ground. WCAG 1.4.11 asks 3:1
+     for the boundary of a user-interface component, which 0.38 clears at 3.50:1.
+     Kept separate from --rule so the ~150 hairline uses across the app are
+     untouched. */
+  --rule-overlay: rgba(255, 255, 255, 0.38);
 
   --accent: #dc2626;
   /* Deeper than the base rather than brighter: #ef4444 carried near-white text
@@ -93,6 +101,15 @@
      theme inherits it. One value serves dialog scrims and poster overlays, with
      the opacity modifier choosing the strength. */
   --scrim: #000000;
+
+  /* The detail-page hero. Only the image opacity is themed: on near-black a
+     backdrop can sit at 50% and the light hero text still reads, because the
+     veil below is dark canvas. Light mode cannot do that -- a pale ground under
+     a dark backdrop leaves nowhere for either the image or a dark title to go --
+     so it declares its own opacity, veil and crossfade further down. The dark
+     veil gradient is the from/via/to pair that has always been on this element;
+     See .kin-hero-backdrop. */
+  --hero-image-opacity: 0.5;
 
   /* Text sitting on a filled accent/highlight chip. Inverts, because the chip
      beneath it does. */
@@ -194,10 +211,13 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  /* Silver, not bone. The ground is a cool near-white -- a hint of blue in it is
-     what makes it read as silver rather than as white -- and every neutral below
-     is on the same cool axis, so the whole page is one temperature and the red
-     is the only chromatic thing on it.
+  /* Warm silver. Still a neutral ramp rather than a tinted one -- the chroma here
+     is low enough that it reads as metal rather than as cream -- but warm rather
+     than blue-grey. It started cool (#e4e7ec, a true blue-tinged silver) and read
+     as clinical on a page carrying nothing but neutrals and red, so the ramp was
+     pulled a few degrees toward paper. That is also why every hairline and tint
+     below is rgba(40, 30, 20) and not the cool rgba(24, 24, 27): a blue-black
+     edge on a warm ground reads as dirt rather than as a hairline.
 
      Depth is capped deliberately, and #e4e7ec is where it lands. This is a
      tint, not a metal: at #d2d6db and darker the red stops clearing body AA
@@ -206,9 +226,9 @@
      ground also spends headroom on everything else -- it lowers every text
      ratio at once, so --danger and --wordmark were deepened along with it rather
      than left on 0.20 and 0.02 of margin. See their comments. */
-  --canvas: #e4e7ec;
-  --surface: #d8dce2;
-  --surface-raised: #ffffff;
+  --canvas: #ebe9e9;
+  --surface: #dedbdc;
+  --surface-raised: #fcf9f2;
 
   /* Cool neutrals, unchanged -- only the ground moved. The floor is
      --content-subtle at 5.62:1 against --surface. */
@@ -218,8 +238,12 @@
 
   /* Neutral hairlines. A warm-tinted rule on a cool ground reads as muddy rather
      than as a hairline, so the warm cast the bone ground wanted is gone. */
-  --rule: rgba(24, 24, 27, 0.14);
-  --rule-strong: rgba(24, 24, 27, 0.26);
+  --rule: rgba(40, 30, 20, 0.14);
+  --rule-strong: rgba(40, 30, 20, 0.26);
+  /* See the note on the dark value. Here 0.55 clears 3:1 against the silver page;
+     0.50 only just manages 3.05, and --rule-strong at 0.26 reaches 1.70, which is
+     why a floating panel was previously invisible on this ground. */
+  --rule-overlay: rgba(40, 30, 20, 0.55);
 
   --accent: #b91c1c;
   --accent-hover: #991b1b;
@@ -248,19 +272,26 @@
      silver. */
   --highlight: #1f2937;
   --highlight-soft: rgba(31, 41, 55, 0.12);
-  /* Load-bearing, not cosmetic, and now load-bearing in the opposite direction.
-     Eight `kin-overline` kickers render at 10px through `text-highlight-muted/80`,
-     and an opacity modifier is invisible to scripts/checkContrast.mjs because it
-     composites rather than resolving to a token -- which is how the light palette
-     came to be "passing" a kicker that measured 3.32:1 on the page.
+  /* The editorial layer: bronze, at FULL strength, and the /80 is gone from the
+     eight `kin-overline` kickers that use this.
 
-     Composited at /80 this measures 5.22:1. It did not have to move: the
-     previous #3f3f46 still passes at 4.67:1 on this ground. It moved because
-     deepening --highlight left a wider gap, and this is the one step that tracks
-     it -- "muted" has to stay lighter than the kicker it labels, and #3f3f46 now
-     sits far enough above #1f2937 to read as a different weight rather than as
-     a slightly washed copy of it. */
-  --highlight-muted: #2d3748;
+     The /80 was the reason this layer was grey. Compositing any hue at 80% costs
+     about a fifth of its contrast, and at 10px there is no slack for that: gold
+     had to darken to #513f2c to reach 4.5:1, at which point its chroma had
+     collapsed to 0.036 and it was no longer gold. Bronze needed #613b04 for the
+     same reason. Only neutrals had the headroom to be composited down and still
+     read, so every hue tried came out looking like the graphite it replaced.
+
+     At full strength this clears 5.26:1 against the darkest ground, and its
+     chroma of 0.098 is far enough from the neutral ramp to register as a colour
+     rather than as a slightly warm grey. That is also the reason the kicker is no
+     longer derived from --highlight: a label wants a warm hue, and --highlight is
+     what every border and chip in the app is built from.
+
+     scripts/checkContrast.mjs composited this token at /80 to match the old
+     markup. That constant is now 1.0, or the checker would be measuring a
+     rendering the app no longer produces. */
+  --highlight-muted: #7a4d14;
   /* The light theme's brand red is already dark enough for body text, so
      --accent-text collapses onto --danger rather than carrying a second red --
      including when --danger is deepened for margin, which it is. */
@@ -284,13 +315,27 @@
   --on-scrim: #f5f5f5;
   --on-scrim-muted: rgba(245, 245, 245, 0.72);
 
+  /* A very small bump over the shared 0.5, and 0.52 is close to the hard
+     ceiling rather than a chosen number. The title is near-black here and sits
+     over the artwork, so the canvas veil above it -- not this opacity -- is what
+     limits things. Measured worst case (the darkest artwork, at the title's
+     position in the gradient): 4.98:1 at 0.50, 4.73:1 at 0.52, 4.60:1 at 0.53,
+     then it falls away -- 4.36:1 at 0.55 and 3.74:1 at 0.58. So anything past
+     about 0.53 fails on a dark backdrop.
+
+     The lever that would actually buy a stronger image is strengthening the
+     canvas veil behind the title, not this value. That needs the gradient in
+     CSS, because a Tailwind alpha modifier like via-canvas/70 reads a literal
+     percentage rather than a token. */
+  --hero-image-opacity: 0.52;
+
   /* Neutral tints for the translucent chrome over the silver ground: the filter
      bar, the assistant, toasts. .kin-ink-band overrides these for the header. */
-  --glass: rgba(24, 24, 27, 0.04);
-  --glass-hover: rgba(24, 24, 27, 0.07);
-  --glass-strong: rgba(24, 24, 27, 0.08);
-  --glass-line: rgba(24, 24, 27, 0.09);
-  --glass-line-strong: rgba(24, 24, 27, 0.18);
+  --glass: rgba(40, 30, 20, 0.04);
+  --glass-hover: rgba(40, 30, 20, 0.07);
+  --glass-strong: rgba(40, 30, 20, 0.08);
+  --glass-line: rgba(40, 30, 20, 0.09);
+  --glass-line-strong: rgba(40, 30, 20, 0.18);
 
   /* The band. A graphite, not the near-black dark mode uses, so the chrome sits
      in the same silver family as the page instead of inverting it. That is the
@@ -336,12 +381,12 @@
      `multiply` stand-in left a flat white circle. AuthShell paints on
      bg-canvas and follows the page's own tokens, not the ink ramp. */
   /* Against a light page the halo carries further than it does on near-black. */
-  --elevation-card: 0 18px 45px -34px rgba(24, 24, 27, 0.16);
+  --elevation-card: 0 18px 45px -34px rgba(40, 30, 20, 0.16);
   --elevation-card-hover: 0 24px 60px -42px rgba(185, 28, 28, 0.3);
-  --elevation-float: 0 24px 80px -48px rgba(24, 24, 27, 0.2);
-  --elevation-poster: 0 28px 80px -44px rgba(24, 24, 27, 0.24);
-  --elevation-filter: 0 18px 55px -42px rgba(24, 24, 27, 0.18);
-  --elevation-glow: 0 12px 28px -18px rgba(24, 24, 27, 0.3);
+  --elevation-float: 0 24px 80px -48px rgba(40, 30, 20, 0.2);
+  --elevation-poster: 0 28px 80px -44px rgba(40, 30, 20, 0.24);
+  --elevation-filter: 0 18px 55px -42px rgba(40, 30, 20, 0.18);
+  --elevation-glow: 0 12px 28px -18px rgba(40, 30, 20, 0.3);
   /* Grain at the dark theme's opacity reads as dirt once the ground is light. */
   --grain-opacity: 0.018;
 }
@@ -368,6 +413,7 @@
   --color-content-subtle: var(--content-subtle);
   --color-rule: var(--rule);
   --color-rule-strong: var(--rule-strong);
+  --color-rule-overlay: var(--rule-overlay);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-highlight: var(--highlight);
@@ -536,6 +582,14 @@ html {
 }
 
 @layer components {
+  /* The detail-page hero image's opacity, in place of a hardcoded `opacity-50`.
+     That is the only part of the hero light mode needs to differ: its veil is
+     plain Tailwind gradient stops over --canvas, which is the correct thing on a
+     silver ground, and the hero keeps its near-black text. */
+  .kin-hero-backdrop {
+    opacity: var(--hero-image-opacity);
+  }
+
   .shell-header {
     /* `kin-ink-band` is added in Navbar's markup rather than @applied here.
        Tailwind v4 will not resolve a hand-written class name inside @apply --
@@ -749,8 +803,20 @@ html {
     }
   }
 
+  /* A floating panel: the account menu, the mobile nav panel, the assistant.
+     Both halves of this used to be wrong in light mode.
+     `bg-canvas/80` was the background, which is a no-op -- canvas composited
+     over a canvas page returns the canvas, so the panel was the same colour as
+     what it sat on and the only separator was a 1.31:1 hairline. It now uses
+     --surface-raised, which is a genuinely different value from --canvas.
+     `border-rule-overlay` replaces --rule because a panel edge has to identify
+     the component; a divider does not, and the two want very different weights.
+     The translucency is kept deliberately -- the blur only does anything once
+     these panels are portalled out of .shell-header, which is itself a
+     backdrop-filter element and therefore a backdrop root that would otherwise
+     leave the blur sampling the header's flat background instead of the page. */
   .premium-surface {
-    @apply border border-rule bg-canvas/80 shadow-float backdrop-blur-xl;
+    @apply border border-rule-overlay bg-surface-raised/85 shadow-float backdrop-blur-xl;
   }
 
   .profile-masthead {

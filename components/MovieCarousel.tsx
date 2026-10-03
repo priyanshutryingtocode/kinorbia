@@ -24,6 +24,19 @@ export interface CarouselMovie {
 // like the placeholder on the thirteen other surfaces. It did not need one: the
 // parent is `aspect-2/3 relative bg-surface-raised`, so the shared fallback's
 // `h-full w-full` fills the same box `TmdbPosterImage fill` occupied.
+// The scroll affordance, written once. The two buttons differed only in the inset
+// side and which way the nudge was translated; everything else -- including a
+// ~40-utility class string -- was repeated verbatim, so a change to the hover or
+// focus treatment had to be made twice and could silently be made once.
+const CAROUSEL_SCROLL_BUTTON_CLASS =
+  "kin-focus absolute top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-rule bg-scrim/70 text-on-scrim opacity-0 shadow-card backdrop-blur-md transition-all duration-300 hover:border-rule-strong hover:bg-surface-raised focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 md:flex";
+
+function scrollButtonClass(side: "left" | "right") {
+  return `${CAROUSEL_SCROLL_BUTTON_CLASS} ${side}-0 ${
+    side === "left" ? "-translate-x-4" : "translate-x-4"
+  }`;
+}
+
 function CarouselPoster({ movie }: { movie: CarouselMovie }) {
   return (
     <PosterImage
@@ -54,7 +67,7 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
       <button
         type="button"
         onClick={() => scroll("left")}
-        className="kin-focus absolute left-0 top-1/2 z-10 hidden h-11 w-11 -translate-x-4 -translate-y-1/2 items-center justify-center rounded-full border border-rule bg-scrim/70 text-on-scrim opacity-0 shadow-card backdrop-blur-md transition-all duration-300 hover:border-rule-strong hover:bg-surface-raised focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 md:flex"
+        className={scrollButtonClass("left")}
         aria-label="Scroll left"
       >
         <ChevronLeft className="h-5 w-5" />
@@ -88,7 +101,7 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
       <button
         type="button"
         onClick={() => scroll("right")}
-        className="kin-focus absolute right-0 top-1/2 z-10 hidden h-11 w-11 translate-x-4 -translate-y-1/2 items-center justify-center rounded-full border border-rule bg-scrim/70 text-on-scrim opacity-0 shadow-card backdrop-blur-md transition-all duration-300 hover:border-rule-strong hover:bg-surface-raised focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 md:flex"
+        className={scrollButtonClass("right")}
         aria-label="Scroll right"
       >
         <ChevronRight className="h-5 w-5" />

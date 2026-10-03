@@ -16,6 +16,7 @@ import PosterImage from "@/components/PosterImage";
 import VisibilityBadge from "@/components/VisibilityBadge";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import dbConnect from "@/lib/dbConnect";
+import { visibleTo } from "@/lib/visibility";
 import {formatDate, mediaHref, mediaKey} from "@/lib/media";
 import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
@@ -216,13 +217,7 @@ export default async function ListsPage() {
   await dbConnect();
 
   const [rawLists, user] = await Promise.all([
-    MovieList.find({
-      $or: [
-        { visibility: "public" },
-        { visibility: { $exists: false } },
-        { userEmail: currentUserEmail },
-      ],
-    })
+    MovieList.find(visibleTo(currentUserEmail))
       .sort({ createdAt: -1 })
       .limit(18)
       .lean<RawMovieList[]>(),
@@ -307,7 +302,7 @@ export default async function ListsPage() {
                   roughly 3.2:1 on hover -- the same trap the kickers had. */}
               <Link
                 href="/"
-                className="kin-focus rounded-sm text-sm font-semibold text-highlight hover:text-highlight-muted/80"
+                className="kin-focus rounded-sm text-sm font-semibold text-highlight hover:text-highlight-muted"
               >
                 Browse titles
               </Link>

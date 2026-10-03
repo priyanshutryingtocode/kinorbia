@@ -19,7 +19,7 @@ type ProfileInsightsProps = {
   userEmail: string;
 };
 
-const EYEBROW_CLASS = "kin-overline text-highlight-muted/80";
+const EYEBROW_CLASS = "kin-overline text-highlight-muted";
 const HEADING_CLASS = "mt-2 flex items-center gap-2 font-display text-2xl font-medium text-content";
 
 function InsightHeading({

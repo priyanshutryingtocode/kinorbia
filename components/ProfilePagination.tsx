@@ -49,8 +49,8 @@ export default function ProfilePagination({
   const first = (page - 1) * pageSize + 1;
   const last = Math.min(page * pageSize, total);
   const pages = visiblePages(page, totalPages);
-  const previousClass = PAGER_EDGE_CLASS;
-  const previousDisabledClass = PAGER_EDGE_DISABLED_CLASS;
+  const edgeClass = PAGER_EDGE_CLASS;
+  const edgeDisabledClass = PAGER_EDGE_DISABLED_CLASS;
   const pageClass =
     "kin-focus inline-flex h-9 min-w-9 items-center justify-center border-b px-1 text-sm transition-colors";
 
@@ -66,8 +66,8 @@ export default function ProfilePagination({
         <PagerEdge
           direction="previous"
           href={page > 1 ? profileHref(tab, page - 1) : undefined}
-          className={previousClass}
-          disabledClassName={previousDisabledClass}
+          className={edgeClass}
+          disabledClassName={edgeDisabledClass}
         />
         {pages.map((pageNumber) => {
           const active = pageNumber === page;
@@ -90,8 +90,8 @@ export default function ProfilePagination({
         <PagerEdge
           direction="next"
           href={page < totalPages ? profileHref(tab, page + 1) : undefined}
-          className={previousClass}
-          disabledClassName={previousDisabledClass}
+          className={edgeClass}
+          disabledClassName={edgeDisabledClass}
         />
       </div>
     </nav>

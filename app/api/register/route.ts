@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
 import dbConnect, { isDuplicateKeyError } from "@/lib/dbConnect";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
@@ -36,13 +37,24 @@ export const POST = withRateLimit(
       }
 
       const baseUsername = slugifyUsername(body.name || body.email.split("@")[0]);
-      let username = baseUsername;
+
+      // Only escapes having found a free candidate. If the walk is exhausted
+      // this stays undefined rather than silently falling back to
+      // `baseUsername` -- which is taken by construction at that point, so
+      // `User.create` would fail on the unique index and the duplicate-key
+      // branch below would answer "you can sign in now" for an account that
+      // does not exist.
+      let username: string | undefined;
 
       for (const candidate of usernameCandidates(baseUsername)) {
         if (!(await User.exists({ username: candidate }))) {
           username = candidate;
           break;
         }
+      }
+
+      if (!username) {
+        username = `${baseUsername}-${randomBytes(3).toString("hex")}`;
       }
 
       try {

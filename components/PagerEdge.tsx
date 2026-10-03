@@ -8,8 +8,13 @@ type PagerEdgeProps = {
   disabledClassName: string;
 };
 
-// Shared by PeopleList and ProfilePagination. Each caller keeps its own class
-// constants because they are deliberately not identical.
+// Shared by PeopleList and ProfilePagination. Both now pass the same two
+// constants from lib/uiClasses -- PAGER_EDGE_CLASS and PAGER_EDGE_DISABLED_CLASS.
+// This comment used to say each caller kept its own constants "because they are
+// deliberately not identical", which stopped being true when those were
+// extracted; the only real difference had been `transition` versus
+// `transition-colors` on the enabled edge, and the edge only changes colour on
+// hover, so the explicit one was settled on.
 export default function PagerEdge({
   direction,
   href,

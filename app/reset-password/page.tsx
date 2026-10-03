@@ -3,10 +3,10 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Lock, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Lock, CheckCircle2 } from "lucide-react";
+import AuthField, { AuthError, AuthSubmit } from "@/components/AuthField";
 import { Suspense } from "react";
 import AuthShell from "@/components/AuthShell";
-import { AUTH_SUBMIT_CLASS } from "@/lib/uiClasses";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -76,56 +76,34 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-      <div className="relative">
-        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-content-subtle" />
-        <label htmlFor="reset-password" className="sr-only">
-          New password
-        </label>
-        <input
-          id="reset-password"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="New password"
-          required
-          minLength={8}
-          autoComplete="new-password"
-          className="kin-input kin-input-affix py-3.5"
-        />
-      </div>
+      {/* Both of these were among the three wrappers missing `group`. */}
+      <AuthField
+        id="reset-password"
+        icon={Lock}
+        label="New password"
+        type="password"
+        value={password}
+        onChange={setPassword}
+        placeholder="New password"
+        minLength={8}
+        autoComplete="new-password"
+      />
 
-      <div className="relative">
-        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-content-subtle" />
-        <label htmlFor="reset-password-confirm" className="sr-only">
-          Confirm new password
-        </label>
-        <input
-          id="reset-password-confirm"
-          type="password"
-          value={confirm}
-          onChange={(event) => setConfirm(event.target.value)}
-          placeholder="Confirm new password"
-          required
-          minLength={8}
-          autoComplete="new-password"
-          className="kin-input kin-input-affix py-3.5"
-        />
-      </div>
+      <AuthField
+        id="reset-password-confirm"
+        icon={Lock}
+        label="Confirm new password"
+        type="password"
+        value={confirm}
+        onChange={setConfirm}
+        placeholder="Confirm new password"
+        minLength={8}
+        autoComplete="new-password"
+      />
 
-      {error && (
-        <p className="text-xs text-danger bg-accent-hover/10 border-accent/20 rounded-sheet px-3 py-2">
-          {error}
-        </p>
-      )}
+      <AuthError message={error} />
 
-      <button
-        type="submit"
-        disabled={loading}
-        className={AUTH_SUBMIT_CLASS}
-      >
-        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-        Set new password
-      </button>
+      <AuthSubmit loading={loading}>Set new password</AuthSubmit>
     </form>
   );
 }

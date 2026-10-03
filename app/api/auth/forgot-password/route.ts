@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import { z } from "zod";
@@ -10,6 +11,10 @@ import { sendEmail, buildLink } from "@/lib/email";
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email().max(254).toLowerCase(),
 });
+
+// The same cost register and reset-password hash at, so the decoy below is
+// comparable to a real credential verification rather than merely plausible.
+const BCRYPT_COST = 10;
 
 export const POST = withRateLimit(
   async (req: Request) => {
@@ -58,10 +63,20 @@ export const POST = withRateLimit(
           console.error("Failed to send reset email:", error);
         }
       } else {
-        // Do comparable work in every branch so response timing doesn't
-        // distinguish registered credentials accounts from unknown emails.
-        const decoyTokenHash = hashToken(generateToken());
-        void decoyTokenHash;
+        // Burn comparable CPU so the two branches cost roughly the same.
+        //
+        // This used to hash a single throwaway token, which is a SHA-256 over 64
+        // bytes -- microseconds, against a full HTTPS round trip to Resend on the
+        // other branch. The stated goal of not distinguishing the two cases by
+        // timing was not achieved by that; register/route.ts does it correctly
+        // with a real bcrypt hash.
+        //
+        // Honest limit: bcrypt is ~68ms and a Resend call is 200-800ms, so this
+        // narrows the signal rather than closing it. Closing it properly means
+        // always sending an email or always skipping one, and burning a paid API
+        // call on every unknown address is the worse trade. The generic response
+        // below is the real defence; this just stops the gap being 100x.
+        await bcrypt.hash(generateToken(), BCRYPT_COST);
       }
 
       return NextResponse.json({

@@ -47,7 +47,7 @@ export default function GenreFilter({ mediaType }: { mediaType: MediaType }) {
                   }}
                   className={`kin-focus relative w-full snap-start whitespace-nowrap rounded-control px-4 py-2 text-sm font-medium transition-all duration-300 lg:px-2 ${
                     isActive
-                      ? "bg-content text-canvas shadow-glow"
+                      ? "bg-highlight-muted text-on-highlight shadow-glow"
                       : "text-content-muted hover:bg-glass-strong hover:text-content"
                   }`}
                 >

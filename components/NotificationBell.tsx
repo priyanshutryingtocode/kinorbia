@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Bell, Bookmark, CheckCheck, Heart, Loader2, MessageSquare, UserPlus } from "lucide-react";
 import { mediaHref } from "@/lib/media";
+import { ICON_BUTTON_CLASS } from "@/lib/uiClasses";
 import { useDismiss } from "@/lib/useDismiss";
 import type { NotificationItem } from "@/types";
 
@@ -54,6 +55,12 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [marking, setMarking] = useState(false);
+  // The three fetchers below all swallow their errors, so a failed request left
+  // `items` at [] and the panel rendered the affirmative "No notifications yet."
+  // -- telling the user they have none when in fact nothing loaded. A failed
+  // badge poll and a failed panel load are different facts, so they get their own
+  // state rather than being inferred from an empty list.
+  const [failed, setFailed] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -69,8 +76,11 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
       if (res.ok) {
         const data = await res.json();
         setUnread(data.unreadCount ?? 0);
+      } else {
+        setFailed(true);
       }
     } catch {
+      setFailed(true);
     }
   }, []);
 
@@ -82,8 +92,13 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
         const data = await res.json();
         setItems(data.notifications ?? []);
         setUnread(data.unreadCount ?? 0);
+        setFailed(false);
+      } else {
+        // Previously ignored outright, so a 500 read as "you have none".
+        setFailed(true);
       }
     } catch {
+      setFailed(true);
     } finally {
       setLoading(false);
     }
@@ -168,7 +183,7 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
         aria-expanded={open}
         aria-controls="notification-panel"
-        className="kin-focus relative flex h-10 w-10 items-center justify-center rounded-control border border-rule bg-glass text-content-muted transition hover:border-rule-strong hover:bg-surface-raised hover:text-content"
+        className={`relative ${ICON_BUTTON_CLASS}`}
       >
         <Bell className="h-5 w-5" aria-hidden="true" />
         {unread > 0 && (
@@ -221,6 +236,13 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
                   {!item.read && <span className="mt-1.5 ml-auto h-2 w-2 shrink-0 rounded-full bg-accent" aria-hidden="true" />}
                 </Link>
               ))
+            ) : failed ? (
+              <div className="px-4 py-8 text-center">
+                <p className="text-sm text-content-muted">Could not load notifications.</p>
+                <p className="mt-1 text-xs text-content-subtle">
+                  This is a failed request, not an empty inbox.
+                </p>
+              </div>
             ) : (
               <p className="px-4 py-8 text-center text-sm text-content-subtle">No notifications yet.</p>
             )}

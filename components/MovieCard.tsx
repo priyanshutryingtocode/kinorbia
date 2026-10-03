@@ -51,7 +51,7 @@ export default function MovieCard({
   );
 
   return (
-    <div className="group relative overflow-hidden rounded-sheet border border-rule bg-canvas shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-rule-strong hover:shadow-card-hover">
+    <div className="group relative overflow-hidden rounded-sheet border border-rule bg-canvas shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-highlight-muted/70 hover:shadow-card-hover">
       <Link
         href={href}
         prefetch={index === undefined ? undefined : index < 3}

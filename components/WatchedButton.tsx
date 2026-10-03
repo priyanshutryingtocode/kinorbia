@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Eye } from "lucide-react";
+import type { DetailSummary } from "@/lib/mediaDetail";
 import { MediaToggleButton, useMediaToggle } from "@/components/MediaToggle";
 import { normalizeMediaType } from "@/lib/media";
 
@@ -11,12 +12,7 @@ const MESSAGES = {
 };
 
 type WatchedButtonProps = {
-  movie: {
-    id: string;
-    title: string;
-    poster_path: string | null;
-    mediaType?: "movie" | "tv";
-  };
+  movie: DetailSummary;
   initialIsWatched: boolean;
 };
 

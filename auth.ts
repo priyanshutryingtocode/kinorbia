@@ -8,7 +8,21 @@ import { getClientIp, rateLimit } from "@/lib/rateLimit";
 import User from "@/models/User";
 import { ensureUserIdentity, slugifyUsername, usernameCandidates } from "@/lib/userIdentity";
 
-const DUMMY_BCRYPT_HASH = "$2b$12$vPZWNgvZy3FQD3F6MCWEmO1q.F9dWYWrRNZTaG5.AF93nQm2yDJU6";
+// Compared against when no user was found, so that a wrong password for an
+// unknown address costs the same as one for a known account.
+//
+// The cost factor must match the one the stored hashes were created with --
+// bcrypt.compare takes its cost from the hash being compared against, not from
+// a parameter. This said $2b$12$ while register and reset-password both hash at
+// 10, which inverted the whole point: a wrong password for a *known* account
+// ran 2^10 and finished in ~68ms, while an unknown email ran 2^12 and took
+// ~259ms. That is a ~3.8x difference in the one direction the dummy hash exists
+// to hide, and the per-IP limit of 10/min needs only a handful of samples to
+// average out.
+//
+// Re-costing the prefix is safe: the salt and digest bytes are unchanged and
+// bcrypt.compare still returns false rather than throwing.
+const DUMMY_BCRYPT_HASH = "$2b$10$vPZWNgvZy3FQD3F6MCWEmO1q.F9dWYWrRNZTaG5.AF93nQm2yDJU6";
 
 // Tighter per account than per IP, on purpose: the per-IP limit bounds one
 // host, and the per-account limit is the one that actually holds when an

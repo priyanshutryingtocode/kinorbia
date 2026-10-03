@@ -288,7 +288,13 @@ const SURFACES = ["--canvas", "--surface", "--surface-raised"];
 // browser actually paints.
 const GOLD_FULL = "--highlight";
 const GOLD_MUTED = "--highlight-muted";
-const GOLD_MUTED_ALPHA = 0.8;
+// Full strength, and it used to be 0.8. The kickers render at 10px in
+// `text-highlight-muted` with no opacity modifier; the /80 was removed from the
+// markup because compositing any hue at 80% costs about a fifth of its contrast
+// and left every candidate too close to neutral to read as a colour. Compositing
+// here at /80 would measure a rendering the app no longer produces, and would
+// fail bronze at 3.93:1 while the painted kicker is 5.26:1.
+const GOLD_MUTED_ALPHA = 1.0;
 
 // The darkest scrim a label is actually placed on, composited over a mid-grey
 // poster. Approximated as an opaque colour so the maths stays simple.

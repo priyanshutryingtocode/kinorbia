@@ -6,6 +6,7 @@ import { Film, Search, User, LogOut, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
 import { useDismiss } from "@/lib/useDismiss";
@@ -31,6 +32,8 @@ function NavbarShell({ pathname }: { pathname: string }) {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
   const accountButtonRef = useRef<HTMLButtonElement>(null);
+  // The portalled menu, which is no longer a descendant of accountRef.
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const mobileButtonRef = useRef<HTMLButtonElement>(null);
   const previousPathname = useRef(pathname);
 
@@ -60,7 +63,9 @@ function NavbarShell({ pathname }: { pathname: string }) {
     open: accountOpen,
     onDismiss: closeAccount,
     returnFocusRef: accountButtonRef,
-    insideRefs: [accountRef],
+    // Both the trigger's wrapper and the portalled menu itself: a press on
+    // either has to count as still-inside.
+    insideRefs: [accountRef, accountMenuRef],
   });
 
   // No outside-press dismissal here: the mobile panel is closed by Escape or by
@@ -177,8 +182,27 @@ function NavbarShell({ pathname }: { pathname: string }) {
                   )}
                 </button>
 
-                {accountOpen && (
-                  <div id="account-menu" className="premium-surface absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-overlay">
+                {/* Portalled to <body> rather than positioned inside the header.
+                    `.shell-header` has a backdrop-filter, which makes it a
+                    backdrop root, so a descendant's own backdrop-filter can only
+                    sample inside that root -- the blur here was diffusing the
+                    header's flat band instead of the page, which left the panel
+                    20% transparent with nothing softening what showed through.
+                    NotificationBell already works this way.
+
+                    `right` comes from the row's own geometry rather than a fixed
+                    inset: `.shell-row` is `mx-auto max-w-page px-4 sm:px-6` with
+                    --container-page at 80rem, so on a wide screen the trigger sits
+                    (100vw - 80rem)/2 + 1.5rem from the right edge, not at a
+                    constant. A plain right-4 drifts off its button past 1280px. */}
+                {accountOpen &&
+                  typeof document !== "undefined" &&
+                  createPortal(
+                    <div
+                      id="account-menu"
+                      ref={accountMenuRef}
+                      className="premium-surface fixed top-[calc(var(--shell-header-height)+0.5rem)] right-4 w-56 overflow-hidden rounded-overlay sm:right-[max(1.5rem,calc((100vw-80rem)/2+1.5rem))]"
+                    >
                     <div className="border-b border-rule bg-surface px-4 py-3">
                       <p className="truncate text-sm font-medium text-content">{session.user.name}</p>
                       <p className="truncate text-xs text-content-muted">{session.user.email}</p>
@@ -201,8 +225,9 @@ function NavbarShell({ pathname }: { pathname: string }) {
                         Sign Out
                       </button>
                     </div>
-                  </div>
-                )}
+                    </div>,
+                    document.body
+                  )}
               </div>
             </>
           ) : (
@@ -230,9 +255,13 @@ function NavbarShell({ pathname }: { pathname: string }) {
         </div>
       </nav>
 
-      {mobileOpen && (
-        <div className="shell-mobile-panel border-t border-rule px-4 pb-4 lg:hidden">
-          <nav id="mobile-navigation" aria-label="Mobile navigation" className="premium-surface mx-auto max-w-page overflow-hidden rounded-overlay">
+      {/* Portalled for the same reason as the account menu above: inside the
+          header its backdrop-filter cannot see the page. */}
+      {mobileOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="shell-mobile-panel fixed inset-x-0 top-[var(--shell-header-height)] border-t border-rule px-4 pb-4 lg:hidden">
+            <nav id="mobile-navigation" aria-label="Mobile navigation" className="premium-surface mx-auto max-w-page overflow-hidden rounded-overlay">
             <div className="grid gap-1 p-1.5">
               {NAV_LINKS.map((link) => (
                 <Link
@@ -275,9 +304,10 @@ function NavbarShell({ pathname }: { pathname: string }) {
                 </>
               )}
             </div>
-          </nav>
-        </div>
-      )}
+            </nav>
+          </div>,
+          document.body
+        )}
     </header>
   );
 }

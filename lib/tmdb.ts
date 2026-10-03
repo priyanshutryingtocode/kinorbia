@@ -27,17 +27,16 @@ async function tmdbFetch<T>(
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     let controller: AbortController | undefined;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
 
     try {
       controller = new AbortController();
-      const timeout = setTimeout(() => controller?.abort(), 8000);
+      timeout = setTimeout(() => controller?.abort(), 8000);
 
       const res = await fetch(url, {
         next: revalidate === false ? undefined : { revalidate },
         signal: controller.signal,
       });
-
-      clearTimeout(timeout);
 
       if (!res.ok) {
         if (attempt === retries || !shouldRetryStatus(res.status)) {
@@ -50,6 +49,13 @@ async function tmdbFetch<T>(
       if (attempt === retries) {
         return null;
       }
+    } finally {
+      // Was only reached on the non-throwing path, so every rejected fetch --
+      // DNS failure, ECONNRESET, a platform AbortError -- left its 8s timer
+      // armed, aborting an already-settled request when it fired. With two
+      // retries that is up to three leaked timers per call, accumulating on a
+      // long-lived server.
+      clearTimeout(timeout);
     }
 
     await sleep(350 * (attempt + 1));
@@ -145,7 +151,15 @@ async function fetchDetailsWithStatus<T>(
   const url = `${BASE}/${mediaType}/${safeId(id)}?api_key=${process.env.TMDB_API_KEY}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    // This call had no timeout at all, unlike tmdbFetch's 8s budget above. A
+    // hung TMDB connection therefore stalled the detail page render
+    // indefinitely rather than degrading. An abort lands in the same catch as
+    // any other failure, so it returns { details: null } and the route's own
+    // error boundary takes over.
+    const res = await fetch(url, {
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(8000),
+    });
 
     if (res.status === 404) {
       return { details: null, notFound: true };
@@ -207,6 +221,19 @@ function searchByQuery(mediaType: MediaPath, query: string, extraParams: string,
   );
 }
 
+// Exported rather than kept internal: three call sites were each re-branching
+// on mediaType to choose between the two aliases below, and one of those was a
+// single-call-site wrapper whose entire body was that ternary plus a slice. Every
+// other media-shaped helper in this file -- searchByQuery, discoverByGenre,
+// fetchSubResource -- is already parameterised, so the exports were the only
+// thing still split.
+//
+// No slice here: the three callers each take a different number (5, all, 6), so
+// truncating belongs to the caller.
+export function getRecommendations(id: string, mediaType: MediaPath) {
+  return recommendations(mediaType, id);
+}
+
 function recommendations(mediaType: MediaPath, id: string) {
   return fetchNormalizedList(
     mediaType,
@@ -247,8 +274,6 @@ export const getMovieCredits = (id: string) =>
 export const getMovieVideos = (id: string) =>
   fetchSubResource<{ results?: TmdbVideo[] } | null>("movie", id, "videos");
 
-export const getRecommendationMovies = (id: string) => recommendations("movie", id);
-
 // --- TV ---
 
 export const getPopularTv = (page = 1) =>
@@ -279,8 +304,6 @@ export const getTvCredits = (id: string) =>
 
 export const getTvVideos = (id: string) =>
   fetchSubResource<{ results?: TmdbVideo[] } | null>("tv", id, "videos");
-
-export const getTvRecommendations = (id: string) => recommendations("tv", id);
 
 // Prefer the newest official YouTube trailer, falling back through any
 // trailer, teaser, clip, and finally whatever exists.

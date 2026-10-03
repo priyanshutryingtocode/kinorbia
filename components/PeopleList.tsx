@@ -3,9 +3,8 @@ import { Search } from "lucide-react";
 import EmptyState from "./EmptyState";
 import PagerEdge from "./PagerEdge";
 import { PAGER_EDGE_CLASS, PAGER_EDGE_DISABLED_CLASS } from "@/lib/uiClasses";
+import { PEOPLE_PAGE_SIZE } from "@/lib/profileData";
 import PersonCard, { type Person } from "./PersonCard";
-
-const PEOPLE_PER_PAGE = 24;
 
 type PeopleListProps = {
   people: Person[];
@@ -42,8 +41,8 @@ export default function PeopleList({
   emptyTitle,
   emptyDescription,
 }: PeopleListProps) {
-  const firstResult = totalCount ? (page - 1) * PEOPLE_PER_PAGE + 1 : 0;
-  const lastResult = Math.min(page * PEOPLE_PER_PAGE, totalCount);
+  const firstResult = totalCount ? (page - 1) * PEOPLE_PAGE_SIZE + 1 : 0;
+  const lastResult = Math.min(page * PEOPLE_PAGE_SIZE, totalCount);
   const hasPrevious = page > 1;
   const hasNext = page < totalPages;
   const paginationClasses = PAGER_EDGE_CLASS;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { DetailSummary } from "@/lib/mediaDetail";
 import { Eye, Loader2, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./ToastProvider";
@@ -8,15 +9,7 @@ import { normalizeMediaType } from "@/lib/media";
 import { useSignInGuard } from "@/lib/useSignInGuard";
 
 type MovieRatingControlProps = {
-  movie: {
-    id: string;
-    title: string;
-    poster_path: string | null;
-    vote_average: number;
-    release_date?: string;
-    mediaType?: "movie" | "tv";
-    genre_ids?: number[];
-  };
+  movie: DetailSummary;
   initialRating: number;
   // The server refuses a rating for a title with no watch log, so the control
   // says why up front instead of letting the user discover it by saving.
@@ -87,14 +80,14 @@ return (
     <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 rounded-overlay border border-rule bg-surface p-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:rounded-full sm:px-3 sm:py-2">
       <div className="flex items-center justify-between gap-2 sm:shrink-0 sm:justify-start">
         <div className="flex shrink-0 items-center gap-2">
-          <Star className="h-4 w-4 fill-current text-highlight" />
+          <Star className="h-4 w-4 fill-current text-highlight-muted" />
           <span className="text-sm font-medium text-content">
             {rating > 0 ? `${savedStars.toFixed(1)} stars` : "Rate"}
           </span>
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-highlight" />}
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-highlight-muted" />}
         </div>
 
-        <span className="shrink-0 rounded-full border border-highlight/20 bg-highlight/10 px-3 py-1 text-sm font-bold text-highlight sm:hidden">
+        <span className="shrink-0 rounded-full border border-highlight-muted/20 bg-highlight-muted/10 px-3 py-1 text-sm font-bold text-highlight-muted sm:hidden">
           {draftStars.toFixed(1)}
         </span>
       </div>
@@ -108,7 +101,7 @@ return (
               <span key={star} className="relative h-6 w-6 text-content-subtle">
                 <Star className="h-6 w-6 fill-current" />
                 <span
-                  className="absolute inset-y-0 left-0 overflow-hidden text-highlight"
+                  className="absolute inset-y-0 left-0 overflow-hidden text-highlight-muted"
                   style={{ width: `${fillPercent}%` }}
                 >
                   <Star className="h-6 w-6 fill-current" />
@@ -130,7 +123,7 @@ return (
         />
       </div>
 
-      <span className="hidden shrink-0 rounded-full border border-highlight/20 bg-highlight/10 px-3 py-1 text-sm font-bold text-highlight sm:inline-block">
+      <span className="hidden shrink-0 rounded-full border border-highlight-muted/20 bg-highlight-muted/10 px-3 py-1 text-sm font-bold text-highlight-muted sm:inline-block">
         {draftStars.toFixed(1)}
       </span>
 

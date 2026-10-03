@@ -1,5 +1,5 @@
 import MovieCarousel, { CarouselMovie } from "./MovieCarousel";
-import { getRecommendationMovies, getTvRecommendations } from "@/lib/tmdb";
+import { getRecommendations } from "@/lib/tmdb";
 import type { MediaType } from "@/types";
 
 interface SimilarMediaProps {
@@ -8,8 +8,7 @@ interface SimilarMediaProps {
 }
 
 export default async function SimilarMedia({ id, mediaType }: SimilarMediaProps) {
-  const data =
-    mediaType === "tv" ? await getTvRecommendations(id) : await getRecommendationMovies(id);
+  const data = await getRecommendations(id, mediaType);
 
   if (!data?.results?.length) {
     return null;

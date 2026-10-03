@@ -12,6 +12,7 @@ import SectionHeader from "@/components/SectionHeader";
 import SubmitButton from "@/components/SubmitButton";
 import VisibilityField from "@/components/VisibilityField";
 import dbConnect from "@/lib/dbConnect";
+import { visibleTo } from "@/lib/visibility";
 import { buildReviewerRatingMaps, dedupeFavorites, lookupRating } from "@/lib/reviewRatings";
 import { buildUsernameMap } from "@/lib/profileLinks";
 import Review from "@/models/Review";
@@ -30,13 +31,7 @@ export default async function ReviewsPage() {
 
   await dbConnect();
 
-  const rawReviews = await Review.find({
-    $or: [
-      { visibility: "public" },
-      { visibility: { $exists: false } },
-      { userEmail: currentUserEmail },
-    ],
-  })
+  const rawReviews = await Review.find(visibleTo(currentUserEmail))
     .sort({ createdAt: -1 })
     .limit(24)
     .lean<RawReview[]>();

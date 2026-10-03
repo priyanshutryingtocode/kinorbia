@@ -24,10 +24,20 @@ export const PUT = withAuthedUser(
       { projection: { name: 1 } }
     );
 
+    if (!result) {
+      // findOneAndUpdate returns null when the filter matches nothing, which
+      // happens when the session outlives the account -- auth.ts already has a
+      // "Account deleted since this token was issued" path, and verify-email
+      // returns 404 for exactly this case. Falling through reported success for
+      // a write that never happened: the client showed "Profile updated" and
+      // refreshed straight back to the old name.
+      return NextResponse.json({ message: "Account not found." }, { status: 404 });
+    }
+
     // Propagate the new display name to denormalized snapshots so old
     // comments, reviews, lists, journal entries, and notifications don't
     // keep the previous name forever.
-    if (result && result.name !== body.name) {
+    if (result.name !== body.name) {
       await Promise.all([
         Comment.updateMany({ userEmail: email }, { $set: { userName: body.name } }),
         JournalEntry.updateMany({ userEmail: email }, { $set: { userName: body.name } }),

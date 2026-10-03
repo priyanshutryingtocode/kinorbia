@@ -2,9 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { Mail, Lock, User as UserIcon, Loader2, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, User as UserIcon, CheckCircle2 } from "lucide-react";
 import AuthShell from "@/components/AuthShell";
-import { AUTH_INPUT_ICON_CLASS, AUTH_SUBMIT_CLASS } from "@/lib/uiClasses";
+import AuthField, { AuthError, AuthSubmit } from "@/components/AuthField";
 import AuthSocialBlock from "@/components/AuthSocialBlock";
 
 export default function SignUpPage() {
@@ -26,21 +26,30 @@ export default function SignUpPage() {
 
     setLoading(true);
 
-    const response = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
+    try {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    if (!response.ok) {
-      const data = await response.json();
+      if (!response.ok) {
+        // Parsed inside the try on purpose: a non-JSON error body -- a proxy or
+        // platform 502 page, say -- makes response.json() throw, which without
+        // this would be indistinguishable from the request itself failing.
+        const data = await response.json().catch(() => null);
+        setError(data?.message || "Could not create account.");
+        return;
+      }
+
+      setRegistered(true);
+    } catch {
+      // As on login: without a catch the rejection escaped the async handler
+      // and left the button disabled for good.
+      setError("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      setError(data.message || "Could not create account.");
-      return;
     }
-
-    setLoading(false);
-    setRegistered(true);
   };
 
   return (
@@ -67,72 +76,42 @@ export default function SignUpPage() {
             <AuthSocialBlock verb="Sign up" />
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
-              <div className="relative group">
-                <UserIcon className={AUTH_INPUT_ICON_CLASS} />
-                <label htmlFor="signup-name" className="sr-only">
-                  Full name
-                </label>
-                <input
-                  id="signup-name"
-                  type="text"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Full Name"
-                  required
-                  autoComplete="name"
-                  className="kin-input kin-input-affix py-3.5"
-                />
-              </div>
+              <AuthField
+                id="signup-name"
+                icon={UserIcon}
+                label="Full name"
+                value={name}
+                onChange={setName}
+                placeholder="Full Name"
+                autoComplete="name"
+              />
 
-              <div className="relative group">
-                <Mail className={AUTH_INPUT_ICON_CLASS} />
-                <label htmlFor="signup-email" className="sr-only">
-                  Email address
-                </label>
-                <input
-                  id="signup-email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="Email address"
-                  required
-                  autoComplete="email"
-                  className="kin-input kin-input-affix py-3.5"
-                />
-              </div>
+              <AuthField
+                id="signup-email"
+                icon={Mail}
+                label="Email address"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="Email address"
+                autoComplete="email"
+              />
 
-              <div className="relative group">
-                <Lock className={AUTH_INPUT_ICON_CLASS} />
-                <label htmlFor="signup-password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="signup-password"
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Password"
-                  required
-                  minLength={8}
-                  autoComplete="new-password"
-                  className="kin-input kin-input-affix py-3.5"
-                />
-              </div>
+              <AuthField
+                id="signup-password"
+                icon={Lock}
+                label="Password"
+                type="password"
+                value={password}
+                onChange={setPassword}
+                placeholder="Password"
+                minLength={8}
+                autoComplete="new-password"
+              />
 
-              {error && (
-                <p className="text-xs text-danger bg-accent-hover/10 border-accent/20 rounded-sheet px-3 py-2">
-                  {error}
-                </p>
-              )}
+              <AuthError message={error} />
 
-              <button
-                type="submit"
-                disabled={loading}
-                className={AUTH_SUBMIT_CLASS}
-              >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Create Account
-              </button>
+              <AuthSubmit loading={loading}>Create Account</AuthSubmit>
             </form>
           </>
         )}

@@ -2,16 +2,9 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import Comment from "@/models/Comment";
 import type { CommentItem } from "@/types";
+import { serializeComment, type RawComment } from "@/lib/serialize";
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
-
-type RawComment = {
-  _id: { toString: () => string };
-  userEmail: string;
-  userName: string;
-  body: string;
-  createdAt: Date;
-};
 
 type CommentSectionProps = {
   parentType: "review" | "list";
@@ -29,15 +22,9 @@ export default async function CommentSection({ parentType, parentId, path }: Com
     .limit(200)
     .lean<RawComment[]>();
 
-  const comments: CommentItem[] = rawComments.map((comment) => ({
-    _id: comment._id.toString(),
-    parentType,
-    parentId,
-    userEmail: comment.userEmail,
-    userName: comment.userName,
-    body: comment.body,
-    createdAt: comment.createdAt.toISOString(),
-  }));
+  const comments: CommentItem[] = rawComments.map((comment) =>
+    serializeComment(comment, parentType, parentId)
+  );
 
   if (comments.length === 0 && !currentUserEmail) {
     return null;

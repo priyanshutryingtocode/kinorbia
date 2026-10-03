@@ -3,10 +3,10 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 import { signIn } from "next-auth/react";
 import AuthShell from "@/components/AuthShell";
-import { AUTH_INPUT_ICON_CLASS, AUTH_SUBMIT_CLASS } from "@/lib/uiClasses";
+import AuthField, { AuthError, AuthSubmit } from "@/components/AuthField";
 import AuthSocialBlock from "@/components/AuthSocialBlock";
 
 export default function LoginPage() {
@@ -21,21 +21,30 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    setLoading(false);
+      if (result?.error) {
+        setError("Invalid email or password.");
+        return;
+      }
 
-    if (result?.error) {
-      setError("Invalid email or password.");
-      return;
+      // Outside the try: a throw from the navigation should not be reported to
+      // the user as a failed sign-in.
+      router.push("/");
+      router.refresh();
+    } catch {
+      // Without this the rejection escaped an async event handler and
+      // `loading` stayed true, leaving the button disabled with a spinner and
+      // no message. forgot-password and reset-password already handled this.
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    router.push("/");
-    router.refresh();
   };
 
   return (
@@ -45,22 +54,16 @@ export default function LoginPage() {
         <AuthSocialBlock verb="Continue" />
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
-          <div className="relative group">
-            <Mail className={AUTH_INPUT_ICON_CLASS} />
-            <label htmlFor="login-email" className="sr-only">
-              Email address
-            </label>
-            <input
-              id="login-email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="Email address"
-              required
-              autoComplete="email"
-              className="kin-input kin-input-affix py-3.5"
-            />
-          </div>
+          <AuthField
+            id="login-email"
+            icon={Mail}
+            label="Email address"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            placeholder="Email address"
+            autoComplete="email"
+          />
 
           {/* No negative margin here. It used to carry `-mt-1`, which pulled this
               row 4px off the card's rhythm and left a 10px gap above against a
@@ -76,37 +79,20 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <div className="relative group">
-            <Lock className={AUTH_INPUT_ICON_CLASS} />
-            <label htmlFor="login-password" className="sr-only">
-              Password
-            </label>
-            <input
-              id="login-password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Password"
-              required
-              autoComplete="current-password"
-              className="kin-input kin-input-affix py-3.5"
-            />
-          </div>
+          <AuthField
+            id="login-password"
+            icon={Lock}
+            label="Password"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            placeholder="Password"
+            autoComplete="current-password"
+          />
 
-          {error && (
-            <p className="text-xs text-danger bg-accent-hover/10 border-accent/20 rounded-sheet px-3 py-2">
-              {error}
-            </p>
-          )}
+          <AuthError message={error} />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={AUTH_SUBMIT_CLASS}
-          >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            Sign In
-          </button>
+          <AuthSubmit loading={loading}>Sign In</AuthSubmit>
         </form>
       </div>
 

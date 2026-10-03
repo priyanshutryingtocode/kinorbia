@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
+import type { ProfileIdentity } from "@/lib/profileData";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import User from "@/models/User";
@@ -20,15 +21,10 @@ import type { FavoriteMovie, MediaType } from "@/types";
 
 export const dynamic = "force-dynamic";
 
-type PublicProfileUser = {
-  _id: { toString: () => string };
-  name: string;
-  email: string;
-  bio?: string;
-  image?: string;
-  username?: string;
-  createdAt?: Date;
-  following?: string[];
+// ProfileIdentity plus this page's own favorite slice. The eight shared fields
+// were written out again here, so a field added to the identity -- or removed
+// from it -- silently failed to reach the public profile.
+type PublicProfileUser = ProfileIdentity & {
   favorites?: FavoriteMovie[];
 };
 

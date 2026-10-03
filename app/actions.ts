@@ -19,7 +19,7 @@ import { fetchSearchResults, type SearchFilters } from "@/lib/search";
 // `nextPage` is where the next click resumes, which is not always `page + 1`: the
 // browse loop may have pulled an extra page to top up, and re-reading it would
 // fetch the same titles again.
-type BrowsePage = { results: MovieSummary[]; hasMore: boolean; nextPage?: number };
+export type BrowsePage = { results: MovieSummary[]; hasMore: boolean; nextPage?: number };
 
 // One "load more" click adds exactly TMDB_PAGE_SIZE (20) *new* titles.
 //
@@ -102,39 +102,42 @@ function toPageNumber(value: unknown): number {
   return Number.isInteger(n) && n >= 1 ? n : 1;
 }
 
-export async function fetchMovies({
-  page,
-  genre,
-  exclude = [],
-}: {
+type BrowseArgs = {
   page: number;
   genre?: string;
   // `mediaKey` for every title on screen, so the action can guarantee 20 new ones.
   exclude?: string[];
-}): Promise<BrowsePage> {
+};
+
+// The four browse endpoints behind two actions. These were four near-identical
+// pairs of functions -- fetchMovies and fetchTvShows differed only in which
+// discover/popular pair they reached for -- and nothing tied the action to the
+// page that uses it. If the two ever disagreed, /movies and /shows would stop
+// loading the same number of titles per click, which is exactly what the
+// "exactly 20" rule in loadBrowsePage exists to prevent.
+const BROWSE_SOURCES = {
+  movie: { popular: getPopularMovies, discover: getDiscoverMovies },
+  tv: { popular: getPopularTv, discover: getDiscoverTv },
+} as const;
+
+type BrowseMedia = keyof typeof BROWSE_SOURCES;
+
+function browsePage(media: BrowseMedia, { page, genre, exclude = [] }: BrowseArgs): Promise<BrowsePage> {
+  const source = BROWSE_SOURCES[media];
   return loadBrowsePage(
     toPageNumber(page),
     (tmdbPage) =>
-      genre ? getDiscoverMovies(tmdbPage, genre) : getPopularMovies(tmdbPage),
+      genre ? source.discover(tmdbPage, genre) : source.popular(tmdbPage),
     exclude
   );
 }
 
-export async function fetchTvShows({
-  page,
-  genre,
-  exclude = [],
-}: {
-  page: number;
-  genre?: string;
-  // See `fetchMovies`.
-  exclude?: string[];
-}): Promise<BrowsePage> {
-  return loadBrowsePage(
-    toPageNumber(page),
-    (tmdbPage) => (genre ? getDiscoverTv(tmdbPage, genre) : getPopularTv(tmdbPage)),
-    exclude
-  );
+export async function fetchMovies(args: BrowseArgs): Promise<BrowsePage> {
+  return browsePage("movie", args);
+}
+
+export async function fetchTvShows(args: BrowseArgs): Promise<BrowsePage> {
+  return browsePage("tv", args);
 }
 
 export async function fetchSearchPage({

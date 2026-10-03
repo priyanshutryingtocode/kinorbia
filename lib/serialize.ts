@@ -1,5 +1,5 @@
 import { normalizeMediaType } from "@/lib/media";
-import type { FavoriteMovie, JournalItem, MovieListItem, ReviewItem } from "@/types";
+import type { CommentItem, FavoriteMovie, JournalItem, MovieListItem, NotificationItem, ReviewItem } from "@/types";
 
 export type RawReview = Omit<ReviewItem, "_id" | "createdAt"> & {
   _id: { toString: () => string };
@@ -78,5 +78,56 @@ export function serializeList(list: RawMovieList): MovieListItem {
     likedBy: list.likedBy || [],
     savedBy: list.savedBy || [],
     createdAt: list.createdAt.toISOString(),
+  };
+}
+
+// The two pairs that were still defined at their call sites. Every other
+// `Raw*` type and its serializer lives here, so a Document carrying a Date or
+// an ObjectId has exactly one documented crossing point into a plain object;
+// these two each did it locally instead, which is how the `_id.toString()` and
+// `createdAt.toISOString()` pair gets forgotten and a raw ObjectId reaches a
+// client component.
+export type RawComment = Omit<CommentItem, "_id" | "createdAt" | "parentType" | "parentId"> & {
+  _id: { toString: () => string };
+  createdAt: Date;
+};
+
+// parentType and parentId are supplied by the query rather than stored per row,
+// so they are passed in rather than read off the document.
+export function serializeComment(
+  comment: RawComment,
+  parentType: CommentItem["parentType"],
+  parentId: string
+): CommentItem {
+  return {
+    _id: comment._id.toString(),
+    parentType,
+    parentId,
+    userEmail: comment.userEmail,
+    userName: comment.userName,
+    body: comment.body,
+    createdAt: comment.createdAt.toISOString(),
+  };
+}
+
+export type RawNotification = Omit<NotificationItem, "_id" | "createdAt"> & {
+  _id: { toString: () => string };
+  createdAt: Date;
+};
+
+export function serializeNotification(notification: RawNotification): NotificationItem {
+  return {
+    _id: notification._id.toString(),
+    userEmail: notification.userEmail,
+    type: notification.type,
+    actorEmail: notification.actorEmail,
+    actorName: notification.actorName,
+    targetType: notification.targetType,
+    targetId: notification.targetId,
+    targetTitle: notification.targetTitle,
+    movieId: notification.movieId,
+    mediaType: notification.mediaType,
+    read: notification.read,
+    createdAt: notification.createdAt.toISOString(),
   };
 }

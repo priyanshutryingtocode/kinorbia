@@ -7,7 +7,7 @@ import LinkTabs from "@/components/LinkTabs";
 import SearchHistory from "@/components/SearchHistory";
 import SearchTrackerForm from "@/components/SearchTrackerForm";
 import EmptyState from "@/components/EmptyState";
-import { fetchSearchResults } from "@/lib/search";
+import { fetchSearchResults, hasAnyFilter, type SearchFilters } from "@/lib/search";
 import { fetchSearchPage } from "../../actions";
 import SearchResultCard from "@/components/SearchResultCard";
 import SearchLoadMore from "@/components/SearchLoadMore";
@@ -53,18 +53,29 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const selectedSort = typeof sort === "string" ? sort : "";
   const mediaType = type === "tv" ? "tv" : "movie";
   const isTv = mediaType === "tv";
-  // `selectedSort` counts as a filter because the page always sends a sort to
-  // TMDB (defaulting to popularity), so a sort-only visit is a real search --
-  // without it here, `?sort=rating.desc` fell through to "Start discovering" and
-  // never fetched anything.
-  const hasNoFilters =
-    !query &&
-    !releaseYear &&
-    !selectedGenre &&
-    !minimumRating &&
-    !maxRuntime &&
-    !selectedLanguage &&
-    !selectedSort;
+  // One object, read twice: the server fetch below and the `args` handed to
+  // SearchLoadMore. They were two hand-written copies of the same nine keys, so
+  // adding a filter meant editing both in this file with nothing to catch a
+  // mismatch -- and a mismatch is not cosmetic. Page 1 and page 2+ would query
+  // different filters, so "load more" would silently append results from a
+  // different search, and useLoadMore's dedupe cannot detect that.
+  //
+  // `sort` deliberately counts towards hasNoFilters: the page always sends one
+  // (defaulting to popularity), so a sort-only visit is a real search. Without it,
+  // `?sort=rating.desc` fell through to "Start discovering" and never fetched
+  // anything.
+  const filters: SearchFilters = {
+    query,
+    year: releaseYear,
+    genre: selectedGenre,
+    minRating: minimumRating,
+    maxRuntime,
+    language: selectedLanguage,
+    sort: selectedSort,
+    type: mediaType,
+  };
+
+  const hasNoFilters = !hasAnyFilter(filters);
 
   const buildTypeHref = (nextType: "movie" | "tv") => {
     const params = new URLSearchParams();
@@ -79,16 +90,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     return `?${params.toString()}`;
   };
 
-  const data = await fetchSearchResults({
-    query,
-    year: releaseYear,
-    genre: selectedGenre,
-    minRating: minimumRating,
-    maxRuntime,
-    language: selectedLanguage,
-    sort: selectedSort,
-    type: mediaType,
-  }, 1);
+  const data = await fetchSearchResults(filters, 1);
   // Already filtered by the action, so each page arrives ready to render. A
   // client-side filter here would hide matches from the appended pages while
   // leaving the "load more" control unable to tell that upstream still has some.
@@ -272,16 +274,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <SearchLoadMore
             key={`${query}|${selectedGenre}|${releaseYear}|${selectedLanguage}|${selectedSort}|${mediaType}`}
             action={fetchSearchPage}
-            args={{
-              query,
-              year: releaseYear,
-              genre: selectedGenre,
-              minRating: minimumRating,
-              maxRuntime,
-              language: selectedLanguage,
-              sort: selectedSort,
-              type: mediaType,
-            }}
+            args={filters}
           />
         </section>
       )}
