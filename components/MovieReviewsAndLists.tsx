@@ -1,5 +1,6 @@
 import Link from "next/link";
 import dbConnect from "@/lib/dbConnect";
+import { publiclyVisible } from "@/lib/visibility";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import { mediaEquals, mediaHref, starsLabel } from "@/lib/media";
@@ -25,7 +26,7 @@ export default async function MovieReviewsAndLists({
     // Review carries unbounded likedBy/savedBy arrays that nothing here reads.
     // `createdAt` is used only for the sort, which the database applies, so it
     // does not need to travel back.
-    Review.find({ movieId, mediaType: mediaEquals(mediaType), visibility: "public" })
+    Review.find({ movieId, mediaType: mediaEquals(mediaType), ...publiclyVisible() })
       .select("_id userEmail userName movieId mediaType body spoiler")
       .sort({ createdAt: -1 })
       .limit(4)
@@ -40,7 +41,7 @@ export default async function MovieReviewsAndLists({
       }[]>(),
     // `movies` narrows to the three fields needed for the entry count and the
     // first poster, so a 500-title list does not transfer in full.
-    MovieList.find({ "movies.movieId": movieId, "movies.mediaType": mediaEquals(mediaType), visibility: "public" })
+    MovieList.find({ "movies.movieId": movieId, "movies.mediaType": mediaEquals(mediaType), ...publiclyVisible() })
       .select("_id userEmail userName title description movies.movieId movies.title movies.posterPath")
       .sort({ createdAt: -1 })
       .limit(4)

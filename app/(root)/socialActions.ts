@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import dbConnect from "@/lib/dbConnect";
+import { publiclyVisible } from "@/lib/visibility";
 import MovieList from "@/models/MovieList";
 import Notification from "@/models/Notification";
 import Review from "@/models/Review";
@@ -33,7 +34,7 @@ export async function toggleSocialAction(formData: FormData) {
     // a notification is created or cleaned up, so concurrent toggles can't
     // produce duplicate or orphaned notifications.
     const added = await Model.updateOne(
-      { _id: id, visibility: "public", [field]: { $ne: email } },
+      { _id: id, ...publiclyVisible(), [field]: { $ne: email } },
       { $addToSet: { [field]: email } }
     );
 
@@ -42,7 +43,7 @@ export async function toggleSocialAction(formData: FormData) {
       hasValue = false;
     } else {
       const removed = await Model.updateOne(
-        { _id: id, visibility: "public", [field]: email },
+        { _id: id, ...publiclyVisible(), [field]: email },
         { $pull: { [field]: email } }
       );
       hasValue = true;

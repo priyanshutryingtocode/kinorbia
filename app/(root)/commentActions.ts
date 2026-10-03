@@ -2,6 +2,7 @@
 
 import { resolveActionArgs, withState, type ActionState } from "@/lib/actionState";
 import dbConnect from "@/lib/dbConnect";
+import { publiclyVisible } from "@/lib/visibility";
 import Comment from "@/models/Comment";
 import MovieList from "@/models/MovieList";
 import Notification from "@/models/Notification";
@@ -35,14 +36,14 @@ export async function createComment(stateOrFormData: ActionState | FormData, for
 
   await dbConnect();
 
-  // Every commentable parent is public by definition (the lookup below only
-  // matches `visibility: "public"`), so a comment is always public content.
+// Every commentable parent is public by definition (the lookup below matches
+// only what `publiclyVisible` allows), so a comment is always public content.
   if (!(await isEmailVerified(email))) {
     return withState(state, "error", VERIFICATION_REQUIRED_MESSAGE);
   }
 
   const Model = parentType === "review" ? Review : MovieList;
-  const parent = await Model.findOne({ _id: parentId, visibility: "public" })
+  const parent = await Model.findOne({ _id: parentId, ...publiclyVisible() })
     .select("userEmail movieTitle title movieId mediaType")
     .lean<{
       userEmail: string;

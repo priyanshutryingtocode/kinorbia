@@ -11,6 +11,7 @@
     "check:unused": "node scripts/checkUnusedExports.mjs",
     "reset:db": "node --env-file=.env.local scripts/resetDb.mjs",
     "seed:data": "node --env-file=.env.local scripts/seedData.mjs",
+    "seed:data:dry": "node --env-file=.env.local scripts/seedData.mjs --dry-run",
     "backfill:verified": "node --env-file=.env.local scripts/backfillVerified.mjs"
   },
   "dependencies": {

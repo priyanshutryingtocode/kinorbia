@@ -24,11 +24,26 @@
 //    rather than narrow it. Dropping the arm can only ever return less.
 type VisibilityArm = Record<string, unknown>;
 
+// The two arms that mean "visible to anyone". This is a function rather than a
+// pair of inline literals because the rule has to be stated exactly once: the
+// display and authorization sites need these two arms on their own, while
+// `visibleTo` needs them plus "or mine". Written out separately the way this
+// used to be, the two spellings agree only by coincidence.
+function publicArms(): VisibilityArm[] {
+  return [{ visibility: "public" }, { visibility: { $exists: false } }];
+}
+
+// Documents anyone may see: explicitly public, or written before `visibility`
+// existed. Spread this into a query alongside that query's own keys rather than
+// in place of them -- `visibleTo` would be wrong at these call sites, because
+// they show a fixed set of documents and must not also surface the viewer's own
+// private writing.
+export function publiclyVisible() {
+  return { $or: publicArms() };
+}
+
 export function visibleTo(email: string | null | undefined) {
-  const arms: VisibilityArm[] = [
-    { visibility: "public" },
-    { visibility: { $exists: false } },
-  ];
+  const arms = publicArms();
 
   if (email) {
     arms.push({ userEmail: email });

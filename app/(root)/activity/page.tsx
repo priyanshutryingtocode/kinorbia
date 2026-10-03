@@ -21,6 +21,7 @@ import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 
 import { emailMatch } from "@/lib/emailMatch";
+import { publiclyVisible } from "@/lib/visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,7 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
   const [reviews, lists] = await Promise.all([
     // Projected because the feed renders neither the unbounded likedBy/savedBy
     // arrays nor the full `movies` array -- only the first poster of each list.
-    Review.find({ visibility: "public", ...scope })
+    Review.find({ ...publiclyVisible(), ...scope })
       .select("_id userName userEmail movieTitle posterPath movieId mediaType body spoiler createdAt")
       .sort({ createdAt: -1 })
       .limit(12)
@@ -76,7 +77,7 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
         spoiler?: boolean;
         createdAt: Date;
       }[]>(),
-    MovieList.find({ visibility: "public", ...scope })
+    MovieList.find({ ...publiclyVisible(), ...scope })
       .select("_id userEmail userName title description createdAt movies.movieId movies.title movies.posterPath")
       .sort({ createdAt: -1 })
       .limit(8)

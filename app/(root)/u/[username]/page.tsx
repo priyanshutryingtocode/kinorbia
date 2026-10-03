@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import type { ProfileIdentity } from "@/lib/profileData";
+import { publiclyVisible } from "@/lib/visibility";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import User from "@/models/User";
@@ -79,15 +80,15 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
     followingCount,
     currentUser,
   ] = await Promise.all([
-    Review.countDocuments({ userEmail: targetEmail, visibility: "public" }),
-    MovieList.countDocuments({ userEmail: targetEmail, visibility: "public" }),
-    Review.find({ userEmail: targetEmail, visibility: "public" })
+Review.countDocuments({ userEmail: targetEmail, ...publiclyVisible() }),
+      MovieList.countDocuments({ userEmail: targetEmail, ...publiclyVisible() }),
+      Review.find({ userEmail: targetEmail, ...publiclyVisible() })
       .select("_id movieTitle movieId mediaType body spoiler createdAt")
       .sort({ createdAt: -1, _id: -1 })
       .limit(6)
       .lean<PublicReview[]>(),
     MovieList.aggregate<PublicList>([
-      { $match: { userEmail: targetEmail, visibility: "public" } },
+      { $match: { userEmail: targetEmail, ...publiclyVisible() } },
       { $sort: { createdAt: -1, _id: -1 } },
       { $limit: 6 },
       { $project: { title: 1, description: 1, createdAt: 1, movieCount: { $size: { $ifNull: ["$movies", []] } } } },

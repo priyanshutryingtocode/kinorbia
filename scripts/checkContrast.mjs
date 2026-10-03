@@ -19,7 +19,7 @@
 //      of BOTH themes.
 //   4. Every token referenced by @theme actually resolves.
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { walkSourceFiles } from "./walkSourceFiles.mjs";
 
 const CSS = "app/globals.css";
