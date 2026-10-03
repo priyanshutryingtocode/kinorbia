@@ -12,8 +12,8 @@ import FeedTabs from "@/components/FeedTabs";
 import EmptyState from "@/components/EmptyState";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
-import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
-import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
+import { buildReviewerMaps, lookupRating } from "@/lib/reviewRatings";
+import { usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
 import type { MediaType } from "@/types";
 import User from "@/models/User";
@@ -22,6 +22,9 @@ import Review from "@/models/Review";
 
 import { emailMatch } from "@/lib/emailMatch";
 import { publiclyVisible } from "@/lib/visibility";
+import NumberedPagination from "@/components/NumberedPagination";
+import { INDEX_PAGE_SIZES, pageBounds } from "@/lib/pagination";
+import { parsePage } from "@/lib/searchParams";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +34,141 @@ export const metadata: Metadata = {
 };
 
 type ActivityPageProps = {
-  searchParams: Promise<{ feed?: string }> | { feed?: string };
+  searchParams: Promise<{ feed?: string; page?: string }> | { feed?: string; page?: string };
 };
 
+type FeedReview = {
+  _id: { toString: () => string };
+  userName: string;
+  userEmail: string;
+  movieTitle: string;
+  posterPath?: string;
+  movieId?: string;
+  mediaType?: MediaType;
+  body: string;
+  spoiler?: boolean;
+  createdAt: Date;
+};
+
+type FeedList = {
+  _id: { toString: () => string };
+  userName: string;
+  userEmail: string;
+  title: string;
+  description?: string;
+  movies: { posterPath?: string }[];
+  createdAt: Date;
+};
+
+type FeedRow =
+  | { kind: "review"; date: Date; review: FeedReview }
+  | { kind: "list"; date: Date; list: FeedList };
+
+// One merged timeline across two collections, so a page is a page.
+//
+// This used to fetch the newest 12 reviews and the newest 8 lists and merge them
+// in JS, which cannot be paged: the cap was invisible, there was no total, and
+// everything past those twenty rows was unreachable. Worse, the two limits made
+// "page 2" meaningless -- the boundary between reviews and lists moved with the
+// data. `$unionWith` gives one sorted stream that skips and limits correctly.
+//
+// Each side projects flat, under a `kind` discriminator, rather than nesting
+// itself under a `payload` key. Nesting is what this looked like first, and it
+// silently returned nothing: in `$project` a bare `{ _id: 1, ... }` is a
+// projection of an existing path called `payload`, not a document to build, so
+// MongoDB dropped the field and the rows arrived empty. The two shapes have no
+// colliding field names anyway, so flat is both simpler and correct.
+function mergedPipeline(filter: Record<string, unknown>) {
+  // Each collection is sorted before the union rather than after, so neither side
+  // has to be read in full. The union result is re-sorted because the two sides
+  // arrive interleaved rather than concatenated.
+  const windowed = [{ $match: filter }, { $sort: { createdAt: -1, _id: -1 } }];
+
+  return [
+    ...windowed,
+    {
+      $project: {
+        kind: { $literal: "review" },
+        date: "$createdAt",
+        // Tiebreaker across two collections: `createdAt` alone would leave page
+        // boundaries free to shuffle rows that share a timestamp.
+        sortId: "$_id",
+        userName: 1,
+        userEmail: 1,
+        createdAt: 1,
+        movieTitle: 1,
+        posterPath: 1,
+        movieId: 1,
+        mediaType: 1,
+        body: 1,
+        spoiler: 1,
+      },
+    },
+    {
+      $unionWith: {
+        coll: MovieList.collection.name,
+        pipeline: [
+          ...windowed,
+          {
+            $project: {
+              kind: { $literal: "list" },
+              date: "$createdAt",
+              sortId: "$_id",
+              userName: 1,
+              userEmail: 1,
+              createdAt: 1,
+              title: 1,
+              description: 1,
+              // The row renders only the first poster, so one entry is
+              // transferred instead of a list that can hold hundreds.
+              movies: { $slice: [{ $ifNull: ["$movies", []] }, 1] },
+            },
+          },
+        ],
+      },
+    },
+    { $sort: { date: -1, sortId: -1 } },
+  ];
+}
+
+type MergedRow = {
+  kind: "review" | "list";
+  date: Date;
+  sortId: unknown;
+} & (Partial<FeedReview> & Partial<FeedList>);
+
+// `$facet` gets the window and the total in one round-trip, which matters when
+// each one costs a network hop. `$facet` preserves input order, so the sort done
+// above is what `rows` arrives in.
+async function fetchFeedPage(filter: Record<string, unknown>, page: number) {
+  const [result] = await Review.collection
+    .aggregate<{ rows: MergedRow[]; total: { count: number }[] }>([
+      ...mergedPipeline(filter),
+      {
+        $facet: {
+          rows: [
+            { $skip: (page - 1) * INDEX_PAGE_SIZES.activity },
+            { $limit: INDEX_PAGE_SIZES.activity },
+          ],
+          total: [{ $count: "count" }],
+        },
+      },
+    ])
+    .toArray();
+
+  const rows = (result?.rows ?? []).map((row) =>
+    row.kind === "review"
+      ? { kind: "review" as const, date: row.date, review: row as FeedReview }
+      : { kind: "list" as const, date: row.date, list: row as FeedList }
+  );
+
+  return { rows, total: result?.total?.[0]?.count ?? 0 };
+}
+
 export default async function ActivityPage({ searchParams }: ActivityPageProps) {
-  const { feed } = await searchParams;
+  const { feed, page } = await searchParams;
   const isFollowingFeed = feed === "following";
+  const requestedPage = parsePage(page);
 
   const session = await auth();
   const sessionEmail = session?.user?.email ?? null;
@@ -58,58 +190,22 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
     ? { userEmail: { $in: following } }
     : {};
 
-  const [reviews, lists] = await Promise.all([
-    // Projected because the feed renders neither the unbounded likedBy/savedBy
-    // arrays nor the full `movies` array -- only the first poster of each list.
-    Review.find({ ...publiclyVisible(), ...scope })
-      .select("_id userName userEmail movieTitle posterPath movieId mediaType body spoiler createdAt")
-      .sort({ createdAt: -1 })
-      .limit(12)
-      .lean<{
-        _id: { toString: () => string };
-        userName: string;
-        userEmail: string;
-        movieTitle: string;
-        posterPath?: string;
-        movieId?: string;
-        mediaType?: MediaType;
-        body: string;
-        spoiler?: boolean;
-        createdAt: Date;
-      }[]>(),
-    MovieList.find({ ...publiclyVisible(), ...scope })
-      .select("_id userEmail userName title description createdAt movies.movieId movies.title movies.posterPath")
-      .sort({ createdAt: -1 })
-      .limit(8)
-      .lean<{
-        _id: { toString: () => string };
-        userName: string;
-        userEmail: string;
-        title: string;
-        description?: string;
-        movies: { posterPath?: string; title: string; movieId: string }[];
-        createdAt: Date;
-      }[]>(),
-  ]);
+  const feedFilter = { ...publiclyVisible(), ...scope };
 
-  const ratingMaps = await buildReviewerRatingMaps(
-    reviews.map((review) => ({
-      userEmail: review.userEmail,
-      movieId: review.movieId,
-      mediaType: review.mediaType,
-    }))
+  // Clamped the same way `paginate` clamps: an out-of-range page re-reads the
+  // last real page rather than rendering an empty timeline.
+  const feedPage = await fetchFeedPage(feedFilter, requestedPage);
+  const bounds = pageBounds(feedPage.total, requestedPage, INDEX_PAGE_SIZES.activity);
+  const items =
+    bounds.page === requestedPage
+      ? feedPage.rows
+      : (await fetchFeedPage(feedFilter, bounds.page)).rows;
+
+  // Byline targets and rating chips from one batched read for the whole page,
+  // rather than a lookup per card plus a second read for the same users.
+  const { ratingMaps, usernames } = await buildReviewerMaps(
+    items.map((row) => (row.kind === "review" ? row.review.userEmail : row.list.userEmail))
   );
-
-  // Byline targets, resolved in one batched read for the whole feed.
-  const usernames = await buildUsernameMap([
-    ...reviews.map((review) => review.userEmail),
-    ...lists.map((list) => list.userEmail),
-  ]);
-
-  const items = [
-    ...reviews.map((review) => ({ kind: "review" as const, date: review.createdAt, review })),
-    ...lists.map((list) => ({ kind: "list" as const, date: list.createdAt, list })),
-  ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 18);
 
   return (
     <RouteShell spacing="standard" width="standard">
@@ -257,6 +353,14 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
               </li>
             );
           })}
+          <NumberedPagination
+            label="Activity"
+            page={bounds.page}
+            totalPages={bounds.totalPages}
+            total={feedPage.total}
+            pageSize={INDEX_PAGE_SIZES.activity}
+            buildHref={(target) => activityHref(isFollowingFeed, target)}
+          />
         </ol>
       ) : (
         <EmptyState
@@ -273,4 +377,18 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
       )}
     </RouteShell>
   );
+}
+
+// The `feed` param is preserved across pages, and page 1 stays on the bare path
+// so the first page of each feed keeps its canonical URL.
+function activityHref(isFollowingFeed: boolean, page: number) {
+  const params = new URLSearchParams();
+  if (isFollowingFeed) {
+    params.set("feed", "following");
+  }
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+  const query = params.toString();
+  return query ? `/activity?${query}` : "/activity";
 }

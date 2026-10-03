@@ -20,7 +20,7 @@ import {
 import type { FavoriteMovie, MediaType, WatchlistMovie } from "@/types";
 import { mediaEquals, normalizeMediaType } from "@/lib/media";
 import { emailMatch } from "@/lib/emailMatch";
-import { pageBounds } from "@/lib/pagination";
+import { pageBounds, paginate } from "@/lib/pagination";
 
 export const PROFILE_PAGE_SIZES = {
   favorites: 20,
@@ -203,53 +203,6 @@ function uniqueMediaItems(field: "favorites" | "watchlist") {
       },
     },
   };
-}
-
-type SortSpec = Record<string, 1 | -1>;
-
-type PageableQuery<TRaw> = {
-  sort(sort: SortSpec): PageableQuery<TRaw>;
-  select(fields: string): PageableQuery<TRaw>;
-  skip(skip: number): PageableQuery<TRaw>;
-  limit(limit: number): PageableQuery<TRaw>;
-  lean(): Promise<TRaw[]>;
-};
-
-type PageableModel<TRaw> = {
-  countDocuments(filter: Record<string, unknown>): Promise<number>;
-  find(filter: Record<string, unknown>): PageableQuery<TRaw>;
-};
-
-// Shared count + windowed fetch. When the requested page is past the end, the
-// clamped page is re-fetched instead of returning an empty result set.
-async function paginate<TRaw>(
-  model: PageableModel<TRaw>,
-  filter: Record<string, unknown>,
-  sort: SortSpec,
-  requestedPage: number,
-  pageSize: number,
-  // Optional so a caller that renders a summary card can leave the unbounded
-  // likedBy/savedBy arrays behind instead of shipping them with every row.
-  projection?: string
-): Promise<{ rows: TRaw[]; page: number; totalPages: number; total: number }> {
-  const fetchPage = (page: number) => {
-    const query = model.find(filter);
-    return (projection ? query.select(projection) : query)
-      .sort(sort)
-      .skip((page - 1) * pageSize)
-      .limit(pageSize)
-      .lean();
-  };
-
-  const [total, initialRows] = await Promise.all([
-    model.countDocuments(filter),
-    fetchPage(Math.max(1, requestedPage)),
-  ]);
-
-  const bounds = pageBounds(total, requestedPage, pageSize);
-  const rows = bounds.page === requestedPage ? initialRows : await fetchPage(bounds.page);
-
-  return { rows, total, ...bounds };
 }
 
 async function getEmbeddedPage(

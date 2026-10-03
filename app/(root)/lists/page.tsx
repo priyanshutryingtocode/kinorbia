@@ -21,6 +21,11 @@ import {formatDate, mediaHref, mediaKey} from "@/lib/media";
 import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
 import { serializeFavorites, serializeList, type RawFavoriteMovie, type RawMovieList } from "@/lib/serialize";
+import NumberedPagination from "@/components/NumberedPagination";
+import { INDEX_PAGE_SIZES, paginate } from "@/lib/pagination";
+import { parsePage } from "@/lib/searchParams";
+
+type ListsSearchParams = { page?: string };
 import MovieList from "@/models/MovieList";
 import User from "@/models/User";
 import type { FavoriteMovie, ListMovie, MovieListItem } from "@/types";
@@ -211,21 +216,30 @@ function ListRow({
   );
 }
 
-export default async function ListsPage() {
+export default async function ListsPage({
+  searchParams,
+}: {
+  searchParams: Promise<ListsSearchParams>;
+}) {
+  const params = await searchParams;
+  const requestedPage = parsePage(params.page);
   const currentUserEmail = await requireUserEmail();
 
   await dbConnect();
 
-  const [rawLists, user] = await Promise.all([
-    MovieList.find(visibleTo(currentUserEmail))
-      .sort({ createdAt: -1 })
-      .limit(18)
-      .lean<RawMovieList[]>(),
+  const [listPage, user] = await Promise.all([
+    paginate<RawMovieList>(
+      MovieList,
+      visibleTo(currentUserEmail),
+      { createdAt: -1, _id: -1 },
+      requestedPage,
+      INDEX_PAGE_SIZES.lists
+    ),
     User.findOne({ email: currentUserEmail }).select("favorites").lean<{
       favorites?: RawFavoriteMovie[];
     } | null>(),
   ]);
-  const lists = rawLists.map(serializeList);
+  const lists = listPage.rows.map(serializeList);
   // Byline targets for the page, in one read.
   const usernames = await buildUsernameMap(lists.map((list) => list.userEmail));
   const favorites = serializeFavorites(user?.favorites);
@@ -337,8 +351,21 @@ export default async function ListsPage() {
               description="Create the first collection from your favorites."
             />
           )}
+          <NumberedPagination
+            label="Lists"
+            page={listPage.page}
+            totalPages={listPage.totalPages}
+            total={listPage.total}
+            pageSize={INDEX_PAGE_SIZES.lists}
+            buildHref={listsHref}
+          />
         </section>
       </div>
     </RouteShell>
   );
+}
+
+// Page 1 stays at the bare path so the first page keeps its canonical URL.
+function listsHref(page: number) {
+  return page > 1 ? `/lists?page=${page}` : "/lists";
 }

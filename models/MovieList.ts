@@ -66,4 +66,9 @@ const MovieListSchema = new mongoose.Schema({
 
 MovieListSchema.index({ "movies.movieId": 1, "movies.mediaType": 1, visibility: 1 });
 
+// As on Review: the lists index and a profile's own lists both filter on one
+// field and sort by date, which the single-field indexes above cannot serve.
+MovieListSchema.index({ visibility: 1, createdAt: -1, _id: -1 });
+MovieListSchema.index({ userEmail: 1, createdAt: -1, _id: -1 });
+
 export default mongoose.models?.MovieList || mongoose.model("MovieList", MovieListSchema);

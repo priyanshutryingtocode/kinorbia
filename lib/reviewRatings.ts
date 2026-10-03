@@ -2,11 +2,24 @@ import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import type { FavoriteMovie, MediaType } from "@/types";
 import { mediaKey, normalizeMediaType } from "@/lib/media";
+import { usernameMapFromUsers } from "@/lib/profileLinks";
+import { emailCandidates } from "@/lib/emailMatch";
 
 type ReviewForRating = {
   userEmail: string;
   movieId?: string;
   mediaType?: MediaType;
+};
+
+// The only favorite fields `buildRatingMap` reads. See `buildReviewerMaps` for
+// why the rest of each favorite is projected away.
+const RATING_PROJECTION =
+  "email username favorites.movieId favorites.mediaType favorites.personalRating";
+
+type FavoriteFields = {
+  email: string;
+  username?: string;
+  favorites?: Pick<FavoriteMovie, "movieId" | "mediaType" | "personalRating">[];
 };
 
 // Generic over the two fields it reads, so a caller that has projected the rest
@@ -40,7 +53,12 @@ export function dedupeFavorites<T extends { movieId?: string; mediaType?: string
   );
 }
 
-export function buildRatingMap(favorites: FavoriteMovie[]): Map<string, number> {
+// Takes only the three fields it reads, so a caller that has projected the rest
+// of each favorite away can pass the result without a cast -- the same reason
+// `dedupeFavorites` above is generic.
+export function buildRatingMap(
+  favorites: Pick<FavoriteMovie, "movieId" | "mediaType" | "personalRating">[]
+): Map<string, number> {
   const map = new Map<string, number>();
   for (const favorite of favorites) {
     map.set(
@@ -80,22 +98,46 @@ export async function findFavoriteByMediaKey(
   );
 }
 
-export async function buildReviewerRatingMaps(
-  reviews: ReviewForRating[]
-): Promise<Map<string, Map<string, number>>> {
-  const emails = [...new Set(reviews.map((review) => review.userEmail))];
-  if (emails.length === 0) {
-    return new Map();
+// Everything a byline and a rating chip need from a feed's authors, in one read.
+//
+// `buildReviewerRatingMaps` and `buildUsernameMap` used to be called on the same
+// emails on three pages -- /reviews, /activity and MovieReviewsAndLists -- each
+// fetching the same User documents a second later. Against a cluster ~57ms away
+// that second round-trip is a whole wave of latency for no new information, so
+// the two are merged here and the rating-only helper is gone.
+//
+// The projection lists the three favorite fields `buildRatingMap` reads rather
+// than the whole array: a title, poster path, vote average, release date and
+// addedAt per favorite were being transferred for every author on the page and
+// then discarded.
+//
+// Note the two maps key differently, and deliberately so. The rating map keys on
+// the stored email because `lookupRating` compares it against the `userEmail`
+// a review carries, while the username map keys lowercase because `usernameFor`
+// lowercases its lookup. Both are preserved exactly as they were.
+export async function buildReviewerMaps(
+  emails: (string | null | undefined)[]
+): Promise<{
+  ratingMaps: Map<string, Map<string, number>>;
+  usernames: Map<string, string>;
+}> {
+  const candidates = emailCandidates(emails);
+  if (candidates.length === 0) {
+    return { ratingMaps: new Map(), usernames: new Map() };
   }
 
   await dbConnect();
-  const users = await User.find({ email: { $in: emails } })
-    .select("email favorites")
-    .lean<{ email: string; favorites?: FavoriteMovie[] }[]>();
+  // No `username: { $exists: true }` arm here, unlike `buildUsernameMap`: an
+  // author with no slug still has ratings, and dropping them would change what
+  // the rating chips show. The missing slug is handled when the map is built.
+  const users = await User.find({ email: { $in: candidates } })
+    .select(RATING_PROJECTION)
+    .lean<FavoriteFields[]>();
 
-  const maps = new Map<string, Map<string, number>>();
+  const ratingMaps = new Map<string, Map<string, number>>();
   for (const user of users) {
-    maps.set(user.email, buildRatingMap(user.favorites || []));
+    ratingMaps.set(user.email, buildRatingMap(user.favorites || []));
   }
-  return maps;
+
+  return { ratingMaps, usernames: usernameMapFromUsers(users) };
 }

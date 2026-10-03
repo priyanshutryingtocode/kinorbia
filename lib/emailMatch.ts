@@ -18,9 +18,24 @@
 // either. Match both and let MongoDB pick whichever one is actually
 // stored. This is the same reasoning as the lowercased join in
 // lib/profileLinks, applied to the filter instead of both sides of a map.
-export function emailMatch(email: string): { $in: string[] } {
-  const trimmed = email.trim();
-  const lower = trimmed.toLowerCase();
+// The spellings that could match `email` in the collection: the value as given,
+// plus its lowercase form when the two differ. One rule, so a caller that has to
+// match a whole set of emails cannot quietly end up with a different policy from
+// the single-value `emailMatch` below.
+export function emailCandidates(emails: (string | null | undefined)[]): string[] {
+  const candidates = new Set<string>();
 
-  return { $in: lower === trimmed ? [trimmed] : [trimmed, lower] };
+  for (const email of emails) {
+    if (typeof email !== "string") continue;
+    const trimmed = email.trim();
+    if (!trimmed) continue;
+    candidates.add(trimmed);
+    candidates.add(trimmed.toLowerCase());
+  }
+
+  return [...candidates];
+}
+
+export function emailMatch(email: string): { $in: string[] } {
+  return { $in: emailCandidates([email]) };
 }

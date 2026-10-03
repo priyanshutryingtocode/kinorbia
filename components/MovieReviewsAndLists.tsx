@@ -4,8 +4,8 @@ import { publiclyVisible } from "@/lib/visibility";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import { mediaEquals, mediaHref, starsLabel } from "@/lib/media";
-import { buildReviewerRatingMaps, lookupRating } from "@/lib/reviewRatings";
-import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
+import { buildReviewerMaps, lookupRating } from "@/lib/reviewRatings";
+import { usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
 import { renderRichText } from "@/lib/renderRichText";
 import type { MediaType } from "@/types";
@@ -55,20 +55,13 @@ export default async function MovieReviewsAndLists({
       }[]>(),
   ]);
 
-  // One lookup for the bylines across both collections, rather than a read per
-  // review and per list.
-  const usernames = await buildUsernameMap([
+  // One read for both the bylines and the rating chips, over both collections.
+  // These were two helpers issuing two queries for the same User documents a
+  // moment apart, on a page that renders on every title detail view.
+  const { ratingMaps, usernames } = await buildReviewerMaps([
     ...publicReviews.map((review) => review.userEmail),
     ...publicLists.map((list) => list.userEmail),
   ]);
-
-  const ratingMaps = await buildReviewerRatingMaps(
-    publicReviews.map((review) => ({
-      userEmail: review.userEmail,
-      movieId: review.movieId,
-      mediaType: review.mediaType,
-    }))
-  );
 
   if (publicReviews.length === 0 && publicLists.length === 0) {
     return null;
