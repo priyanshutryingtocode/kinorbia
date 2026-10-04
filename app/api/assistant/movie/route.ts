@@ -158,6 +158,11 @@ async function getGeminiPlan(
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
+      // The only fetch in the app with no deadline. A generation call that hangs
+      // held the request open until the platform killed it, and because the route
+      // allows two per minute, one hung call could hold a slot long enough to
+      // reject the retry behind it. 20s is well past a normal generation.
+      signal: AbortSignal.timeout(20_000),
       body: JSON.stringify({
         contents: [
           {

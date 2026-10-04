@@ -60,10 +60,6 @@ type FeedList = {
   createdAt: Date;
 };
 
-type FeedRow =
-  | { kind: "review"; date: Date; review: FeedReview }
-  | { kind: "list"; date: Date; list: FeedList };
-
 // One merged timeline across two collections, so a page is a page.
 //
 // This used to fetch the newest 12 reviews and the newest 8 lists and merge them

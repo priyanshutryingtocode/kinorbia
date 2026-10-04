@@ -40,6 +40,21 @@
      untouched. */
   --rule-overlay: rgba(255, 255, 255, 0.38);
 
+    /* The media detail panels: the control bar, the crew boxes, the cast boxes.
+       Dark values are the exact equivalents of the classes they replace, so
+       nothing in this theme moves -- the colour is a light-theme addition.
+
+       They exist as tokens rather than opacity modifiers because
+       `bg-canvas/70` and `bg-surface-raised/50` cannot express a bronze fill in
+       one theme and not the other: the modifier resolves to the same token in
+       both. --highlight-muted is #c9a273 here, so `bg-highlight-muted/8` would
+       have tinted the dark panels too. */
+    --bar-surface: rgba(10, 10, 10, 0.7);
+    --bar-border: rgba(255, 255, 255, 0.1);
+    --panel-surface: rgba(23, 23, 23, 0.5);
+    --panel-surface-soft: rgba(23, 23, 23, 0.5);
+    --panel-border: rgba(255, 255, 255, 0.1);
+
   --accent: #dc2626;
   /* Deeper than the base rather than brighter: #ef4444 carried near-white text
      at 3.76:1, and a lighter hover cannot fix that. #d92626 is the same hue and
@@ -245,6 +260,36 @@
      why a floating panel was previously invisible on this ground. */
   --rule-overlay: rgba(40, 30, 20, 0.55);
 
+  /* The media detail panels. See the note on the dark value for why these are
+     tokens and not `bg-highlight-muted/N`.
+
+     Bronze is --highlight-muted. It is applied at three strengths because the
+     three boxes do different jobs: the control bar sits on the hero and needs to
+     read as a surface, the crew boxes carry text at length, and the cast boxes
+     sit behind circular portraits that should stay the loudest thing in the
+     grid.
+
+     The fills are shallow on purpose. Composited over this ground, 8% lands on
+     #e2ddd8 and 6% on #e4e0dc -- a warm shift of about 1.1:1 against the page,
+     which is felt rather than seen. Twelve percent was measurably muddier
+     (#ddd6cf) for very little extra colour. The bronze that actually registers
+     is on the small uppercase labels, which is why those move to
+     `text-highlight-muted` alongside the fill: at 5.37:1 and 5.52:1 those clear
+     the 4.5 a 10px label needs, where a deeper fill would have cost contrast
+     without buying legibility.
+
+     These are static content cards, not controls, so the fill and border are
+     decorative grouping cues -- the text is what is readable, at 13:1 and
+     above. WCAG 1.4.11 asks 3:1 for the boundary of a user-interface component,
+     and bronze cannot reach it here: even at 60% it measures 2.66:1 against
+     #ebe9e9, so a compliant edge would be a solid brown line at odds with the
+     soft editorial ground. --rule is at 1.38:1 here for the same reason. */
+  --bar-surface: rgba(252, 249, 242, 0.85);
+  --bar-border: rgba(122, 77, 20, 0.28);
+  --panel-surface: rgba(122, 77, 20, 0.08);
+  --panel-surface-soft: rgba(122, 77, 20, 0.06);
+  --panel-border: rgba(122, 77, 20, 0.22);
+
   --accent: #b91c1c;
   --accent-hover: #991b1b;
   /* Deepened from #b91c1c, which is still the fill in --accent above. The fill
@@ -414,6 +459,11 @@
   --color-rule: var(--rule);
   --color-rule-strong: var(--rule-strong);
   --color-rule-overlay: var(--rule-overlay);
+  --color-bar-surface: var(--bar-surface);
+  --color-bar-border: var(--bar-border);
+  --color-panel-surface: var(--panel-surface);
+  --color-panel-surface-soft: var(--panel-surface-soft);
+  --color-panel-border: var(--panel-border);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-highlight: var(--highlight);

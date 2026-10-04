@@ -6,16 +6,15 @@ import type {
   TmdbTvCredits,
   TmdbVideo,
 } from "@/types";
+import { fetchJsonWithRetry } from "@/lib/httpRetry";
 
 const BASE = "https://api.themoviedb.org/3";
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
+// 429 is here because TMDB rate-limits on bursts, and the browse pages can ask
+// for several lists at once. 404 is deliberately absent: a film that does not
+// exist is an answer, not a failure, and retrying it costs round trips to
+// arrive at the same place.
 const RETRIABLE_STATUS = new Set([429, 500, 502, 503, 504]);
-
-function shouldRetryStatus(status: number) {
-  return RETRIABLE_STATUS.has(status);
-}
 
 async function tmdbFetch<T>(
   path: string,
@@ -25,43 +24,43 @@ async function tmdbFetch<T>(
   const separator = path.includes("?") ? "&" : "?";
   const url = `${BASE}${path}${separator}api_key=${process.env.TMDB_API_KEY}`;
 
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    let controller: AbortController | undefined;
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-
-    try {
-      controller = new AbortController();
-      timeout = setTimeout(() => controller?.abort(), 8000);
-
-      const res = await fetch(url, {
-        next: revalidate === false ? undefined : { revalidate },
-        signal: controller.signal,
-      });
-
-      if (!res.ok) {
-        if (attempt === retries || !shouldRetryStatus(res.status)) {
-          return null;
-        }
-      } else {
-        return (await res.json()) as T;
-      }
-    } catch {
-      if (attempt === retries) {
-        return null;
-      }
-    } finally {
-      // Was only reached on the non-throwing path, so every rejected fetch --
-      // DNS failure, ECONNRESET, a platform AbortError -- left its 8s timer
-      // armed, aborting an already-settled request when it fired. With two
-      // retries that is up to three leaked timers per call, accumulating on a
-      // long-lived server.
-      clearTimeout(timeout);
+  const outcome = await fetchJsonWithRetry<T>(
+    url,
+    { next: revalidate === false ? undefined : { revalidate } },
+    {
+      retries,
+      retryStatuses: RETRIABLE_STATUS,
+      onExhausted: ({ url: failed, attempts, status, cause }) => {
+        // This used to fail completely silently: `catch { return null }` with no
+        // logging, so an upstream outage rendered as a browse grid that was
+        // simply empty, with nothing anywhere to say why. One line per dead
+        // call, and `warn` rather than `error` because a degraded page is not a
+        // crash -- a flapping TMDB should not look like a broken deploy.
+        console.warn(
+          `TMDB gave up after ${attempts} attempt(s): ${failed}` +
+            (status === null ? ` (${describeCause(cause)})` : ` (HTTP ${status})`)
+        );
+      },
     }
+  );
 
-    await sleep(350 * (attempt + 1));
+  return outcome.ok ? outcome.data : null;
+}
+
+// `ECONNRESET` and friends arrive as the cause of a TypeError, several layers
+// down, and "fetch failed" on its own tells you nothing at 2am.
+function describeCause(cause: unknown): string {
+  if (typeof cause !== "object" || cause === null || !("cause" in cause)) {
+    return cause instanceof Error ? cause.message : String(cause);
   }
 
-  return null;
+  const inner = (cause as { cause?: unknown }).cause;
+  if (typeof inner === "object" && inner !== null && "code" in inner) {
+    const code = (inner as { code?: unknown }).code;
+    if (typeof code === "string") return code;
+  }
+
+  return cause instanceof Error ? cause.message : String(cause);
 }
 
 type ResultList<T> = { results?: T[] };
@@ -150,29 +149,31 @@ async function fetchDetailsWithStatus<T>(
 ): Promise<{ details: T | null; notFound: boolean }> {
   const url = `${BASE}/${mediaType}/${safeId(id)}?api_key=${process.env.TMDB_API_KEY}`;
 
-  try {
-    // This call had no timeout at all, unlike tmdbFetch's 8s budget above. A
-    // hung TMDB connection therefore stalled the detail page render
-    // indefinitely rather than degrading. An abort lands in the same catch as
-    // any other failure, so it returns { details: null } and the route's own
-    // error boundary takes over.
-    const res = await fetch(url, {
-      next: { revalidate: 3600 },
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (res.status === 404) {
-      return { details: null, notFound: true };
+  // This is the one call that used to have neither a retry nor a log. A single
+  // stale keep-alive socket -- the ECONNRESET that motivated all of this -- took
+  // a whole detail page down and said nothing about it.
+  const outcome = await fetchJsonWithRetry<T>(
+    url,
+    { next: { revalidate: 3600 } },
+    {
+      // 404 is absent from this set, so it is terminal on the first response:
+      // three round trips to be told a film does not exist would be worse than
+      // useless on the browse path.
+      retryStatuses: RETRIABLE_STATUS,
+      onExhausted: ({ url: failed, attempts, status, cause }) => {
+        console.warn(
+          `TMDB details gave up after ${attempts} attempt(s): ${failed}` +
+            (status === null ? ` (${describeCause(cause)})` : ` (HTTP ${status})`)
+        );
+      },
     }
+  );
 
-    if (!res.ok) {
-      return { details: null, notFound: false };
-    }
-
-    return { details: (await res.json()) as T, notFound: false };
-  } catch {
-    return { details: null, notFound: false };
+  if (outcome.ok) {
+    return { details: outcome.data, notFound: false };
   }
+
+  return { details: null, notFound: outcome.status === 404 };
 }
 
 function discoverQuery(genre: string | undefined, page: number) {

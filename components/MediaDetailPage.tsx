@@ -139,7 +139,11 @@ export default async function MediaDetailPage({
               ))}
             </div>
 
-            <div className="mt-8 rounded-sheet border border-rule bg-canvas/70 p-4 backdrop-blur-xl sm:p-5">
+            {/* bg-canvas/70 was a no-op here: canvas over canvas resolves to
+                canvas, so this bar had no fill of its own and read as a 1.31:1
+                hairline. --bar-surface gives it a real warm surface in light
+                mode and is the same value in dark. */}
+            <div className="mt-8 rounded-sheet border border-bar-border bg-bar-surface p-4 backdrop-blur-xl sm:p-5">
               <div className="flex flex-wrap items-center gap-3">
                 {model.trailerKey && (
                   <TrailerButton videoKey={model.trailerKey} title={model.title} />
@@ -164,8 +168,8 @@ export default async function MediaDetailPage({
             {model.crew.length > 0 && (
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
                 {model.crew.map((panel) => (
-                  <div key={panel.label} className="rounded-sheet border border-rule bg-surface-raised/50 p-4">
-                    <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-content-subtle">
+                  <div key={panel.label} className="rounded-sheet border border-panel-border bg-panel-surface p-4">
+                    <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-highlight-muted">
                       {panel.label}
                     </h3>
                     <p className="text-base font-semibold text-content">{panel.names}</p>
@@ -181,7 +185,7 @@ export default async function MediaDetailPage({
             <h2 className="font-display mb-5 text-2xl font-medium">Top Cast</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {model.cast.map((member) => (
-                <div key={member.id} className="rounded-sheet border border-rule bg-surface-raised/50 p-3 text-center">
+                <div key={member.id} className="rounded-sheet border border-panel-border bg-panel-surface-soft p-3 text-center">
                   {member.profile_path ? (
                     <Image
                       src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
@@ -199,7 +203,7 @@ export default async function MediaDetailPage({
                     </div>
                   )}
                   <p className="mt-3 text-sm font-semibold text-content">{member.name}</p>
-                  <p className="mt-1 text-xs text-content-muted">{member.character || "—"}</p>
+                  <p className="mt-1 text-xs text-highlight-muted">{member.character || "—"}</p>
                 </div>
               ))}
             </div>
