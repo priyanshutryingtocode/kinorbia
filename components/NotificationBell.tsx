@@ -55,19 +55,11 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [marking, setMarking] = useState(false);
-  // The three fetchers below all swallow their errors, so a failed request left
-  // `items` at [] and the panel rendered the affirmative "No notifications yet."
-  // -- telling the user they have none when in fact nothing loaded. A failed
-  // badge poll and a failed panel load are different facts, so they get their own
-  // state rather than being inferred from an empty list.
   const [failed, setFailed] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
-
-  // Stable identity, because useDismiss lists `onDismiss` in its deps. The prop
-  // is `(open: boolean)`; the hook wants a no-argument close.
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   const loadUnread = useCallback(async () => {
@@ -94,7 +86,6 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
         setUnread(data.unreadCount ?? 0);
         setFailed(false);
       } else {
-        // Previously ignored outright, so a 500 read as "you have none".
         setFailed(true);
       }
     } catch {
@@ -104,11 +95,6 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
     }
   }, []);
 
-  // Badge polling. A hidden tab learns nothing from a poll -- nobody is looking
-  // at the bell -- and this endpoint costs two database round trips, so the
-  // interval is suspended while the document is hidden and one poll is fired on
-  // the way back in. The interval id lives in a ref so a rapid hide/show
-  // sequence cannot leave a second timer running.
   const pollRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -201,7 +187,7 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
           aria-modal="false"
           aria-labelledby="notification-heading"
           tabIndex={-1}
-          className="fixed inset-x-4 top-[calc(var(--shell-header-height)+0.5rem)] z-[var(--z-header)] flex max-h-[calc(100dvh-var(--shell-header-height)-1rem)] flex-col overflow-hidden rounded-overlay border border-rule bg-surface shadow-2xl lg:left-auto lg:w-80"
+          className="fixed inset-x-4 top-[calc(var(--shell-header-height)+0.5rem)] z-(--z-header) flex max-h-[calc(100dvh-var(--shell-header-height)-1rem)] flex-col overflow-hidden rounded-overlay border border-rule bg-surface shadow-2xl lg:left-auto lg:w-80"
         >
           <div className="flex shrink-0 items-center justify-between border-b border-rule bg-surface px-4 py-3">
             <h2 id="notification-heading" className="text-sm font-bold text-content">Notifications</h2>

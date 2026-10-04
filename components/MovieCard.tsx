@@ -4,23 +4,6 @@ import PosterBadges from "@/components/PosterBadges";
 import { Star } from "lucide-react";
 import { mediaHref, starsLabel, yearOf } from "@/lib/media";
 import type { MovieSummary } from "@/types";
-
-// Not to be merged with SearchResultCard, the inline posters in
-// `app/(root)/lists/[id]/page.tsx` and `app/(root)/u/[username]/page.tsx`, or
-// MovieCarousel's. They look like one component and are three: this is a poster
-// *tile* with a hover lift, SearchResultCard and ListPoster are poster *plus
-// caption* rows, and CarouselPoster is a bare image with no chrome. Compared line
-// by line the two caption cards differ in image `sizes`, `alt`, hover opacity,
-// fallback icon size, background, padding, title classes and caption wording --
-// unifying them needs roughly eight override props and buys one component that
-// expresses none of them well. The duplicated part worth sharing is the
-// poster-or-fallback image itself, not the card.
-//
-// The *overlay* is the exception and is shared: the year and rating chips were
-// drawn here and in MovieCarousel with different content, different corners and
-// different backgrounds (`bg-scrim/55` against `bg-scrim/55`), so both now render
-// PosterBadges. That is a leaf with no card's opinions in it, which is what makes
-// it safe to share where the cards are not.
 export type MovieProp = MovieSummary;
 
 export default function MovieCard({
@@ -37,8 +20,6 @@ export default function MovieCard({
   const releaseYear = yearOf(movie.release_date);
   const href = mediaHref(movie.mediaType, movie.id);
   const isEager = loading ? loading === "eager" : index !== undefined && index < 3;
-  // Was a <Film> with no size class, so a missing poster rendered at lucide's
-  // 24px default while every other surface used 28-40px.
   const posterElement = (
     <PosterImage
       path={movie.poster_path}

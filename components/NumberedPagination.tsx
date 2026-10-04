@@ -8,21 +8,9 @@ type NumberedPaginationProps = {
   totalPages: number;
   total: number;
   pageSize: number;
-  // The caller's URL shape. `page` is already clamped by `pageBounds`, so this
-  // is only ever asked for pages that exist, plus the two edges.
   buildHref: (page: number) => string;
 };
 
-// Numbered pages plus a "Showing X-Y of Z" range.
-//
-// This is `ProfilePagination`'s markup, extracted because four pages now need
-// the same affordance and the windowing arithmetic below is exactly the kind of
-// thing that quietly disagrees between copies. It was already a shared
-// `PagerEdge`; the numbered links around it were not.
-//
-// What did *not* get absorbed is `PeopleList`, which offers only previous/next
-// and a "Page X of Y" count. Those are different affordances, so it stays
-// separate -- the distinction ProfilePagination's own note recorded, kept.
 export default function NumberedPagination({
   label,
   page,
@@ -89,8 +77,6 @@ export default function NumberedPagination({
   );
 }
 
-// A five-page window centred on the current page, clamped at both ends so the
-// first and last pages still show five numbers rather than running off the end.
 function visiblePages(page: number, totalPages: number) {
   const count = Math.min(5, totalPages);
   const start = Math.min(Math.max(1, page - 2), Math.max(1, totalPages - count + 1));

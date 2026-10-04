@@ -21,11 +21,6 @@ export default function SectionHeader({
   return (
     <div id={id} aria-labelledby={headingId} className={`scroll-mt-32 ${className}`}>
       <header className="relative border-t border-rule pt-4">
-        {/* A short bronze segment sitting on the section's own hairline, so the
-            divider carries the editorial hue instead of being flat grey. Same
-            shape as the rule StatusState draws above its heading. Decorative: it
-            marks a boundary the border already marks, so it is hidden from
-            assistive tech rather than being announced as content. */}
         <span aria-hidden="true" className="absolute -top-px left-0 h-px w-12 bg-highlight-muted" />
         <HeaderBlock
           eyebrow={eyebrow}

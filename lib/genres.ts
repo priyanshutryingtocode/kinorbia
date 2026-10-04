@@ -45,12 +45,6 @@ export function genreName(id: number, mediaType: MediaType) {
   return mediaType === "tv" ? TV_GENRES[id] : MOVIE_GENRES[id];
 }
 
-// The genres offered in the browse filter and the search dropdown, as ids
-// rather than id/name pairs. Deliberately a curated subset: the filter grid has
-// exactly eleven slots, so it cannot show all nineteen movie genres. The names
-// come from the maps above, which is the point -- the browse filter used to
-// spell id 878 "Sci-Fi" while the insights chart spelled it "Science Fiction",
-// so the same film was labelled two ways in two places.
 export const CURATED_GENRES: Record<MediaType, number[]> = {
   movie: [28, 12, 16, 35, 80, 18, 14, 27, 878, 53],
   tv: [10759, 16, 35, 80, 99, 18, 10751, 9648, 10765, 10768],

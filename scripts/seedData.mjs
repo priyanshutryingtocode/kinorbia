@@ -17,14 +17,8 @@ if (!TMDB_API_KEY) {
 
 const DEMO_PASSWORD = "demo1234";
 
-// Every id is generated up front so the comment and notification documents can
-// point at their parents before anything is written. That is also what lets
-// --dry-run build the entire graph without ever opening a Mongo connection.
 const newId = () => new ObjectId();
 
-// Both mongoose and the raw driver fall back to "test" when the URI carries no
-// database name, so resolve it explicitly rather than writing to "whatever the
-// driver defaulted to" -- the confirmation prompt has to name the real target.
 const DEFAULT_DATABASE = "test";
 
 function describeTarget(connectionString) {
@@ -83,10 +77,6 @@ const DARK = [53, 80, 27, 9648];
 const ARTSY = [18, 99, 36, 10749, 10768];
 const LIGHT = [35, 16, 10751, 14, 10762];
 const ACTION = [28, 12, 10759];
-
-// Volume targets. The UI paginates favorites/watchlist at 20 and reviews/lists
-// at 9, and Insights plots a rolling 12-month chart, so every per-user number
-// here sits above the threshold it needs to clear.
 const FAVORITES_PER_USER = 30;
 const WATCHLIST_PER_USER = 30;
 const REVIEWS_PER_USER = 15;
@@ -284,8 +274,6 @@ function daysAgo(n) {
   return date;
 }
 
-// Biases older entries towards the recent past so the monthly chart, the
-// current streak and the best streak all have a realistic shape.
 function spreadDates(count, spanDays, rng) {
   const offsets = [];
   for (let i = 0; i < count; i += 1) {
@@ -314,9 +302,6 @@ async function tmdbPage(path, page) {
   }
 }
 
-// Paging the list endpoints rather than searching by name is what puts
-// genre_ids on every record. The old per-title /search/... path returned no
-// genre_ids at all, which left the Insights genre breakdown empty.
 async function fetchPool({ mediaType, sources, target }) {
   const seen = new Set();
   const pool = [];
@@ -355,8 +340,6 @@ async function fetchPool({ mediaType, sources, target }) {
   return pool;
 }
 
-// The media mix is per-persona rather than a fixed ratio so profiles differ
-// instead of all trending the same way.
 function affinityScore(item, affinity) {
   return item.genreIds.filter((id) => affinity.includes(id)).length;
 }
@@ -372,8 +355,6 @@ function buildLibrary(pool, config, rng, { exclude, count }) {
   const byAffinity = [...candidates].sort(
     (a, b) => affinityScore(b, config.affinity) - affinityScore(a, config.affinity)
   );
-  // Rotate a random slice of the affinity ordering so users with similar
-  // tastes still end up with different libraries.
   const offset = rng.int(Math.max(1, byAffinity.length));
   const rotated = [...byAffinity.slice(offset), ...byAffinity.slice(0, offset)];
 
@@ -454,8 +435,6 @@ function buildWatchlist(pool, config, rng, favorites) {
   }));
 }
 
-// Journal entries are their own draw rather than a slice of favourites: the
-// Insights watch counts come from here, so they have to exceed the library.
 function buildJournal(favorites, pool, config, rng) {
   const journalDates = spreadDates(JOURNAL_PER_USER, JOURNAL_SPAN_DAYS, rng);
 
@@ -479,8 +458,6 @@ function buildJournal(favorites, pool, config, rng) {
     take(favorite);
   }
 
-  // Top up from watchlist, then from the wider pool, so the journal can run
-  // past the favourites without ever repeating a title (watchedAt is unique).
   const leftovers = buildLibrary(
     pool,
     config,
@@ -518,8 +495,6 @@ function buildReviews(favorites, config, rng) {
       movieTitle: favorite.title,
       posterPath: favorite.posterPath,
       body: template.replace("{title}", favorite.title),
-      // Roughly one review in five stays private so the public feed is not
-      // uniformly "everything is public".
       visibility: index % 5 === 1 ? "private" : "public",
       spoiler: index % 7 === 3,
       createdAt: daysAgo(dates[index] ?? 30),
@@ -547,8 +522,6 @@ function buildLists(favorites, watchlist, config, rng) {
     }
     if (picked.length < 4) continue;
 
-    // Titles are shared across personas, so a user must not end up with two
-    // lists called the same thing.
     const baseTitle = LIST_TITLES[titleIndex];
     let title = baseTitle;
     let bump = 2;
@@ -582,7 +555,6 @@ function buildLists(favorites, watchlist, config, rng) {
   return lists;
 }
 
-// Weighted by persona popularity so the demo followers are not all equal.
 function weightedActors(rng, authorEmail, candidates, max = 6, min = 1) {
   const pool = candidates.filter((user) => user.email !== authorEmail);
   const totalWeight = pool.reduce((sum, user) => sum + user.popularity, 0);
@@ -592,8 +564,6 @@ function weightedActors(rng, authorEmail, candidates, max = 6, min = 1) {
   const chosen = [];
 
   for (let attempt = 0; attempt < max * 10 && chosen.length < actorCount; attempt += 1) {
-    // Weight only the people still available, otherwise the ticket is measured
-    // against weights that are then skipped and the draw usually fails.
     const remaining = pool.filter((user) => !chosen.some((c) => c.email === user.email));
     if (remaining.length === 0) break;
 
@@ -623,7 +593,6 @@ function buildSocial(users, reviews, lists, rng) {
   };
 
   for (const doc of [...reviews, ...lists]) {
-    // Private content gets no engagement at all.
     if (doc.visibility !== "public") {
       doc.likedBy = [];
       doc.savedBy = [];
@@ -734,8 +703,6 @@ function buildSocial(users, reviews, lists, rng) {
     }
   }
 
-  // A bell showing 60+ unread reads as a bug rather than as activity. Keep a
-  // realistic recent window per user and settle everything older to read.
   const now = Date.now();
   const MAX_PER_USER = 45;
   const RECENT_UNREAD = 14;

@@ -66,9 +66,6 @@ const VARIANTS = {
   },
 } satisfies Record<string, VariantConfig>;
 
-// Derived rather than hand-written: the old local union was a second place to
-// remember a variant, and keeping them in sync is what forced the four one-line
-// wrapper components that existed only to name each variant.
 type Variant = keyof typeof VARIANTS;
 
 type StatusStateCommon = {
@@ -76,11 +73,6 @@ type StatusStateCommon = {
   description?: string;
 };
 
-// A discriminated union so the variant itself decides which extra props are
-// legal: an error state owns a retry button, a not-found state owns a link.
-// This used to be enforced by four wrapper components that each hardcoded the
-// right `Omit<...>`; expressing it in the props type keeps the same guarantee
-// without the extra files.
 type ErrorVariant = Extract<Variant, "routeError" | "profileError">;
 type NotFoundVariant = Exclude<Variant, ErrorVariant>;
 

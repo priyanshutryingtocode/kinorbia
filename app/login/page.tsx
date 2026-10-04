@@ -33,14 +33,10 @@ export default function LoginPage() {
         return;
       }
 
-      // Outside the try: a throw from the navigation should not be reported to
-      // the user as a failed sign-in.
       router.push("/");
       router.refresh();
     } catch {
-      // Without this the rejection escaped an async event handler and
-      // `loading` stayed true, leaving the button disabled with a spinner and
-      // no message. forgot-password and reset-password already handled this.
+
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -65,11 +61,6 @@ export default function LoginPage() {
             autoComplete="email"
           />
 
-          {/* No negative margin here. It used to carry `-mt-1`, which pulled this
-              row 4px off the card's rhythm and left a 10px gap above against a
-              14px gap below. It is a password affordance sitting between the email
-              and password fields, so uniform spacing reads as deliberate rather
-              than as a nudge. */}
           <div className="flex items-center justify-end">
             <Link
               href="/forgot-password"

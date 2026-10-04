@@ -29,11 +29,6 @@ export const PROFILE_PAGE_SIZES = {
   lists: 9,
 } as const;
 
-// The people-directory page size, here for the same reason: PeopleFollowPage
-// queries with it and PeopleList computes its "Showing X-Y of Z" range from it,
-// and they each used to declare their own copy of the same 24. Nothing tied the
-// two together, so changing one silently produced a wrong range against the
-// right page size.
 export const PEOPLE_PAGE_SIZE = 24;
 
 type JournalHistoryRecord = {
@@ -69,9 +64,6 @@ type ProfileOverviewData = {
   recentLists: ReturnType<typeof serializeList>[];
 };
 
-// Not exported: the only same-named import candidate is the profile page's own
-// default-exported component, which makes a text search for `ProfilePage` lie
-// about whether this type is used.
 type ProfilePage<T> = {
   items: T[];
   total: number;
@@ -91,9 +83,6 @@ export type PersonalMediaStatus = {
   isWatched: boolean;
 };
 
-// Shared by the movie and TV detail pages. `mediaEquals` reproduces each
-// page's own journal filter exactly (`{ $in: ["movie", null] }` / `"tv"`),
-// so the two routes can no longer drift apart.
 export async function getPersonalMediaStatus(
   email: string | null | undefined,
   id: string,
@@ -105,11 +94,6 @@ export async function getPersonalMediaStatus(
 
   await dbConnect();
 
-  // Only three fields per favorite and two per watchlist entry are needed, and
-  // this runs on every film detail page view. The dotted projection keeps the
-  // other five sub-fields of each entry out of the response, so the type is
-  // narrowed to match what actually comes back rather than claiming to be a
-  // full FavoriteMovie.
   const user = await User.findOne({ email: emailMatch(email) })
     .select(
       "favorites.movieId favorites.mediaType favorites.personalRating watchlist.movieId watchlist.mediaType"
@@ -122,28 +106,11 @@ export async function getPersonalMediaStatus(
   const matches = (item: { movieId?: string; mediaType?: string }) =>
     item.movieId === id && normalizeMediaType(item.mediaType) === mediaType;
 
-  // The *last* matching copy, not the first. Both read paths -- dedupeFavorites
-  // and uniqueMediaItems -- keep the last, and dedupeFavorites changed from
-  // first to last deliberately; this used to use `.find()`, which is the
-  // opposite, so on a legacy row holding duplicates the detail page showed a
-  // different personalRating than /profile and /reviews did for the same title.
   const favorite = user?.favorites
     ? [...user.favorites].reverse().find(matches)
     : undefined;
 
   const journalEntry = await JournalEntry.findOne({
-    // emailMatch, not the raw session value. This matters here specifically
-    // because the detail pages pass `session?.user?.email` straight from auth()
-    // rather than going through lib/session.ts, which is what lowercases it --
-    // so unlike every withAuthedUser route, `email` here can still carry the
-    // casing NextAuth put in the token. Querying JournalEntry exactly while
-    // querying User through emailMatch one line above meant the same account
-    // could be told it had not watched something it had.
-    //
-    // Note this is not a drop-in fix for the ~40 other `userEmail: email`
-    // queries: those go through withAuthedUser, so their email is already
-    // lowercase and emailMatch returns a single-element $in that matches
-    // exactly what the raw query already did. See lib/emailMatch.ts.
     userEmail: emailMatch(email),
     movieId: id,
     mediaType: mediaEquals(mediaType),
@@ -159,13 +126,6 @@ export async function getPersonalMediaStatus(
   };
 }
 
-// Reverses, reduces keeping the first hit per mediaKey, so the surviving copy is
-// the LAST in storage order -- and since Mongo preserves insertion order and
-// addedAt defaults to the insertion time, that is the newest. Matches
-// dedupeFavorites in lib/reviewRatings.ts; keep the two in step.
-//
-// Not merged with it: this is load-bearing for pagination, computing the total
-// and slicing items in one round trip, which the JS twin cannot do.
 function uniqueMediaItems(field: "favorites" | "watchlist") {
   return {
     $reduce: {
@@ -322,9 +282,6 @@ export async function getProfileOverview(email: string): Promise<ProfileOverview
       .sort({ createdAt: -1, _id: -1 })
       .limit(4)
       .lean<RawReview[]>(),
-    // The consumer only counts `movies`, so each of a list's (up to 500)
-    // entries is narrowed to its id rather than shipping all six fields. The
-    // document-level fields are left intact because `serializeList` reads them.
     MovieList.find({ userEmail: email })
       .select(
         "_id userEmail userName title description visibility likedBy savedBy createdAt movies.movieId"
@@ -396,16 +353,6 @@ export async function getListPage(email: string, requestedPage: number): Promise
     { createdAt: -1, _id: -1 },
     requestedPage,
     PROFILE_PAGE_SIZES.lists,
-    // Every document-level field `serializeList` reads has to be here, and it
-    // reads them unconditionally: `createdAt.toISOString()` threw a TypeError
-    // when the projection omitted it, which broke this tab outright for anyone
-    // with at least one list. (Users with none never noticed, because `.map`
-    // over an empty array never calls the serializer.)
-    //
-    // The two unbounded social arrays are the only thing left out, which is the
-    // point of the projection -- a 500-title list does not need to ship the
-    // email lists of everyone who liked it. Same string as getProfileOverview's
-    // list query above, minus likedBy/savedBy.
     "_id userEmail userName title description visibility createdAt movies.movieId"
   );
   return { items: rows.map(serializeList), ...bounds };

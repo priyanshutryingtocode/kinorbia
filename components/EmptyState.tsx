@@ -11,10 +11,6 @@ type EmptyStateProps = {
   headingLevel?: 2 | 3 | 4;
 };
 
-// Only the full block goes ink. The compact variant is used inline inside lists
-// and feeds -- all ten call sites are in profile and u/[username] -- so putting
-// them on ink would scatter ten dark rectangles through two already-dense pages
-// and read as noise rather than emphasis.
 export default function EmptyState({
   title,
   description,

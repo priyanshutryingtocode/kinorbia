@@ -1,40 +1,6 @@
-// A flat wireframe orb, drawn as SVG rather than CSS gradients.
-//
-// This replaced three attempts to light a sphere with `radial-gradient`, all of
-// which failed the same way: `radial-gradient(circle at ...)` with no explicit
-// size is sized `farthest-corner`, measured from the box *corner*, so an "88%"
-// stop is nowhere near 88% of the orb. That sliced a rim light into a hard
-// crescent, turned the terminator into a centred vignette that described no
-// shape at all, and eventually left the orb with no height and invisible.
-//
-// SVG circles have explicit radii. `rx="172.6"` is 172.6. There is no geometry
-// here to miscalculate, which is the whole reason the drawing is line art rather
-// than lit shading.
-//
-// The identity lives in the static geometry. Only the accents animate -- an arc,
-// a dashed ring, and two orbiting dots -- and all three degrade safely when
-// frozen: an arc still reads as an arc, a dash pattern is already a ring, and
-// dots land at defined points on their circles. Nothing relies on a transform
-// that would collapse to a flat line.
-//
-// Colours are all theme tokens, so one component is correct in both themes
-// without a second palette. Decorative and behind the card, so it is hidden from
-// assistive technology rather than announced as an empty graphic.
-//
-// The rotating groups need `transform-box: view-box` and a 50% origin, both set
-// in globals.css. SVG's default origin is 0 0, which would send every dot
-// spinning around the top-left corner instead of around the orb.
+const C = 260; 
+const R = 230; 
 
-const C = 260; // centre, in a 520x520 viewBox
-const R = 230; // silhouette radius
-
-// A latitude at `dy` from the equator has radius sqrt(R^2 - dy^2), which is what
-// keeps those lines hugging the silhouette instead of cutting through it.
-//
-// Rounded, because Math.sqrt(230 * 230 - 76 * 76) is exactly
-// 217.08063018150654, and shipping seventeen significant figures into the markup
-// of a decorative background helps nobody. One decimal is well under a pixel
-// at any size this renders at.
 const latitude = (dy: number) => Math.round(Math.sqrt(R * R - dy * dy) * 10) / 10;
 
 export default function AuthOrb() {

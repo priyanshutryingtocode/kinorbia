@@ -53,7 +53,7 @@ export default function CommentList({ comments, currentUserEmail, path }: Commen
                   </ActionForm>
                 )}
               </div>
-              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-content-muted [overflow-wrap:anywhere]">{comment.body}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-content-muted wrap-anywhere">{comment.body}</p>
             </div>
           </li>
         ))}

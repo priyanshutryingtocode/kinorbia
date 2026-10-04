@@ -15,9 +15,6 @@ export const PUT = withAuthedUser(
       return badRequest("A valid name and bio are required.");
     }
 
-    // Projects just `name` and deliberately leaves `new` unset, so `result` is
-    // the document *before* the update -- which is the point: the fan-out below
-    // should only run when the name actually changed.
     const result = await User.findOneAndUpdate(
       { email },
       { name: body.name, bio: body.bio },
@@ -25,18 +22,9 @@ export const PUT = withAuthedUser(
     );
 
     if (!result) {
-      // findOneAndUpdate returns null when the filter matches nothing, which
-      // happens when the session outlives the account -- auth.ts already has a
-      // "Account deleted since this token was issued" path, and verify-email
-      // returns 404 for exactly this case. Falling through reported success for
-      // a write that never happened: the client showed "Profile updated" and
-      // refreshed straight back to the old name.
       return NextResponse.json({ message: "Account not found." }, { status: 404 });
     }
 
-    // Propagate the new display name to denormalized snapshots so old
-    // comments, reviews, lists, journal entries, and notifications don't
-    // keep the previous name forever.
     if (result.name !== body.name) {
       await Promise.all([
         Comment.updateMany({ userEmail: email }, { $set: { userName: body.name } }),

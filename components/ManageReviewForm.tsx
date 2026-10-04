@@ -28,11 +28,6 @@ export default function ManageReviewForm({ review }: { review: ReviewItem }) {
             className="kin-input resize-y"
           />
         </div>
-        {/* Was a hand-rolled <select>, while the lists and reviews forms both use
-            VisibilityField. Note this changes the control: that component renders
-            two radios in a fieldset, not a dropdown. Both post name="visibility",
-            so the action is unaffected, and every form now sets visibility the
-            same way. */}
         <VisibilityField legendClassName="kin-label" fieldsetClassName="kin-field" visibility={review.visibility} />
         <label className="kin-choice">
           <input type="checkbox" name="spoiler" defaultChecked={review.spoiler} />

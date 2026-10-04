@@ -1,9 +1,5 @@
 import type { ElementType, ReactNode } from "react";
 
-// Shared by PageHeader, SectionHeader, and FormPanel. Each of those takes a
-// literal `titleTag` now ("h1" for the page, "h2" for a section) rather than
-// routing a `headingLevel` number through a 1->h1, 2->h2 map, which no call
-// site varied -- so the map had no consumers left and is gone.
 type HeaderBlockProps = {
   eyebrow?: ReactNode;
   title?: ReactNode;

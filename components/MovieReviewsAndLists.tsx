@@ -22,10 +22,6 @@ export default async function MovieReviewsAndLists({
 }) {
   await dbConnect();
   const [publicReviews, publicLists] = await Promise.all([
-    // Projected, because this component renders on every film detail page and a
-    // Review carries unbounded likedBy/savedBy arrays that nothing here reads.
-    // `createdAt` is used only for the sort, which the database applies, so it
-    // does not need to travel back.
     Review.find({ movieId, mediaType: mediaEquals(mediaType), ...publiclyVisible() })
       .select("_id userEmail userName movieId mediaType body spoiler")
       .sort({ createdAt: -1 })
@@ -39,8 +35,6 @@ export default async function MovieReviewsAndLists({
         body: string;
         spoiler?: boolean;
       }[]>(),
-    // `movies` narrows to the three fields needed for the entry count and the
-    // first poster, so a 500-title list does not transfer in full.
     MovieList.find({ "movies.movieId": movieId, "movies.mediaType": mediaEquals(mediaType), ...publiclyVisible() })
       .select("_id userEmail userName title description movies.movieId movies.title movies.posterPath")
       .sort({ createdAt: -1 })
@@ -55,9 +49,6 @@ export default async function MovieReviewsAndLists({
       }[]>(),
   ]);
 
-  // One read for both the bylines and the rating chips, over both collections.
-  // These were two helpers issuing two queries for the same User documents a
-  // moment apart, on a page that renders on every title detail view.
   const { ratingMaps, usernames } = await buildReviewerMaps([
     ...publicReviews.map((review) => review.userEmail),
     ...publicLists.map((list) => list.userEmail),
@@ -126,11 +117,6 @@ export default async function MovieReviewsAndLists({
         {publicLists.length > 0 ? (
           <div className="space-y-3">
             {publicLists.map((list) => (
-              // The card is a container, not a link. Wrapping the whole thing in
-              // a <Link> made the byline un-linkable -- an anchor inside an
-              // anchor is invalid HTML and unreachable by keyboard -- so the
-              // title carries the navigation instead, which is what
-              // `app/(root)/lists/page.tsx` already does.
               <article
                 key={list._id.toString()}
                 className="rounded-sheet border border-rule bg-surface-raised/50 p-4 transition hover:border-accent/40"

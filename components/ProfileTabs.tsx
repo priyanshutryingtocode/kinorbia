@@ -23,12 +23,6 @@ function tabHref(tab: ProfileTab, year?: number) {
   return `/profile?${params.toString()}`;
 }
 
-// A thin wrapper over LinkTabs, the way FeedTabs already is. This used to be a
-// third hand-rolled copy of the tab bar, and it had drifted: it coloured the
-// active tab `text-red-100` where LinkTabs uses `text-content`, and it hand-rolled
-// a `focus-visible:ring-1 ring-inset` indicator instead of the `kin-focus`
-// token, so the profile tabs had a visibly different focus ring from every
-// other tab bar in the app.
 export default function ProfileTabs({
   current,
   year,

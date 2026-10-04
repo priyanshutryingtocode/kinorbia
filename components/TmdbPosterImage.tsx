@@ -8,10 +8,6 @@ type TmdbPosterImageProps = Omit<ImageProps, "src" | "onError" | "unoptimized"> 
   src: string;
 };
 
-// Handles the second of the two ways a poster can fail: the URL resolved, but
-// the image did not load. The first -- TMDB returning no poster path at all --
-// never reaches this component, and is PosterImage's job. Both render
-// `PosterFallback` so a missing poster looks the same either way.
 export default function TmdbPosterImage({ src, alt, className, ...props }: TmdbPosterImageProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 

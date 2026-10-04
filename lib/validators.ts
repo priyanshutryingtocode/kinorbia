@@ -2,14 +2,6 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 
 export const movieRefSchema = z.object({
-  // Bounded, where every other client-supplied string here already was. This one
-  // used to accept an arbitrary length and was written verbatim into the
-  // embedded `favorites` / `watchlist` subdocuments of the User document. The
-  // entry *count* is capped at 2,500 by lib/bounds.ts, but each entry was not
-  // capped, so a handful of multi-megabyte ids was enough to push User past
-  // MongoDB's 16 MB BSON limit -- after which every write to that account fails,
-  // including the bcrypt update on a password reset, permanently bricking it.
-  // TMDB ids are at most 10 digits; 64 leaves room for any id-shaped string.
   movieId: z.union([z.string(), z.number()]).transform(String).pipe(z.string().max(64)),
   movieTitle: z.string().trim().min(1).max(120),
   posterPath: z.string().trim().max(500).nullish().transform((v) => v ?? null),

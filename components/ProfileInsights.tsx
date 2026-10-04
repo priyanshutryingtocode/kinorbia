@@ -46,8 +46,6 @@ function InsightHeading({
   );
 }
 
-// `activeItem` is a string, so "Overall" needs a key that cannot collide with a
-// year. `selectedYear` is a number or undefined, so this never does.
 const OVERALL_KEY = "overall";
 
 function yearHref(year?: number) {
@@ -78,13 +76,6 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
   const areaId = `${chartId}-area`;
   const summary = data.monthly.map((point) => `${point.key}: ${point.count}`).join(", ");
 
-  // Every colour below is a `var(--color-*)` reference rather than a literal.
-  // The chart used to hardcode the dark theme's values: the point fill was
-  // #0a0a0a, which is --canvas in dark, so in light mode each data point was a
-  // black disc; the tooltip was a near-black #171717 box; and the #737373 axis
-  // labels measured about 3.4:1 on --surface-raised, under AA at 11px. None of it
-  // responded to data-theme. SVG presentation attributes accept var(), so the
-  // tokens reach the drawing without a class.
   return (
     <figure aria-labelledby={headingId}>
       <div
@@ -96,7 +87,7 @@ function MonthlyWatchChart({ data, headingId }: { data: InsightsData; headingId:
         <svg
           viewBox={`0 0 ${width} ${height}`}
           preserveAspectRatio="xMidYMid meet"
-          className="block h-auto min-w-[640px] w-full"
+          className="block h-auto min-w-160 w-full"
           role="img"
           aria-labelledby={chartId}
           aria-describedby={`${chartId}-summary`}
@@ -307,9 +298,6 @@ export default function ProfileInsights({
   return (
     <div className="space-y-0">
       {years.length > 0 && (
-        // Was a third hand-rolled tab bar, with the <Link> written out twice --
-        // once for "Overall", once per year -- and drifting the same way the
-        // profile tabs did. LinkTabs takes the items as data.
         <LinkTabs
           ariaLabel="Insight year"
           activeItem={selectedYear === undefined ? OVERALL_KEY : String(selectedYear)}
@@ -464,11 +452,6 @@ export default function ProfileInsights({
                       className="kin-focus group block min-w-0 border-b border-rule pb-3 transition-colors hover:border-highlight/50"
                     >
                       <div className="relative aspect-2/3 overflow-hidden bg-surface-raised">
-                        {/* Called tmdbImage twice in one expression and cast the second
-                            result with `as string`. That cast was suppressing a real null:
-                            tmdbImage rejects any host other than image.tmdb.org and re-sizes an
-                            already-absolute TMDB url, so the guard could pass and the src could
-                            still come back null. */}
                         <PosterImage
                           path={item.posterPath}
                           width="w185"

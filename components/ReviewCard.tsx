@@ -11,8 +11,6 @@ import SpoilerText from "./SpoilerText";
 import UserNameLink from "./UserNameLink";
 import VisibilityBadge from "./VisibilityBadge";
 
-// Shared empty map so the optional `usernames` prop does not allocate a new Map
-// on every render of every card in the grid.
 const NO_USERNAMES = new Map<string, string>();
 
 type ReviewCardProps = {
@@ -20,8 +18,6 @@ type ReviewCardProps = {
   rating?: number;
   currentUserEmail: string;
   path: string;
-  // email -> username, resolved once by the page that owns this list. The card
-  // itself never queries: it is rendered inside grids and repeated per review.
   usernames?: Map<string, string>;
 };
 
@@ -36,7 +32,7 @@ export default function ReviewCard({
   const body = review.spoiler ? (
     <SpoilerText text={review.body} />
   ) : (
-    <div className="whitespace-pre-wrap break-words text-sm leading-6 text-content-muted [overflow-wrap:anywhere]">
+    <div className="whitespace-pre-wrap wrap-break-word text-sm leading-6 text-content-muted">
       {renderRichText(review.body)}
     </div>
   );
@@ -54,7 +50,7 @@ export default function ReviewCard({
       </div>
       <div className="min-w-0 flex-1 p-4">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="min-w-0 break-words font-display text-lg font-medium leading-tight text-content [overflow-wrap:anywhere]">
+          <h3 className="min-w-0 wrap-break-word font-display text-lg font-medium leading-tight text-content">
             {review.movieTitle}
           </h3>
           <VisibilityBadge visibility={review.visibility} />

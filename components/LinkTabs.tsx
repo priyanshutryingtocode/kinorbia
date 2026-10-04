@@ -12,9 +12,6 @@ type LinkTabsProps = {
   activeItem: string;
   ariaLabel: string;
   className?: string;
-  // Let the tabs wrap onto a second row instead of scrolling. The profile's six
-  // tabs do not fit a 320px screen, so they have to wrap; the activity feed's
-  // two and the search page's do not and stay on one scrollable row.
   wrap?: boolean;
 };
 

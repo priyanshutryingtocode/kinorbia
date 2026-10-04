@@ -81,19 +81,11 @@ export function serializeList(list: RawMovieList): MovieListItem {
   };
 }
 
-// The two pairs that were still defined at their call sites. Every other
-// `Raw*` type and its serializer lives here, so a Document carrying a Date or
-// an ObjectId has exactly one documented crossing point into a plain object;
-// these two each did it locally instead, which is how the `_id.toString()` and
-// `createdAt.toISOString()` pair gets forgotten and a raw ObjectId reaches a
-// client component.
 export type RawComment = Omit<CommentItem, "_id" | "createdAt" | "parentType" | "parentId"> & {
   _id: { toString: () => string };
   createdAt: Date;
 };
 
-// parentType and parentId are supplied by the query rather than stored per row,
-// so they are passed in rather than read off the document.
 export function serializeComment(
   comment: RawComment,
   parentType: CommentItem["parentType"],

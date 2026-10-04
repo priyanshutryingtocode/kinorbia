@@ -3,19 +3,6 @@ import type { LucideIcon } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { AUTH_INPUT_ICON_CLASS, AUTH_SUBMIT_CLASS } from "@/lib/uiClasses";
 
-// The auth field, written out once.
-//
-// There are eight of these across login, signup, forgot-password and
-// reset-password, and they were all hand-written: icon, sr-only label, input.
-// What differed between them was only the id, type, autoComplete, minLength,
-// placeholder, label text, icon and value/onChange pair -- every one of them a
-// pass-through prop here.
-//
-// That hand-writing had already drifted. Two of the eight omitted `group` on
-// their wrapper, so `group-focus-within:` on the icon did nothing and the field
-// icon never lit up on focus on /forgot-password and /reset-password. One
-// component cannot drift that way again.
-
 type AuthFieldProps = {
   id: string;
   icon: LucideIcon;
@@ -40,8 +27,6 @@ export default function AuthField({
   minLength,
 }: AuthFieldProps) {
   return (
-    // `group` is what lets the icon react to focus on this field specifically.
-    // Two of the eight fields were missing it.
     <div className="relative group">
       <Icon className={AUTH_INPUT_ICON_CLASS} />
       <label htmlFor={id} className="sr-only">
@@ -75,9 +60,6 @@ export function AuthError({ message }: { message: string }) {
   );
 }
 
-// The submit button, with its loading spinner. Not the shared SubmitButton: that
-// reads useFormStatus and renders an sr-only live region, and these four pages
-// drive their own `loading` state from a client handler.
 export function AuthSubmit({
   loading,
   children,

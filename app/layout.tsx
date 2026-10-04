@@ -20,12 +20,6 @@ export const metadata: Metadata = {
   description: "Track the films you watch.",
 };
 
-// Runs before first paint rather than in an effect. The palette is chosen by a
-// `data-theme` attribute on <html>, and React cannot set that during the server
-// render, so a theme applied after hydration would flash the dark canvas at a
-// light-theme reader and then repaint. This has to be an inline blocking script
-// for the same reason next/font keeps its class on <html>. Kept in sync with
-// lib/theme.ts; `ThemeToggle` writes the same key.
 const THEME_SCRIPT = `(function(){try{var s=localStorage.getItem("kinorbia-theme");if(s!=="light"&&s!=="dark"){s=window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"}document.documentElement.dataset.theme=s}catch(e){}})();`;
 
 export default function RootLayout({

@@ -37,7 +37,7 @@ try {
 
   let removedDupes = 0;
   for (const group of dupes) {
-    if (!group._id.movieId) continue; // manual entries have no movieId; keep all
+    if (!group._id.movieId) continue; 
     const [, ...staleIds] = group.ids;
     const res = await journal.deleteMany({ _id: { $in: staleIds } });
     removedDupes += res.deletedCount;

@@ -42,10 +42,6 @@ export type InsightsData = {
   topGenre: string | null;
 };
 
-// The minimum a watched row needs for insights. `posterPath` was declared here
-// and selected from the database for the watched list, but nothing in
-// buildInsights reads it -- TopRatedItem.posterPath (above) comes from the
-// *favorites* side, which is a different collection.
 type JournalLike = {
   watchedAt: string | Date;
   mediaType?: MediaType;
@@ -58,8 +54,6 @@ function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
-// Journal watch dates are stored as UTC midnight of the selected calendar
-// day, so all journal bucketing uses UTC getters to stay consistent.
 function monthKey(date: Date) {
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}`;
 }
@@ -90,8 +84,6 @@ function journalKey(entry: JournalLike, manualOccurrences: Map<string, number>) 
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Calendar-day number derived from the YYYY-MM-DD string itself, so streak
-// math is immune to timezone offsets and DST transitions.
 function dayNumber(day: string) {
   const [y, m, d] = day.split("-").map(Number);
   return Math.round(Date.UTC(y, m - 1, d) / DAY_MS);
@@ -108,8 +100,6 @@ function computeStreaks(dayStrs: string[], now = new Date()) {
   let run = 0;
   let prev: number | null = null;
 
-  // Days are unique and ascending, so `run` after the loop is already the
-  // length of the trailing consecutive chain and `prev` its last day.
   for (const day of days) {
     run = prev !== null && day - prev === 1 ? run + 1 : 1;
     best = Math.max(best, run);

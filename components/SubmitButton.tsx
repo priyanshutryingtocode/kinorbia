@@ -14,10 +14,6 @@ type SubmitButtonProps = {
   className?: string;
   variant?: SubmitButtonVariant;
   confirmText?: string;
-  // For click-driven async work, where there is no form submission and no
-  // ActionForm transition for `useFormStatus`/`useFormPending` to report. ORed
-  // into the same pending state, so a "Load more" fetch gets the identical
-  // spinner and screen-reader announcement a form submit does.
   loading?: boolean;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children">;
 
@@ -38,10 +34,6 @@ export default function SubmitButton({
   loading = false,
   disabled,
   onClick,
-  // Defaults to "submit" because that is what a button inside an ActionForm
-  // almost always wants. It was previously hardcoded *after* `{...rest}`, which
-  // silently discarded any `type` a caller passed -- MovieGrid and
-  // SearchLoadMore both wrote `type="button"`, believing they were opting out.
   type = "submit",
   ...rest
 }: SubmitButtonProps) {
@@ -68,7 +60,7 @@ export default function SubmitButton({
         aria-busy={pending}
         onClick={handleClick}
         className={twMerge(
-          "kin-focus inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] border px-3.5 py-2 text-sm font-semibold transition-colors",
+          "kin-focus inline-flex min-h-10 items-center justify-center gap-2 rounded-(--radius-control) border px-3.5 py-2 text-sm font-semibold transition-colors",
           variantClasses[variant],
           className,
           "disabled:cursor-not-allowed disabled:opacity-50"

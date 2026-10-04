@@ -12,9 +12,6 @@ async function getSessionUser(): Promise<{ email: string | null; name: string | 
   };
 }
 
-// Wraps an authenticated API handler: resolves the session user (401 when
-// signed out), connects to the database, funnels thrown errors into a
-// consistent 500 response, and applies the given rate limit.
 export function withAuthedUser(
   handler: (req: Request, user: { email: string; name: string | null }) => Promise<Response>,
   options: { windowMs: number; limit: number; errorLabel: string }

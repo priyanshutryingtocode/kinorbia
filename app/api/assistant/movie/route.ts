@@ -90,10 +90,6 @@ async function getUserContext(email?: string | null) {
   await dbConnect();
 
   const [user, watched] = await Promise.all([
-    // Projections, not whole documents: favorites can hold 2,500 subdocs and
-    // this only needs the titles.
-    // Only the last 15 favorites reach the prompt, and only their title and
-    // rating are read, so this projects a slice rather than the whole array.
     User.findOne({ email })
       .select({ favorites: { $slice: -15 } })
       .lean<{ favorites?: { title: string; personalRating?: number }[] } | null>(),
@@ -152,16 +148,11 @@ async function getGeminiPlan(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
     {
       method: "POST",
-      // Send the key via header so the secret never lands in URLs that may
-      // end up in proxy or access logs.
       headers: {
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
-      // The only fetch in the app with no deadline. A generation call that hangs
-      // held the request open until the platform killed it, and because the route
-      // allows two per minute, one hung call could hold a slot long enough to
-      // reject the retry behind it. 20s is well past a normal generation.
+
       signal: AbortSignal.timeout(20_000),
       body: JSON.stringify({
         contents: [
@@ -225,14 +216,11 @@ async function getHistory(email?: string | null): Promise<AssistantMessage[]> {
   }
 
   await dbConnect();
-  // Projected to the two fields the prompt uses, and to the last 8 messages,
-  // rather than transferring up to 24 messages each carrying a `movies` array.
+
   const conv = await Conversation.findOne({ userEmail: email })
     .select({ messages: { $slice: -8 } })
     .lean<{ messages?: { role: Role; content: string }[] } | null>();
 
-  // The projection above already limits this to the last 8, so there is no
-  // second slice here to disagree with it.
   return (conv?.messages || []).map((message) => ({
     role: message.role,
     content: message.content,

@@ -1,31 +1,9 @@
-// The retry policy, exercised against a stubbed fetch.
-//
-// Fails on: not retrying a thrown transport error, retrying a status it should
-// not, or leaking a timer per attempt. Run with: node scripts/checkFetchRetry.mjs
-//
-//   Run it: npm run check:retry
-//
-// Why this is a behavioural check rather than more `check:contrast`-style text
-// scanning: the other two checks read files as strings, and a retry policy
-// cannot be verified by reading it. It is also the kind of logic that rots
-// quietly -- an edit that drops the retry on a thrown error still compiles,
-// still lints, and still looks correct in review, and the only symptom is an
-// empty browse grid days later.
-//
-// `lib/httpRetry.ts` is imported directly and run through Node's type stripping
-// rather than transpiled, so this exercises the module the app actually ships
-// instead of a copy that can drift. That only works while that file keeps to two
-// constraints, both asserted below: it imports nothing, and it uses no runtime
-// TypeScript syntax. Type annotations erase; `enum`, `namespace` and parameter
-// properties do not, and adding one would break this gate rather than the app.
-
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const RETRYABLE = new Set([429, 500, 502, 503, 504]);
 const URL_UNDER_TEST = "https://api.test.invalid/thing";
 
-// --- the two import constraints, verified before anything runs ----------------
 
 const source = readFileSync(new URL("../lib/httpRetry.ts", import.meta.url), "utf8");
 
@@ -57,7 +35,6 @@ function jsonResponse(status, body) {
   };
 }
 
-// What undici actually throws on a reused keep-alive socket.
 function connectionReset() {
   const error = new TypeError("fetch failed");
   error.cause = Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" });
@@ -75,8 +52,6 @@ function test(name, run) {
   cases.push({ name, run });
 }
 
-// The reported bug: a stale pooled socket threw, and the old policy only retried
-// status codes, so this was terminal on the first attempt.
 test("retries a thrown transport error and succeeds", async () => {
   let calls = 0;
   const restore = stubFetch(async () => {
@@ -193,11 +168,6 @@ test("a hung request aborts at the timeout", async () => {
       })
   );
 
-  // Raced against a sentinel on purpose. If the abort were removed from the
-  // implementation this promise would never settle, and awaiting it directly
-  // would wedge the whole check on a hang instead of reporting a failure -- which
-  // is worse than no test, because a wedged check reads as "still running" rather
-  // than "broken". The sentinel turns a missing timeout into a clean failure.
   const HUNG = Symbol("hung");
   const started = Date.now();
 
@@ -218,10 +188,6 @@ test("a hung request aborts at the timeout", async () => {
 });
 
 test("repeated calls do not accumulate timers", async () => {
-  // The version this replaced cleared its timer only when the fetch resolved, so
-  // every rejected attempt left one armed. Comparing a baseline against a later
-  // count rather than asserting zero, so the check cannot go flaky on an
-  // unrelated timer elsewhere in the process.
   const restore = stubFetch(async () => {
     throw connectionReset();
   });

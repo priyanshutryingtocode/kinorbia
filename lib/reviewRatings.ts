@@ -11,8 +11,6 @@ type ReviewForRating = {
   mediaType?: MediaType;
 };
 
-// The only favorite fields `buildRatingMap` reads. See `buildReviewerMaps` for
-// why the rest of each favorite is projected away.
 const RATING_PROJECTION =
   "email username favorites.movieId favorites.mediaType favorites.personalRating";
 
@@ -22,22 +20,6 @@ type FavoriteFields = {
   favorites?: Pick<FavoriteMovie, "movieId" | "mediaType" | "personalRating">[];
 };
 
-// Generic over the two fields it reads, so a caller that has projected the rest
-// of each favorite away can still pass the result here without a cast.
-//
-// Keeps the *newest* copy of a duplicate, matching the `$reduce` in
-// `uniqueMediaItems` (lib/profileData.ts). That is the correct direction: Mongo
-// preserves insertion order and `addedAt` defaults to the insertion time, so
-// walking backwards and taking the first hit keeps the most recently added row.
-// The rating route updates `favorites.$` positionally, so the newest copy is
-// also the one holding the freshest title, poster, and personalRating.
-//
-// This walked forwards and kept the *oldest*, so the two dedupes disagreed about
-// which copy survived -- and only rows that predate the unique index can contain
-// duplicates at all, which is why the disagreement was invisible for so long.
-//
-// Output order matches the input order, so a caller rendering the result shows
-// the array's own sequence rather than the reverse.
 export function dedupeFavorites<T extends { movieId?: string; mediaType?: string }>(
   favorites: T[]
 ): T[] {
@@ -53,9 +35,6 @@ export function dedupeFavorites<T extends { movieId?: string; mediaType?: string
   );
 }
 
-// Takes only the three fields it reads, so a caller that has projected the rest
-// of each favorite away can pass the result without a cast -- the same reason
-// `dedupeFavorites` above is generic.
 export function buildRatingMap(
   favorites: Pick<FavoriteMovie, "movieId" | "mediaType" | "personalRating">[]
 ): Map<string, number> {
@@ -76,10 +55,6 @@ export function lookupRating(
   return maps.get(review.userEmail)?.get(mediaKey(review.mediaType, review.movieId)) || 0;
 }
 
-// Resolves the `mediaKey` string produced by a favorites <select> back to the
-// stored favorite. Both halves are normalized so a key written with different
-// casing (e.g. "Movie:123") still matches, which is why this does not simply
-// compare mediaKey(movie.mediaType, movie.movieId) to the raw value.
 export async function findFavoriteByMediaKey(
   email: string,
   favoriteMediaKey: string
@@ -98,23 +73,6 @@ export async function findFavoriteByMediaKey(
   );
 }
 
-// Everything a byline and a rating chip need from a feed's authors, in one read.
-//
-// `buildReviewerRatingMaps` and `buildUsernameMap` used to be called on the same
-// emails on three pages -- /reviews, /activity and MovieReviewsAndLists -- each
-// fetching the same User documents a second later. Against a cluster ~57ms away
-// that second round-trip is a whole wave of latency for no new information, so
-// the two are merged here and the rating-only helper is gone.
-//
-// The projection lists the three favorite fields `buildRatingMap` reads rather
-// than the whole array: a title, poster path, vote average, release date and
-// addedAt per favorite were being transferred for every author on the page and
-// then discarded.
-//
-// Note the two maps key differently, and deliberately so. The rating map keys on
-// the stored email because `lookupRating` compares it against the `userEmail`
-// a review carries, while the username map keys lowercase because `usernameFor`
-// lowercases its lookup. Both are preserved exactly as they were.
 export async function buildReviewerMaps(
   emails: (string | null | undefined)[]
 ): Promise<{
@@ -127,9 +85,6 @@ export async function buildReviewerMaps(
   }
 
   await dbConnect();
-  // No `username: { $exists: true }` arm here, unlike `buildUsernameMap`: an
-  // author with no slug still has ratings, and dropping them would change what
-  // the rating chips show. The missing slug is handled when the map is built.
   const users = await User.find({ email: { $in: candidates } })
     .select(RATING_PROJECTION)
     .lean<FavoriteFields[]>();

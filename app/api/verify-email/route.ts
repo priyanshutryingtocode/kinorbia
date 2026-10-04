@@ -5,11 +5,6 @@ import { hashToken } from "@/lib/token";
 
 const RESULT_PAGE = "/verify-email";
 
-// Redemption lives in a route handler rather than the page component because a
-// page render is not a safe place to write: link prefetchers in mail clients
-// and security scanners will request the URL on their own, which would consume
-// the single-use token before the recipient ever saw it. The user can always
-// request a fresh link from their profile, so a burned token is recoverable.
 export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get("token");
 

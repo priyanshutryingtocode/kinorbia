@@ -41,9 +41,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell>
-      {/* Same `mx-auto w-full max-w-64` column as login and signup. The card is
-          `max-w-sm`, so without `mx-auto` this copy would sit flush left against
-          32px of padding with 64px opposite it. */}
       <div className="mx-auto w-full max-w-64">
         <Link
           href="/login"
@@ -67,8 +64,6 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            {/* This field was one of the three whose wrapper had no `group`, so its
-                icon never lit up on focus. One component cannot drift that way. */}
             <AuthField
               id="forgot-email"
               icon={Mail}

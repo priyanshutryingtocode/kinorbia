@@ -32,7 +32,6 @@ function NavbarShell({ pathname }: { pathname: string }) {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
   const accountButtonRef = useRef<HTMLButtonElement>(null);
-  // The portalled menu, which is no longer a descendant of accountRef.
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const mobileButtonRef = useRef<HTMLButtonElement>(null);
   const previousPathname = useRef(pathname);
@@ -40,8 +39,6 @@ function NavbarShell({ pathname }: { pathname: string }) {
   const isActive = (path: string) =>
     path === "/" ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
 
-  // Stable identities: useDismiss lists `onDismiss` in its dependency array, so
-  // an inline arrow would re-run the effect on every render.
   const closeAccount = useCallback(() => setAccountOpen(false), []);
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
@@ -63,13 +60,9 @@ function NavbarShell({ pathname }: { pathname: string }) {
     open: accountOpen,
     onDismiss: closeAccount,
     returnFocusRef: accountButtonRef,
-    // Both the trigger's wrapper and the portalled menu itself: a press on
-    // either has to count as still-inside.
     insideRefs: [accountRef, accountMenuRef],
   });
 
-  // No outside-press dismissal here: the mobile panel is closed by Escape or by
-  // choosing a destination, not by tapping the page behind it.
   useDismiss({
     open: mobileOpen,
     onDismiss: closeMobile,
@@ -97,9 +90,6 @@ function NavbarShell({ pathname }: { pathname: string }) {
     });
   };
 
-  // Stable so that NotificationBell's `close`, which wraps it, is stable too --
-  // otherwise useDismiss's effect would tear down and re-add its listeners on
-  // every render of the Navbar.
   const handleNotificationOpenChange = useCallback((value: boolean) => {
     setNotificationOpen(value);
     if (value) {
@@ -181,20 +171,6 @@ function NavbarShell({ pathname }: { pathname: string }) {
                     <User className="h-4 w-4 text-content-muted" aria-hidden="true" />
                   )}
                 </button>
-
-                {/* Portalled to <body> rather than positioned inside the header.
-                    `.shell-header` has a backdrop-filter, which makes it a
-                    backdrop root, so a descendant's own backdrop-filter can only
-                    sample inside that root -- the blur here was diffusing the
-                    header's flat band instead of the page, which left the panel
-                    20% transparent with nothing softening what showed through.
-                    NotificationBell already works this way.
-
-                    `right` comes from the row's own geometry rather than a fixed
-                    inset: `.shell-row` is `mx-auto max-w-page px-4 sm:px-6` with
-                    --container-page at 80rem, so on a wide screen the trigger sits
-                    (100vw - 80rem)/2 + 1.5rem from the right edge, not at a
-                    constant. A plain right-4 drifts off its button past 1280px. */}
                 {accountOpen &&
                   typeof document !== "undefined" &&
                   createPortal(
@@ -254,13 +230,10 @@ function NavbarShell({ pathname }: { pathname: string }) {
           </button>
         </div>
       </nav>
-
-      {/* Portalled for the same reason as the account menu above: inside the
-          header its backdrop-filter cannot see the page. */}
       {mobileOpen &&
         typeof document !== "undefined" &&
         createPortal(
-          <div className="shell-mobile-panel fixed inset-x-0 top-[var(--shell-header-height)] border-t border-rule px-4 pb-4 lg:hidden">
+          <div className="shell-mobile-panel fixed inset-x-0 top-(--shell-header-height) border-t border-rule px-4 pb-4 lg:hidden">
             <nav id="mobile-navigation" aria-label="Mobile navigation" className="premium-surface mx-auto max-w-page overflow-hidden rounded-overlay">
             <div className="grid gap-1 p-1.5">
               {NAV_LINKS.map((link) => (

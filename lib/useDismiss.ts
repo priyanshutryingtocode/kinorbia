@@ -2,26 +2,12 @@
 
 import { useEffect, type RefObject } from "react";
 
-// Escape-to-close, plus optional click-outside, plus returning focus to whatever
-// opened the surface. This was written three times by hand -- twice in Navbar
-// and once in NotificationBell -- and it is the kind of behaviour that must be
-// identical everywhere, because getting it subtly wrong is what leaves a
-// keyboard user stranded outside a menu with no way back.
 
 type UseDismissOptions = {
   open: boolean;
   onDismiss: () => void;
-  // Where focus goes when Escape closes the surface. Omit for surfaces that
-  // should not steal focus back, such as the mobile nav panel whose trigger is
-  // itself hidden while it is open.
   returnFocusRef?: RefObject<HTMLElement | null>;
-  // A pointer press inside any of these counts as "still open". An array
-  // because a portalled surface is not one element: NotificationBell's panel is
-  // rendered into a portal, so its trigger and its panel are separate refs and
-  // a press on either must not dismiss it.
   insideRefs?: RefObject<HTMLElement | null>[];
-  // Off for the mobile nav panel, which is dismissed by Escape and by choosing a
-  // destination rather than by pressing outside it.
   dismissOnPointerDownOutside?: boolean;
 };
 

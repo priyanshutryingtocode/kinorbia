@@ -19,13 +19,6 @@ export type SearchFilters = {
 
 export type SearchPage = { results: MovieSummary[]; hasMore: boolean };
 
-// "Is there enough here to search?" -- one implementation, because the page and
-// this function previously each spelled it out and carried a comment asking the
-// reader to keep them in sync by hand. `sort` is deliberately included: the page
-// always sends one (defaulting to popularity), so a sort-only visit is a real
-// search, and excluding it here showed "No results" instead of fetching
-// anything. Accepts the whole filter object rather than eight arguments, so a
-// filter added later is picked up by both call sites automatically.
 export function hasAnyFilter(filters: {
   query?: string;
   year?: string;
@@ -46,15 +39,6 @@ export function hasAnyFilter(filters: {
   );
 }
 
-// The rating/genre/language filters TMDB's search endpoint cannot express, so
-// they are applied here after the fetch.
-//
-// The `!query ||` guards are deliberate and load-bearing: during a *title*
-// search TMDB ignores genre and language, so those two are filtered by hand,
-// but during a *discovery* search they were already sent as query parameters
-// and re-filtering would exclude rows whose genre/language metadata the
-// normalized result shape does not carry. Removing the guards would silently
-// change existing results, so they stay exactly as they were.
 function applyClientFilters(
   results: MovieSummary[],
   { query, genre, minRating, language }: Pick<SearchFilters, "query" | "genre" | "minRating" | "language">
@@ -94,10 +78,6 @@ export async function fetchSearchResults(filters: SearchFilters, page: number): 
 
   return {
     results: applyClientFilters(raw, filters),
-    // From the RAW page, not the filtered one: a page whose 20 upstream results
-    // all fail `minRating` yields zero matches here while page 3 may well
-    // contain some, and reporting "no more" on that basis would strand the user
-    // with results still available.
     hasMore: raw.length > 0,
   };
 }

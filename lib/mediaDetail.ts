@@ -1,24 +1,12 @@
 import type { MediaType, TmdbCredit, TmdbTvCreator, TmdbTvDetails } from "@/types";
 import { normalizeMediaType, starsLabel } from "@/lib/media";
 
-// The film and show detail pages were two near-copies of one layout, which is
-// how the overline token came to be spelled two different ways on the same
-// element. This module holds the parts that genuinely differ between the two
-// media types; components/MediaDetailPage owns the markup they share.
-//
-// Everything here is a pure function of the TMDB payload, so the per-media
-// differences can be exercised without a database or a render.
-
-// Icons are named rather than rendered so this stays free of JSX, and so the
-// icon set lives in one place next to the markup that picks it.
 export type DetailIcon = "star" | "star-filled" | "calendar" | "clock" | "layers";
 
 export type DetailChip = {
   key: string;
   icon: DetailIcon;
   label: string;
-  // The signed-in user's own rating is highlighted rather than presented as
-  // another piece of metadata.
   accent?: boolean;
 };
 
@@ -27,10 +15,6 @@ type DetailCrew = {
   names: string;
 };
 
-// The favorite, watched, watchlist, and rating controls each declare their own
-// structural prop type rather than sharing a named one, so this is the common
-// denominator. `id` is a string here, where MovieSummary allows a number,
-// because the TMDB ids reach these controls as route params.
 export type DetailSummary = {
   id: string;
   title: string;
@@ -47,27 +31,18 @@ export type DetailModel = {
   title: string;
   tagline: string;
   overview: string;
-  // "Film" or "Series", rendered in the overline beside the year.
   kindLabel: string;
   releaseYear: string;
   releaseDate: string;
   posterPath: string | null;
   backdropPath: string | null;
-  // Rating first, then whatever the medium adds, then the release date. A
-  // value the medium does not have is simply an absent chip, rather than a
-  // conditional in the markup.
   chips: DetailChip[];
   cast: TmdbCredit[];
-  // A film lists its director and producers; a show lists its creator and
-  // network. Built by the route, since only it knows which medium it is.
   crew: DetailCrew[];
-  // The shape the favorite, watched, watchlist, and rating controls expect.
   summary: DetailSummary;
   trailerKey: string | null;
 };
 
-// detailYear used to live here as a fifth year derivation, alongside four others
-// across the app. yearOf in lib/media.ts replaced all of them, so it went too.
 
 function ratingChip(voteAverage: number | undefined): DetailChip {
   return {
@@ -116,8 +91,6 @@ export function seasonsChip(numberOfSeasons: number | null | undefined): DetailC
   };
 }
 
-// Rating first, then the medium-specific chip if it has one, then the date, so
-// both media types read the same way across the row.
 export function detailChips(options: {
   voteAverage: number | undefined;
   releaseDate: string | undefined;
@@ -151,19 +124,7 @@ export function crewPanel(label: string, members: TmdbCredit[]): DetailCrew | nu
   };
 }
 
-// A show has no single director, so the film's crew panels do not carry over.
-// TMDB's equivalent on /tv/{id} is `created_by` -- the creator/showrunner, which
-// is the name a viewer is actually looking for -- alongside the network, a fact
-// a film never has. Both ride along on the details call the page already makes,
-// so neither costs a request.
-//
-// Directing and writing credits are deliberately absent. The show-level crew
-// endpoint does not carry them: /tv/1396/credits returns 27 crew and zero
-// directors, and even the per-season aggregate returns none. They are only
-// populated per episode (62 requests for Breaking Bad) or on the separate
-// aggregate_credits endpoint, which was judged not worth a fourth request.
 export function creatorPanel(creators: TmdbTvCreator[] | undefined): DetailCrew | null {
-  // Absent on about a fifth of shows, mostly reality and unscripted formats.
   if (!creators || creators.length === 0) {
     return null;
   }
@@ -179,16 +140,12 @@ export function networkPanel(networks: TmdbTvDetails["networks"]): DetailCrew | 
     return null;
   }
 
-  // No plural branch: of 24 shows checked, every one with a network had exactly
-  // one, so "Network" is the accurate heading in practice.
   return {
     label: "Network",
     names: networks.map((network) => network.name).join(", "),
   };
 }
 
-// The film payload and the show payload use different keys for the same two
-// facts, so both are mapped here and the model below is media-agnostic.
 export function detailSummary(details: {
   id: number | string;
   title: string;

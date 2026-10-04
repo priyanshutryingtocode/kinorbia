@@ -76,7 +76,6 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-      {/* Both of these were among the three wrappers missing `group`. */}
       <AuthField
         id="reset-password"
         icon={Lock}
@@ -111,13 +110,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <AuthShell>
-      {/* Same `mx-auto w-full max-w-64` column as login and signup, wrapping the
-          heading and the form together so `ResetPasswordForm`'s `mt-6` still
-          measures from the subtitle. */}
       <div className="mx-auto w-full max-w-64">
-        {/* Same lead-in as forgot-password. Without it the card offered only the
-            wordmark above it, which goes home rather than back to the form the
-            link was opened from. */}
         <Link
           href="/login"
           className="mb-6 inline-flex items-center gap-2 text-sm text-content-muted transition hover:text-content"

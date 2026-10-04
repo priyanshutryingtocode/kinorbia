@@ -7,10 +7,7 @@ import { isDuplicateKeyError } from "@/lib/dbConnect";
 import { mediaEquals } from "@/lib/media";
 
 const markWatchedSchema = z.object({
-  // Bounded for the same reason as movieRefSchema's copy in lib/validators.ts:
-  // this reaches an embedded subdocument of both JournalEntry and User, and an
-  // unbounded id could bloat either past BSON's 16 MB limit. The two schemas
-  // are hand-rolled duplicates of each other rather than one shared definition.
+
   movieId: z.union([z.string(), z.number()]).transform(String).pipe(z.string().max(64)),
   movieTitle: z.string().trim().min(1).max(120),
   posterPath: z.string().trim().max(500).nullish().transform((v) => v ?? null),
@@ -48,8 +45,7 @@ export const POST = withAuthedUser(
     try {
       await markWatched();
     } catch (error) {
-      // Concurrent upserts race past the missing-document check under the
-      // unique index; retrying updates the winner's document instead.
+
       if (!isDuplicateKeyError(error)) {
         throw error;
       }

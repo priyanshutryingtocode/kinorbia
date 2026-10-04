@@ -4,14 +4,6 @@ import { useId, useState } from "react";
 import { Play, X } from "lucide-react";
 import AccessibleDialog from "@/components/AccessibleDialog";
 
-// The panel used to carry its own focus trap, Escape handling, scroll lock and
-// focus restore -- all of which `AccessibleDialog` already does. It was also a
-// worse copy of them: it queried only `button, iframe` with no visibility
-// filter, so Tab could land on an invisible element, and it had no "focus is
-// outside the dialog" guard. That missing guard is why it needed a `focusin`
-// handler to yank focus back to the close button, which in turn needed a
-// focusable `aria-hidden` element as a parking spot -- an ARIA violation that
-// existed only as a workaround. Using the shared dialog removes all three.
 export default function TrailerButton({
   videoKey,
   title,
@@ -39,8 +31,6 @@ export default function TrailerButton({
         titleId={titleId}
         panelClassName="shell-panel-enter relative w-[min(94vw,calc((100dvh-8.5rem)*16/9))] focus:outline-none"
       >
-        {/* Was positioned against the viewport overlay. Inside the panel it is
-            visually near-identical, because the panel is itself centred. */}
         <div
           className="pointer-events-none absolute -inset-x-24 -inset-y-24 rounded-full bg-accent/20 blur-[120px]"
           aria-hidden="true"
@@ -60,8 +50,6 @@ export default function TrailerButton({
               </div>
             </div>
 
-            {/* First focusable inside the panel, which is where the dialog's
-                initial focus lands. Previously an explicit ref. */}
             <button
               type="button"
               onClick={() => setOpen(false)}

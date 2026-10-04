@@ -1,10 +1,6 @@
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 
-// Verification is deliberately *not* cached on the session. A user who
-// redeems a link should be able to post publicly on their very next action
-// rather than after the session's own lifetime elapses. One indexed point
-// lookup on the unique `email` is cheaper than the staleness it prevents.
 export async function isEmailVerified(email: string): Promise<boolean> {
   await dbConnect();
 

@@ -12,8 +12,6 @@ const forgotPasswordSchema = z.object({
   email: z.string().trim().email().max(254).toLowerCase(),
 });
 
-// The same cost register and reset-password hash at, so the decoy below is
-// comparable to a real credential verification rather than merely plausible.
 const BCRYPT_COST = 10;
 
 export const POST = withRateLimit(
@@ -27,10 +25,6 @@ export const POST = withRateLimit(
       await dbConnect();
       const user = await User.findOne({ email: body.email }).select("email provider");
 
-      // No `emailVerified` check here on purpose. Sign-in no longer requires a
-      // confirmed address, and redeeming a reset link proves inbox control, so
-      // this path both recovers the account and marks it verified. An
-      // unverified user asking for help is the common case, not an edge case.
       if (user?.provider === "credentials") {
         const resetToken = generateToken();
         const resetTokenHash = hashToken(resetToken);
@@ -63,19 +57,7 @@ export const POST = withRateLimit(
           console.error("Failed to send reset email:", error);
         }
       } else {
-        // Burn comparable CPU so the two branches cost roughly the same.
-        //
-        // This used to hash a single throwaway token, which is a SHA-256 over 64
-        // bytes -- microseconds, against a full HTTPS round trip to Resend on the
-        // other branch. The stated goal of not distinguishing the two cases by
-        // timing was not achieved by that; register/route.ts does it correctly
-        // with a real bcrypt hash.
-        //
-        // Honest limit: bcrypt is ~68ms and a Resend call is 200-800ms, so this
-        // narrows the signal rather than closing it. Closing it properly means
-        // always sending an email or always skipping one, and burning a paid API
-        // call on every unknown address is the worse trade. The generic response
-        // below is the real defence; this just stops the gap being 100x.
+
         await bcrypt.hash(generateToken(), BCRYPT_COST);
       }
 

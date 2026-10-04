@@ -10,7 +10,7 @@ export default function SpoilerText({ text }: { text: string }) {
 
   return (
     <div className={revealed ? undefined : "rounded-control border border-rule bg-surface-raised px-3 py-2.5"}>
-      <div id={contentId} hidden={!revealed} className="whitespace-pre-wrap break-words text-sm leading-6 text-content-muted [overflow-wrap:anywhere]">
+      <div id={contentId} hidden={!revealed} className="whitespace-pre-wrap wrap-break-word text-sm leading-6 text-content-muted">
         {renderRichText(text)}
       </div>
       <button

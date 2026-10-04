@@ -1,11 +1,8 @@
 type Visibility = "public" | "private";
 
 type VisibilityFieldProps = {
-  // Class strings differ per form, so they stay props rather than being
-  // normalized here.
   legendClassName: string;
   fieldsetClassName?: string;
-  // Omit to default to public.
   visibility?: Visibility;
 };
 

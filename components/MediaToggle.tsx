@@ -18,8 +18,6 @@ type UseMediaToggleOptions = {
   payload: Record<string, unknown>;
   messages: MediaToggleMessages;
   initialActive: boolean;
-  // Omit for create-only endpoints: the button locks once active, so the
-  // response body is never read and never needs to parse.
   readActive?: (data: unknown) => boolean;
   lockWhenActive?: boolean;
 };

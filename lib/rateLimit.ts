@@ -23,9 +23,6 @@ function getRatelimit({ limit, windowMs }: LimitOptions): Ratelimit {
   return rl;
 }
 
-// Exported because the credentials sign-in path rate limits itself: NextAuth
-// calls `authorize` directly, so there is no route handler to wrap with
-// `withRateLimit`.
 export function getClientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {

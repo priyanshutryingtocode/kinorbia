@@ -48,7 +48,7 @@ export default function ProfileVerifyBanner({ verified }: ProfileVerifyBannerPro
   return (
     <section
       aria-label="Email verification"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-control)] border border-highlight/25 bg-highlight/5 px-4 py-3"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-(--radius-control) border border-highlight/25 bg-highlight/5 px-4 py-3"
     >
       <div className="flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-highlight" aria-hidden="true" />
@@ -64,7 +64,7 @@ export default function ProfileVerifyBanner({ verified }: ProfileVerifyBannerPro
         type="button"
         onClick={requestVerification}
         disabled={loading}
-        className="kin-focus inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-highlight/40 px-3.5 py-2 text-sm font-semibold text-highlight transition-colors hover:bg-highlight/10 disabled:cursor-not-allowed disabled:opacity-50"
+        className="kin-focus inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-(--radius-control) border border-highlight/40 px-3.5 py-2 text-sm font-semibold text-highlight transition-colors hover:bg-highlight/10 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <MailCheck className="h-4 w-4" aria-hidden="true" />
         {loading ? "Sending..." : "Verify email"}

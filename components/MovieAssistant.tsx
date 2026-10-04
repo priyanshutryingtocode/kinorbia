@@ -27,10 +27,6 @@ const GREETING: ChatMessage = {
 
 const HISTORY_KEY = "kinorbia-assistant-history";
 
-// One entry, or nothing. Anything that is not a message with a real role and
-// some content is dropped rather than half-rendered; the API is called with
-// whichever half of the message survives, so a missing `content` would otherwise
-// be sent as undefined.
 function isChatMessage(value: unknown): value is ChatMessage {
   if (typeof value !== "object" || value === null) {
     return false;
@@ -60,11 +56,6 @@ function loadHistory(): ChatMessage[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     if (raw) {
-      // Validated per element, not just per array. Array.isArray alone let a
-      // corrupt or hand-edited value like [1] or [{"role":"user"}] through, which
-      // produced messages with undefined role and content -- a blank bubble, every
-      // entry keyed "undefined-N" -- and, for a `movies` entry missing
-      // vote_average, a TypeError that took the whole panel down.
       const parsed: unknown = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         return parsed.filter(isChatMessage);

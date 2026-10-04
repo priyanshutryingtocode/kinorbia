@@ -4,10 +4,7 @@ import { withAuthedUser } from "@/lib/session";
 import { generateToken, hashToken, TOKEN_TTL_MS } from "@/lib/token";
 import { sendEmail, buildLink } from "@/lib/email";
 
-// Issues a verification link on demand. The address comes from the session
-// rather than the request body, so this can never be pointed at someone else's
-// inbox. Sign-in does not require a verified address; this is how a user opts
-// in to posting publicly.
+// Issues a verification link on demand.
 export const POST = withAuthedUser(
   async (_req, { email }) => {
     const user = await User.findOne({ email }).select("emailVerified verifyToken");
@@ -22,8 +19,6 @@ export const POST = withAuthedUser(
       return NextResponse.json({ message: "A verification link is already on its way." });
     }
 
-    // The session can outlive the account it points at, so fall through the
-    // two checks above without finding a document.
     if (!user) {
       return NextResponse.json({ message: "Account not found. Sign in again." }, { status: 404 });
     }

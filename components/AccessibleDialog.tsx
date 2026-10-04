@@ -11,13 +11,7 @@ type AccessibleDialogProps = {
   titleId: string;
   children: ReactNode;
   className?: string;
-  // Replaces the panel's entire styling string rather than appending to it.
-  // Needed by a caller that wants a different `width` and `padding`: `w-full`
-  // and `w-[…]` are the same specificity, and so are `p-6` and `p-0`, so
-  // appending cannot win -- Tailwind resolves equal-specificity utilities by
-  // their order in the stylesheet, not by where they sit in the class string.
-  // The structural and ARIA attributes are never part of this string, so a
-  // replacement still gets a focusable role="dialog" panel.
+
   panelClassName?: string;
 };
 

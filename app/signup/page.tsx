@@ -34,9 +34,6 @@ export default function SignUpPage() {
       });
 
       if (!response.ok) {
-        // Parsed inside the try on purpose: a non-JSON error body -- a proxy or
-        // platform 502 page, say -- makes response.json() throw, which without
-        // this would be indistinguishable from the request itself failing.
         const data = await response.json().catch(() => null);
         setError(data?.message || "Could not create account.");
         return;
@@ -44,8 +41,6 @@ export default function SignUpPage() {
 
       setRegistered(true);
     } catch {
-      // As on login: without a catch the rejection escaped the async handler
-      // and left the button disabled for good.
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);

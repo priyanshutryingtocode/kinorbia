@@ -123,8 +123,6 @@ export default async function PeopleFollowPage({
   const path = `/u/${encodeURIComponent(username)}/${mode}`;
 
   return (
-    // RouteShell rather than the same padding typed out again, so the shell
-    // stays identical to the followers/following `loading.tsx` files.
     <RouteShell spacing="extended" width="standard">
       <Link
         href={`/u/${encodeURIComponent(username)}`}

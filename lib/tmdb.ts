@@ -10,10 +10,6 @@ import { fetchJsonWithRetry } from "@/lib/httpRetry";
 
 const BASE = "https://api.themoviedb.org/3";
 
-// 429 is here because TMDB rate-limits on bursts, and the browse pages can ask
-// for several lists at once. 404 is deliberately absent: a film that does not
-// exist is an answer, not a failure, and retrying it costs round trips to
-// arrive at the same place.
 const RETRIABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 
 async function tmdbFetch<T>(
@@ -31,11 +27,6 @@ async function tmdbFetch<T>(
       retries,
       retryStatuses: RETRIABLE_STATUS,
       onExhausted: ({ url: failed, attempts, status, cause }) => {
-        // This used to fail completely silently: `catch { return null }` with no
-        // logging, so an upstream outage rendered as a browse grid that was
-        // simply empty, with nothing anywhere to say why. One line per dead
-        // call, and `warn` rather than `error` because a degraded page is not a
-        // crash -- a flapping TMDB should not look like a broken deploy.
         console.warn(
           `TMDB gave up after ${attempts} attempt(s): ${failed}` +
             (status === null ? ` (${describeCause(cause)})` : ` (HTTP ${status})`)
@@ -47,8 +38,6 @@ async function tmdbFetch<T>(
   return outcome.ok ? outcome.data : null;
 }
 
-// `ECONNRESET` and friends arrive as the cause of a TypeError, several layers
-// down, and "fetch failed" on its own tells you nothing at 2am.
 function describeCause(cause: unknown): string {
   if (typeof cause !== "object" || cause === null || !("cause" in cause)) {
     return cause instanceof Error ? cause.message : String(cause);
@@ -67,32 +56,15 @@ type ResultList<T> = { results?: T[] };
 
 type MediaPath = "movie" | "tv";
 
-// TMDB rejects anything past page 500.
 const MAX_TMDB_PAGE = 500;
 
-// TMDB's page size. The browse actions need it as the target for a "load more":
-// it is the one number that divides the 2, 4 and 5 column browse grids exactly,
-// so a click has to add exactly this many *new* titles or the final row is short.
 export const TMDB_PAGE_SIZE = 20;
 
-// Coerce untrusted page/genre values into safe URL fragments.
 function safePage(page: unknown) {
   const n = Number(page);
   return Number.isInteger(n) && n >= 1 && n <= MAX_TMDB_PAGE ? n : 1;
 }
 
-// Whether a browse page number is still fetchable.
-//
-// TMDB rejects anything past page 500, and `safePage` responds to an
-// out-of-range page by folding it back to 1. That is the right behaviour for a
-// single request but catastrophic for paging: a caller that kept asking would be
-// handed page 1's contents as brand-new cards, over and over, with
-// `hasMore: true` every time and no way out. So the browse actions check this
-// first and report the list as finished instead of asking.
-//
-// These are server-action arguments, so a non-integer can arrive here too, and
-// that reaches the same trap by a different route: `NaN` fails the `<=` test
-// below, passes through, and gets folded to 1.
 export function isFetchablePage(page: unknown): boolean {
   const n = Number(page);
   return Number.isInteger(n) && n >= 1 && n <= MAX_TMDB_PAGE;
@@ -106,8 +78,6 @@ function safeGenre(genre: string | undefined) {
   return Number.isInteger(n) && n > 0 ? String(n) : "";
 }
 
-// TMDB ids are numeric; strip everything else so route params can't alter
-// the request path.
 function safeId(id: string | number) {
   const digits = String(id).replace(/[^0-9]/g, "");
   return digits || "0";
@@ -136,9 +106,6 @@ function normalizeTvResult(result: RawTvResult): MovieSummary {
   };
 }
 
-// Shared list/detail/sub-resource fetchers. TV responses are normalized into
-// MovieSummary shape (name -> title, first_air_date -> release_date); movie
-// responses already match and are returned untouched.
 function fetchSubResource<T>(mediaType: MediaPath, id: string, resource: string, revalidate = 3600) {
   return tmdbFetch<T>(`/${mediaType}/${safeId(id)}/${resource}?language=en-US`, revalidate);
 }
@@ -149,16 +116,10 @@ async function fetchDetailsWithStatus<T>(
 ): Promise<{ details: T | null; notFound: boolean }> {
   const url = `${BASE}/${mediaType}/${safeId(id)}?api_key=${process.env.TMDB_API_KEY}`;
 
-  // This is the one call that used to have neither a retry nor a log. A single
-  // stale keep-alive socket -- the ECONNRESET that motivated all of this -- took
-  // a whole detail page down and said nothing about it.
   const outcome = await fetchJsonWithRetry<T>(
     url,
     { next: { revalidate: 3600 } },
     {
-      // 404 is absent from this set, so it is terminal on the first response:
-      // three round trips to be told a film does not exist would be worse than
-      // useless on the browse path.
       retryStatuses: RETRIABLE_STATUS,
       onExhausted: ({ url: failed, attempts, status, cause }) => {
         console.warn(
@@ -181,9 +142,6 @@ function discoverQuery(genre: string | undefined, page: number) {
   return `${genreParam ? `with_genres=${genreParam}&` : ""}language=en-US&page=${safePage(page)}`;
 }
 
-// --- Media list endpoints ---
-// Movies and TV share every path shape; the only differences are the path
-// segment and, for TV, normalizing the result into MovieSummary.
 
 const asSummaries = (data: ResultList<RawTvResult> | null) => ({
   results: data?.results?.map(normalizeTvResult) || [],
@@ -222,15 +180,6 @@ function searchByQuery(mediaType: MediaPath, query: string, extraParams: string,
   );
 }
 
-// Exported rather than kept internal: three call sites were each re-branching
-// on mediaType to choose between the two aliases below, and one of those was a
-// single-call-site wrapper whose entire body was that ternary plus a slice. Every
-// other media-shaped helper in this file -- searchByQuery, discoverByGenre,
-// fetchSubResource -- is already parameterised, so the exports were the only
-// thing still split.
-//
-// No slice here: the three callers each take a different number (5, all, 6), so
-// truncating belongs to the caller.
 export function getRecommendations(id: string, mediaType: MediaPath) {
   return recommendations(mediaType, id);
 }
@@ -306,8 +255,6 @@ export const getTvCredits = (id: string) =>
 export const getTvVideos = (id: string) =>
   fetchSubResource<{ results?: TmdbVideo[] } | null>("tv", id, "videos");
 
-// Prefer the newest official YouTube trailer, falling back through any
-// trailer, teaser, clip, and finally whatever exists.
 export function pickMainTrailer(videos: TmdbVideo[] | undefined | null): TmdbVideo | null {
   if (!videos || videos.length === 0) {
     return null;

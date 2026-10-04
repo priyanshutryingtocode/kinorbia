@@ -78,10 +78,6 @@ const UserSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 UserSchema.index({ following: 1 });
-
-// Both single-use token lookups are point reads on an unauthenticated route, so
-// without these they would be collection scans. Non-unique, which means they
-// build cleanly over legacy documents that never had a token.
 UserSchema.index({ "verifyToken.token": 1 });
 UserSchema.index({ "resetToken.token": 1 });
 

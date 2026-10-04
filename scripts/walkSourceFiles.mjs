@@ -1,9 +1,3 @@
-// One recursive source-file walker, shared by both check scripts.
-//
-// They each had their own, differing in a way that was going to bite: one
-// skipped the three ignored directories with an `if` per entry and the other via
-// a Set, and one returned a spread while the other threaded an accumulator. A
-// fourth directory added to one would silently not be checked by the other.
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 

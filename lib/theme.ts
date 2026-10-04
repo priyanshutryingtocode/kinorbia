@@ -4,9 +4,6 @@ import { useCallback, useSyncExternalStore } from "react";
 
 export type Theme = "light" | "dark";
 
-// The key the inline script in app/layout.tsx reads, and the one it falls back
-// to `prefers-color-scheme` when absent. Duplicated there because that script
-// runs before this module exists; the two must not drift.
 const THEME_STORAGE_KEY = "kinorbia-theme";
 
 const listeners = new Set<() => void>();
@@ -21,16 +18,9 @@ function readTheme(): Theme {
   return document.documentElement.dataset.theme === "light" ? "light" : "dark";
 }
 
-// The live source of truth is the `data-theme` attribute, because the inline
-// script in app/layout.tsx has already written it before React ever runs.
-// useSyncExternalStore is the right shape for that: subscribing to the DOM beats
-// copying the value into state inside an effect, which renders once with the
-// wrong theme and causes a visible flash on the toggle.
 function subscribe(listener: () => void) {
   listeners.add(listener);
 
-  // Follow the OS while the reader has expressed no preference of their own, so
-  // a system theme change is picked up without a reload.
   const media = window.matchMedia("(prefers-color-scheme: light)");
 
   function onSystemChange() {
@@ -55,8 +45,6 @@ function subscribe(listener: () => void) {
   };
 }
 
-// `app/globals.css` puts the dark palette on `:root`, so dark is what the
-// server rendered and what the first client snapshot must report to match.
 function getServerSnapshot(): Theme {
   return "dark";
 }
@@ -85,9 +73,5 @@ export function useTheme() {
     setTheme(readTheme() === "light" ? "dark" : "light");
   }, []);
 
-  // Only `toggleTheme` is consumed. `setTheme` is kept module-private rather
-  // than offered as part of the hook's surface: nothing reads it, and an
-  // exported-but-unused setter is exactly what checkUnusedExports exists to
-  // catch.
   return { theme, toggleTheme };
 }

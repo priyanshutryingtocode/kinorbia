@@ -45,7 +45,7 @@ export default function ProfileMetricRail({
         const content = (
           <>
             <p className="kin-overline text-content-muted">{label}</p>
-            <p className={`mt-1.5 break-words font-display text-2xl font-medium leading-none sm:text-3xl ${valueColors[emphasis]}`}>
+            <p className={`mt-1.5 wrap-break-word font-display text-2xl font-medium leading-none sm:text-3xl ${valueColors[emphasis]}`}>
               {value}
             </p>
             {detail && <p className="mt-1.5 text-[11px] leading-4 text-content-muted">{detail}</p>}

@@ -10,8 +10,6 @@ export default function GenreFilter({ mediaType }: { mediaType: MediaType }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentGenre = searchParams.get("genre") || "";
-  // Names resolve through lib/genres, so they cannot drift from the ones the
-  // insights chart uses. The empty id is the "everything" entry.
   const genres = [
     { id: "", name: mediaType === "tv" ? "All Shows" : "All Movies" },
     ...CURATED_GENRES[mediaType].map((id) => ({

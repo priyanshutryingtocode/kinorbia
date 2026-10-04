@@ -5,11 +5,6 @@ import { FOOTER_LINK_CLASS } from "@/lib/uiClasses";
 
 export default function Footer() {
   return (
-    /* kin-ink-band re-points the palette for everything inside, so none of the
-       colour classes below name an ink token: `text-content`, `text-highlight`
-       and `text-accent` resolve to their dark-ground values here and to their
-       light ones everywhere else. Same reason the fill is opaque rather than
-       /80 -- see the note on .shell-header. */
     <footer className="kin-ink-band border-t border-rule bg-chrome pt-12 pb-[calc(5rem+env(safe-area-inset-bottom))] text-content-muted backdrop-blur-xl">
       <PageContainer className="grid grid-cols-1 gap-10 md:grid-cols-4">
         <div className="space-y-4">

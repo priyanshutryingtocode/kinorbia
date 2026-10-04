@@ -33,10 +33,6 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
     setError("");
 
     try {
-      // Same endpoint the film pages and the diary use. The server requires a
-      // diary entry before it will store a rating, so a favorite that has never
-      // been watched comes back 409 with its own message and we surface that
-      // rather than inventing one here.
       const res = await fetch("/api/user/rating", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -11,8 +11,6 @@ import { useSignInGuard } from "@/lib/useSignInGuard";
 type MovieRatingControlProps = {
   movie: DetailSummary;
   initialRating: number;
-  // The server refuses a rating for a title with no watch log, so the control
-  // says why up front instead of letting the user discover it by saving.
   isWatched: boolean;
 };
 

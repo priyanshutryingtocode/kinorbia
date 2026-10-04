@@ -15,14 +15,6 @@ export function isDuplicateKeyError(error: unknown) {
   );
 }
 
-// Which index a duplicate-key error actually violated, e.g. "username".
-//
-// `isDuplicateKeyError` answers "did something collide?", which is enough when
-// every collision means the same retry. It is not enough where two different
-// fields are unique: a username collision is fixed by trying the next candidate,
-// while an email collision is not retryable at all, because the address is the
-// same on every attempt. Retrying the latter forever is what the auth Google
-// path used to do.
 export function duplicateKeyField(error: unknown): string | undefined {
   if (!isDuplicateKeyError(error)) {
     return undefined;
@@ -62,8 +54,6 @@ async function dbConnect() {
       serverSelectionTimeoutMS: 5000,
     };
 
-    // The module-level guard above throws before this runs, so the
-    // non-null assertion holds for the same reason `cached!` does.
     cached!.promise = mongoose.connect(mongoUri!, opts);
   }
 

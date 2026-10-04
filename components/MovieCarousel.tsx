@@ -12,22 +12,10 @@ export interface CarouselMovie {
   title: string;
   poster_path: string | null;
   release_date: string;
-  // The rating chip needs it. TMDB's recommendation results already carry
-  // `vote_average` on every entry -- verified against /movie/1396/recommendations
-  // and /tv/1399/recommendations -- so this costs no extra request; the cast in
-  // SimilarMedia was simply dropping it on the way through.
   vote_average: number;
   mediaType?: "movie" | "tv";
 }
 
-// This had its own null branch returning a bare ImageIcon, which looked nothing
-// like the placeholder on the thirteen other surfaces. It did not need one: the
-// parent is `aspect-2/3 relative bg-surface-raised`, so the shared fallback's
-// `h-full w-full` fills the same box `TmdbPosterImage fill` occupied.
-// The scroll affordance, written once. The two buttons differed only in the inset
-// side and which way the nudge was translated; everything else -- including a
-// ~40-utility class string -- was repeated verbatim, so a change to the hover or
-// focus treatment had to be made twice and could silently be made once.
 const CAROUSEL_SCROLL_BUTTON_CLASS =
   "kin-focus absolute top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-rule bg-scrim/70 text-on-scrim opacity-0 shadow-card backdrop-blur-md transition-all duration-300 hover:border-rule-strong hover:bg-surface-raised focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 md:flex";
 
@@ -77,8 +65,7 @@ export default function MovieCarousel({ movies }: { movies: CarouselMovie[] }) {
         className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-6 hide-scrollbar scroll-smooth sm:gap-5"
       >
         {movies.map((movie) => {
-          // null rather than a fallback string, so PosterBadges omits the chip
-          // instead of printing "N/A" on every undated title in the strip.
+
           const year = movie.release_date ? yearOf(movie.release_date) : null;
 
           return (

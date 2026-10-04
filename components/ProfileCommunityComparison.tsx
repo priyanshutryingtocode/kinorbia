@@ -84,11 +84,11 @@ export default async function ProfileCommunityComparison({
         aria-label="Scrollable community rating comparison"
         tabIndex={0}
       >
-        <table className="w-full min-w-[32rem] border-collapse text-sm">
+        <table className="w-full min-w-lg border-collapse text-sm">
           <caption className="sr-only">Your ratings compared with community ratings</caption>
           <thead>
             <tr className="border-b border-rule">
-              <th scope="col" className="min-w-[13rem] pb-3 pr-4 text-left font-medium text-content-muted">Title</th>
+              <th scope="col" className="min-w-52 pb-3 pr-4 text-left font-medium text-content-muted">Title</th>
               <th scope="col" className="px-2 pb-3 text-right font-medium text-highlight">You</th>
               <th scope="col" className="px-2 pb-3 text-right font-medium text-content">Community</th>
               <th scope="col" className="pb-3 pl-2 text-right font-medium text-content">Difference</th>

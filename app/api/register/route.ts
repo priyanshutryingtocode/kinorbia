@@ -7,8 +7,7 @@ import { slugifyUsername, usernameCandidates } from "@/lib/userIdentity";
 import { registerSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
 
-// Identical body for every outcome so the endpoint cannot be used to
-// enumerate registered emails.
+
 const GENERIC_RESPONSE = {
   message: "Registration received. If this email is new, you can sign in now.",
 };
@@ -38,12 +37,6 @@ export const POST = withRateLimit(
 
       const baseUsername = slugifyUsername(body.name || body.email.split("@")[0]);
 
-      // Only escapes having found a free candidate. If the walk is exhausted
-      // this stays undefined rather than silently falling back to
-      // `baseUsername` -- which is taken by construction at that point, so
-      // `User.create` would fail on the unique index and the duplicate-key
-      // branch below would answer "you can sign in now" for an account that
-      // does not exist.
       let username: string | undefined;
 
       for (const candidate of usernameCandidates(baseUsername)) {
@@ -66,8 +59,7 @@ export const POST = withRateLimit(
           username,
         });
       } catch (error) {
-        // Lost a unique-index race (email or username taken concurrently):
-        // report the generic outcome rather than leaking which.
+
         if (isDuplicateKeyError(error)) {
           return NextResponse.json(GENERIC_RESPONSE, { status: 202 });
         }

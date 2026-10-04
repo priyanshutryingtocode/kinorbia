@@ -39,12 +39,9 @@ function writeBucket(mediaType: SearchMediaType, entries: string[]) {
   try {
     localStorage.setItem(storageKey(mediaType), JSON.stringify(entries));
   } catch {
-    // Storage unavailable (private mode, quota); history is best-effort.
   }
 }
 
-// One-time migration: the pre-split feature tracked a single flat list.
-// Seed it into the Movies bucket and remove the legacy entry.
 function migrateLegacy() {
   let legacyRaw: string | null;
   try {

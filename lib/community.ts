@@ -9,16 +9,12 @@ type CommunityComparisonItem = {
   mediaType: MediaType;
   movieId: string;
   yours: number;
-  // Non-null: `items` is a slice of `comparableItems`, which is filtered to
-  // `community !== null`.
   community: number;
   count: number;
   delta: number;
 };
 
 type CommunityComparison = {
-  // Non-null: a reduce over `comparableItems`, which the guard above proves
-  // non-empty, so the quotient is a real number.
   overallCommunityAvg: number;
   userComparableAvg: number;
   comparableCount: number;
@@ -86,10 +82,6 @@ export async function buildCommunityComparison(
     existing.count = count;
   }
 
-  // A title nobody else has rated has no community average, so it cannot be
-  // compared. The type predicate drops those rows and narrows `community` to a
-  // real number, which is why the item type above is not `number | null` -- the
-  // filter below is what guarantees it, and the compiler needs to see that.
   const comparableItems: CommunityComparisonItem[] = rated
     .map((favorite) => {
       const mediaType = normalizeMediaType(favorite.mediaType);

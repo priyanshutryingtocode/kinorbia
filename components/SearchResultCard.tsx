@@ -3,15 +3,6 @@ import PosterImage from "@/components/PosterImage";
 import { mediaHref, normalizeMediaType, yearOf } from "@/lib/media";
 import type { MovieSummary } from "@/types";
 
-// Extracted from the search page's inline result markup so the first page and
-// the appended pages render identically.
-//
-// Deliberately not `MovieCard`: this is a poster *plus caption* row and
-// MovieCard is a bare tile, so mixing the two would make the appended rows look
-// different from the ones above them. The overlay is the shared part -- both now
-// draw PosterBadges, so the year and rating are consistent wherever a poster
-// carries them. They are simply not repeated here, where the caption underneath
-// already states the year.
 export default function SearchResultCard({ movie }: { movie: MovieSummary }) {
   const mediaType = normalizeMediaType(movie.mediaType);
   const releaseYear = yearOf(movie.release_date);
