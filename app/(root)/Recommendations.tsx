@@ -1,53 +1,19 @@
 import { auth } from "@/auth";
-import dbConnect from "@/lib/dbConnect";
-import User from "@/models/User";
+import { getLatestFavoriteOfType } from "@/features/media/queries";
 import MovieCard, { type MovieProp } from "@/components/MovieCard";
 import { getRecommendations } from "@/lib/tmdb";
 import type { MediaType } from "@/types";
-import { emailMatch } from "@/lib/emailMatch";
-
-type SourceFavorite = { movieId: string; title: string };
 
 // The newest favorite *of one media type*, resolved in the database.
 //
-// `$slice: -1` on its own takes the newest entry regardless of type, which is
-// how the movies page used to end up recommending shows. Filtering after a
-// fixed-width slice does not work either: a user with 100 movie favorites and
-// one old show would have no show in the last 20, so the shows panel would
-// never appear. Filter the array first, then take its last element.
-async function latestFavoriteOfType(email: string, mediaType: MediaType) {
-  const [row] = await User.aggregate<{ favorites?: SourceFavorite[] }>([
-    { $match: { email: emailMatch(email) } },
-    {
-      $project: {
-        favorites: {
-          $slice: [
-            {
-              $filter: {
-                input: { $ifNull: ["$favorites", []] },
-                as: "favorite",
-                // The subdocument defaults mediaType to "movie", so this should
-                // always match; $ifNull keeps a favorite that predates the
-                // field from being silently dropped on the movie side.
-                cond: { $eq: [{ $ifNull: ["$$favorite.mediaType", "movie"] }, mediaType] },
-              },
-            },
-            -1,
-          ],
-        },
-      },
-    },
-  ]);
-
-  return row?.favorites?.at(0) ?? null;
-}
+// `$slice: -1` on the embedded array took the newest entry regardless of type, which is how
+// the movies page recommended shows. Filtering after a fixed-width slice fails too: one old
+// show behind 100 favorites is not in the last 20. The filter has to be in the query.
 
 export default async function Recommendations({ mediaType }: { mediaType: MediaType }) {
   const session = await auth();
   if (!session?.user?.email) return null;
-
-  await dbConnect();
-  const favorite = await latestFavoriteOfType(session.user.email, mediaType);
+  const favorite = await getLatestFavoriteOfType(session.user.email, mediaType);
   // No favorite of this type: hide the panel rather than fall back to something
   // unrelated to the viewer.
   if (!favorite) return null;
@@ -60,10 +26,8 @@ export default async function Recommendations({ mediaType }: { mediaType: MediaT
   if (recommendations.length === 0) return null;
 
   return (
-    // A strip, not a second hero. This used to carry a 3xl/4xl display-serif
-    // heading that rivalled the page's <h1>; it is now one small label plus a
-    // quiet subtitle on a single line. The <h2> stays so the region is still
-    // announced in the document outline -- it is just styled like a label.
+    // A strip, not a second hero: this used to carry a 3xl/4xl heading rivalling the
+    // page's <h1>. The <h2> stays so the region is announced in the outline.
     <section className="mb-10 border-t border-rule pt-8">
       <div className="mb-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="kin-overline text-highlight">Recommended</h2>

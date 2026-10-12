@@ -1,5 +1,5 @@
 import { Bookmark, Heart } from "lucide-react";
-import { toggleSocialAction } from "@/app/(root)/socialActions";
+import { toggleSocialAction } from "@/features/social/actions";
 import SubmitButton from "./SubmitButton";
 
 type SocialActionButtonProps = {

@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { buildPageHref } from "@/lib/pageHref";
 import { Search } from "lucide-react";
 import EmptyState from "./EmptyState";
 import PagerEdge from "./PagerEdge";
 import { PAGER_EDGE_CLASS, PAGER_EDGE_DISABLED_CLASS } from "@/lib/uiClasses";
-import { PEOPLE_PAGE_SIZE } from "@/lib/profileData";
+import { PEOPLE_PAGE_SIZE } from "@/features/profile/constants";
 import PersonCard, { type Person } from "./PersonCard";
 
 type PeopleListProps = {
@@ -18,17 +19,8 @@ type PeopleListProps = {
   emptyDescription: string;
 };
 
-function pageHref(path: string, query: string, page: number) {
-  const params = new URLSearchParams();
-  if (query) {
-    params.set("q", query);
-  }
-  if (page > 1) {
-    params.set("page", String(page));
-  }
-  const search = params.toString();
-  return search ? `${path}?${search}` : path;
-}
+const pageHref = (path: string, query: string, page: number) =>
+  buildPageHref(path, { q: query }, page);
 
 export default function PeopleList({
   people,

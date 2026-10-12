@@ -2,10 +2,9 @@
 
 import StatusState from "@/components/StatusState";
 
-// No error boundary until now, for the same reason the movie route had none:
-// getTvDetails throws on any non-404 TMDB problem and also runs inside
-// generateMetadata, so one API blip took this to Next's bare default error
-// document instead of the styled retry the other routes have.
+// No error boundary until now, for the same reason the movie route had none: getTvDetails
+// throws on any non-404 TMDB problem and also runs inside generateMetadata, so one blip
+// reached Next's bare default document instead of the styled retry.
 export default function TvDetailError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <StatusState

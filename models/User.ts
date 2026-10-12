@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { tokenField } from "./shared";
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -40,41 +41,14 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
-  verifyToken: {
-    token: String,
-    expiresAt: Date,
-    _id: false,
-  },
-  resetToken: {
-    token: String,
-    expiresAt: Date,
-    _id: false,
-  },
-  favorites: [
-    {
-      movieId: { type: String, required: true },
-      title: { type: String, required: true },
-      posterPath: { type: String },
-      voteAverage: { type: Number },
-      releaseDate: { type: String },
-      personalRating: { type: Number, default: 0 },
-      mediaType: { type: String, enum: ["movie", "tv"], default: "movie" },
-      genreIds: { type: [Number], default: [] },
-      addedAt: { type: Date, default: Date.now },
-    },
-  ],
+  // Row counts per state. A `countDocuments` cannot enforce the cap -- counting and
+  // inserting are two operations -- but a conditional `$inc` on one document is atomic.
+  // Denormalized, so it can drift: `npm run check:media-counts` reconciles it.
+  favoritesCount: { type: Number, default: 0 },
+  watchlistCount: { type: Number, default: 0 },
+  verifyToken: tokenField,
+  resetToken: tokenField,
   following: { type: [String], default: [] },
-  watchlist: [
-    {
-      movieId: { type: String, required: true },
-      title: { type: String, required: true },
-      posterPath: { type: String },
-      voteAverage: { type: Number },
-      releaseDate: { type: String },
-      mediaType: { type: String, enum: ["movie", "tv"], default: "movie" },
-      addedAt: { type: Date, default: Date.now },
-    },
-  ],
 }, { timestamps: true });
 
 UserSchema.index({ following: 1 });

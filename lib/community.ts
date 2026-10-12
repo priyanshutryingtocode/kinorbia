@@ -1,5 +1,5 @@
 import dbConnect from "@/lib/dbConnect";
-import User from "@/models/User";
+import UserMovie from "@/models/UserMovie";
 import type { FavoriteMovie, MediaType } from "@/types";
 import { normalizeMediaType, mediaKey } from "@/lib/media";
 
@@ -43,43 +43,30 @@ export async function buildCommunityComparison(
 
   await dbConnect();
 
-  const rows = await User.aggregate<{
+  const rows = await UserMovie.aggregate<{
     _id: { movieId: string; mediaType: string };
     avg: number;
     count: number;
-  }>([
-    { $unwind: "$favorites" },
-    {
-      $match: {
-        "favorites.personalRating": { $gt: 0 },
-        "favorites.movieId": { $in: rated.map((favorite) => favorite.movieId) },
-        ...(userEmail ? { email: { $ne: userEmail } } : {}),
-      },
-    },
-    {
-      $group: {
-        _id: {
-          movieId: "$favorites.movieId",
-          mediaType: { $ifNull: ["$favorites.mediaType", "movie"] },
+  }>(
+    [
+      { $match: { "favorite.personalRating": { $gt: 0 }, ...(userEmail ? { userEmail: { $ne: userEmail } } : {}) } },
+      {
+        $group: {
+          _id: { movieId: "$movieId", mediaType: "$mediaType" },
+          avg: { $avg: "$favorite.personalRating" },
+          // One row per member per title now, so this is a count of people rather than
+          // a count of array entries.
+          count: { $sum: 1 },
         },
-        avg: { $avg: "$favorites.personalRating" },
-        count: { $sum: 1 },
       },
-    },
-  ]);
+    ],
+    { session: null }
+  );
+
 
   const communityMap = new Map<string, { avg: number; count: number }>();
   for (const row of rows) {
-    const key = mediaKey(row._id.mediaType, row._id.movieId);
-    const existing = communityMap.get(key);
-    if (!existing) {
-      communityMap.set(key, { avg: row.avg, count: row.count });
-      continue;
-    }
-
-    const count = existing.count + row.count;
-    existing.avg = (existing.avg * existing.count + row.avg * row.count) / count;
-    existing.count = count;
+    communityMap.set(mediaKey(row._id.mediaType, row._id.movieId), { avg: row.avg, count: row.count });
   }
 
   const comparableItems: CommunityComparisonItem[] = rated

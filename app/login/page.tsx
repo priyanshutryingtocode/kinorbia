@@ -36,7 +36,6 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     } catch {
-
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -45,51 +44,71 @@ export default function LoginPage() {
 
   return (
     <AuthShell>
-      <h1 className="sr-only">Sign in to KinOrbia</h1>
-      <div className="mx-auto w-full max-w-64 space-y-3.5">
-        <AuthSocialBlock verb="Continue" />
+      {/* No `text-center` on this wrapper. It used to sit here so the header and
+          footer inherited centring, but that meant the form needed `text-left` to
+          counteract it -- two opposing utilities where neither was needed. The
+          header block below declares its own centring instead, and the form's
+          left alignment is now just the inherited default. */}
+      <div className="mx-auto w-full max-w-64">
+        <div className="mb-5 text-center">
+          <p className="kin-overline mb-1.5 text-highlight-muted">Welcome back</p>
+          <h1 className="font-display text-xl font-medium leading-tight text-content">
+            Sign in
+          </h1>
+          <p className="mt-1.5 text-[13px] leading-6 text-content-muted">
+            Pick up your lists, journal and reviews.
+          </p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          <AuthField
-            id="login-email"
-            icon={Mail}
-            label="Email address"
-            type="email"
-            value={email}
-            onChange={setEmail}
-            placeholder="Email address"
-            autoComplete="email"
-          />
+        <div className="space-y-3.5">
+          <AuthSocialBlock verb="Continue" />
 
-          <div className="flex items-center justify-end">
-            <Link
-              href="/forgot-password"
-              className="text-[11px] font-medium text-content-subtle hover:text-highlight transition"
-            >
-              Forgot password?
-            </Link>
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-3.5 text-left">
+            <AuthField
+              id="login-email"
+              icon={Mail}
+              label="Email address"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              autoComplete="email"
+            />
 
-          <AuthField
-            id="login-password"
-            icon={Lock}
-            label="Password"
-            type="password"
-            value={password}
-            onChange={setPassword}
-            placeholder="Password"
-            autoComplete="current-password"
-          />
+            <AuthField
+              id="login-password"
+              icon={Lock}
+              label="Password"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+            />
 
-          <AuthError message={error} />
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-[11px] font-medium text-content-subtle transition-colors hover:text-wordmark"
+              >
+                Forgot password?
+              </Link>
+            </div>
 
-          <AuthSubmit loading={loading}>Sign In</AuthSubmit>
-        </form>
+            <AuthError message={error} />
+
+            <AuthSubmit loading={loading}>Sign In</AuthSubmit>
+          </form>
+        </div>
+
+        <p className="mt-6 text-xs text-content-subtle">
+          Need an account?{" "}
+          <Link
+            href="/signup"
+            className="font-medium text-highlight transition-colors hover:text-wordmark hover:underline"
+          >
+            Sign up
+          </Link>
+        </p>
       </div>
-
-      <p className="mt-6 text-xs text-content-subtle">
-        Need an account? <Link href="/signup" className="text-highlight font-medium hover:text-danger hover:underline transition-colors">Sign up</Link>
-      </p>
     </AuthShell>
   );
 }

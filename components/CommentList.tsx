@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { deleteComment } from "@/app/(root)/commentActions";
+import { deleteComment } from "@/features/comments/actions";
 import ActionForm from "./ActionForm";
 import type { CommentItem } from "@/types";
 import SubmitButton from "./SubmitButton";

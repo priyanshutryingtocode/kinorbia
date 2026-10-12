@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getFavoritePage, getInsightsSource, getListPage, getProfileIdentity, getProfileOverview, getRelationshipCounts, getReviewPage, getWatchlistPage } from "@/features/profile/queries";
+import { PROFILE_PAGE_SIZES } from "@/features/profile/constants";
 import PosterImage from "@/components/PosterImage";
 import RouteShell from "@/components/RouteShell";
 import SpoilerText from "@/components/SpoilerText";
@@ -11,17 +13,7 @@ import dbConnect from "@/lib/dbConnect";
 import { buildInsights, yearsFromJournal } from "@/lib/insights";
 import {formatDate, mediaHref, mediaKey, normalizeMediaType} from "@/lib/media";
 import { firstValue, parsePage, parseYear } from "@/lib/searchParams";
-import {
-  getFavoritePage,
-  getInsightsSource,
-  getListPage,
-  getProfileIdentity,
-  getProfileOverview,
-  getRelationshipCounts,
-  getReviewPage,
-  getWatchlistPage,
-  PROFILE_PAGE_SIZES,
-} from "@/lib/profileData";
+
 import { buildUsernameMap } from "@/lib/profileLinks";
 import EmptyState from "@/components/EmptyState";
 import MovieCard from "@/components/MovieCard";
@@ -58,41 +50,44 @@ function parseTab(value: string | string[] | undefined): ProfileTab {
     : "overview";
 }
 
-function JournalCard({ item }: { item: JournalItem }) {
-  const href = item.movieId ? mediaHref(item.mediaType, item.movieId) : null;
+function WatchedCard({ item }: { item: JournalItem }) {
+  const href = mediaHref(item.mediaType, item.movieId);
   const content = (
     <>
       <div className="relative aspect-2/3 bg-surface-raised">
         <PosterImage
           path={item.posterPath}
           width="w342"
-          alt={item.movieTitle}
+          alt={item.title}
           sizes="(min-width: 768px) 20vw, 45vw"
           className="object-cover"
         />
       </div>
       <div className="p-3">
-        <h3 className="truncate text-sm font-semibold text-content">{item.movieTitle}</h3>
+        <h3 className="truncate text-sm font-semibold text-content">{item.title}</h3>
         <p className="mt-1 text-xs text-content-muted">{formatDate(item.watchedAt)}</p>
       </div>
     </>
   );
-  const className = "kin-focus block overflow-hidden rounded-sm border border-rule bg-surface-raised/45 transition-colors hover:border-highlight/40";
-  return href ? <Link href={href} className={className}>{content}</Link> : <div className={className}>{content}</div>;
+  return (
+    <Link
+      href={href}
+      className="kin-focus block overflow-hidden rounded-sm border border-rule bg-surface-raised/45 transition-colors hover:border-highlight/40"
+    >
+      {content}
+    </Link>
+  );
 }
 
 function CompactReview({ review }: { review: ReviewItem }) {
   return (
-    // The row is a container, not a link. It used to be a <Link> around the
-    // whole thing, which would have put the spoiler's reveal <button> inside an
-    // <a> -- invalid HTML, unreachable by keyboard, and clicking "reveal"
-    // would navigate away instead. The title carries the navigation, matching
-    // `components/MovieReviewsAndLists`.
+    // A container, not a link: it used to be a <Link>, putting the spoiler's reveal
+    // <button> inside an <a> -- invalid HTML, unreachable by keyboard. The title navigates.
     <div className="group border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/25">
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-display text-lg font-semibold">
           <Link href="/reviews" className="kin-focus text-content transition-colors group-hover:text-highlight">
-            {review.movieTitle}
+            {review.title}
           </Link>
         </h3>
         {review.spoiler && <span className="rounded-full border border-highlight/20 bg-highlight/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-highlight">Spoiler</span>}
@@ -163,7 +158,7 @@ function OverviewPanel({
 
       <ProfilePanel id="recent" eyebrow="Last watched" title="Recent titles">
         {data.recentJournal.length ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{data.recentJournal.map((item) => <JournalCard key={item._id} item={item} />)}</div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{data.recentJournal.map((item) => <WatchedCard key={item.key} item={item} />)}</div>
         ) : (
           <EmptyState compact title="No watch history yet" description="Mark a title as watched and it will appear here." />
         )}

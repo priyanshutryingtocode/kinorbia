@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { type ConnectOptions } from "mongoose";
 
 const mongoUri = process.env.MONGO_MONGODB_URI || process.env.MONGODB_URI;
 
@@ -43,6 +43,74 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
+// Only nameserver/network failures: retrying an auth error or a bad URI just
+// delays a clear message.
+const TRANSIENT_CODES = new Set([
+  "ESERVFAIL",
+  "EREFUSED",
+  "ENOTFOUND",
+  "ETIMEOUT",
+  "ECONNREFUSED",
+]);
+
+const CONNECT_ATTEMPTS = 3;
+const CONNECT_BACKOFF_MS = [250, 500];
+
+// SRV lookups for the Atlas host fail intermittently; matching on the message as well
+// as `code` covers mongoose wrapping the driver error and dropping the code.
+function isTransientConnectError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const code = "code" in error ? String((error as { code?: unknown }).code) : "";
+
+  if (TRANSIENT_CODES.has(code) || error.message.includes("querySrv")) {
+    return true;
+  }
+
+  // Mongoose wraps a failed SRV lookup in a ServerSelectionError with no `code` and a message
+  // mentioning a timeout, not DNS. Treating that wrapper as fatal meant one flaky resolver
+  // took down the request, so it is classified as transient.
+  return error.name === "MongooseServerSelectionError";
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function errorCode(error: unknown): string {
+  if (error instanceof Error && "code" in error) {
+    return String((error as { code?: unknown }).code);
+  }
+
+  return "unknown";
+}
+
+async function connectWithRetry(opts: ConnectOptions) {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < CONNECT_ATTEMPTS; attempt += 1) {
+    try {
+      return await mongoose.connect(mongoUri!, opts);
+    } catch (error) {
+      if (!isTransientConnectError(error) || attempt === CONNECT_ATTEMPTS - 1) {
+        throw error;
+      }
+
+      lastError = error;
+
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          `MongoDB connect attempt ${attempt + 1}/${CONNECT_ATTEMPTS} failed (${errorCode(error)}); retrying.`
+        );
+      }
+
+      await sleep(CONNECT_BACKOFF_MS[attempt]);
+    }
+  }
+
+  throw lastError;
+}
+
 async function dbConnect() {
   if (cached!.conn) {
     return cached!.conn;
@@ -54,7 +122,9 @@ async function dbConnect() {
       serverSelectionTimeoutMS: 5000,
     };
 
-    cached!.promise = mongoose.connect(mongoUri!, opts);
+    // The retry lives inside the cached promise: concurrent callers share one connect
+    // attempt sequence rather than each amplifying a flapping resolver.
+    cached!.promise = connectWithRetry(opts);
   }
 
   try {
@@ -62,13 +132,10 @@ async function dbConnect() {
   } catch (e) {
     cached!.promise = null;
 
-    if (e instanceof Error && ("code" in e || e.message.includes("querySrv"))) {
-      const code = "code" in e ? String(e.code) : "";
-      if (code === "ENOTFOUND" || code === "ETIMEOUT" || e.message.includes("querySrv")) {
-        throw new Error(
-          "Could not resolve the MongoDB Atlas host. Check that your MongoDB URI is current, the Atlas cluster still exists, and your network/DNS can resolve mongodb+srv records."
-        );
-      }
+    if (isTransientConnectError(e)) {
+      throw new Error(
+        "Could not resolve the MongoDB Atlas host. Check that your MongoDB URI is current, the Atlas cluster still exists, and your network/DNS can resolve mongodb+srv records."
+      );
     }
 
     throw e;

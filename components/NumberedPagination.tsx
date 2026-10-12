@@ -58,8 +58,8 @@ export default function NumberedPagination({
               aria-current={active ? "page" : undefined}
               className={`${pageClass} ${
                 active
-                  ? "border-accent/80 font-semibold text-accent-text"
-                  : "border-transparent font-normal text-content-subtle hover:border-rule-strong hover:text-content"
+                  ? "border-highlight-muted font-semibold text-highlight-muted"
+                  : "border-transparent font-normal text-content-subtle hover:border-highlight-muted/70 hover:text-highlight-muted"
               }`}
             >
               {pageNumber}

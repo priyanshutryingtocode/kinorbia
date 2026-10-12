@@ -1,56 +1,27 @@
 import mongoose from "mongoose";
+import { authorFields, mediaCoreFields, socialFields, visibilityField } from "./shared";
 
 const ReviewSchema = new mongoose.Schema({
-  userEmail: {
-    type: String,
-    required: true,
-    index: true,
-  },
-  userName: {
-    type: String,
-    required: true,
-  },
-  movieId: {
-    type: String,
-  },
-  mediaType: {
-    type: String,
-    enum: ["movie", "tv"],
-    default: "movie",
-  },
-  movieTitle: {
-    type: String,
-    required: true,
-  },
-  posterPath: {
-    type: String,
-  },
+  ...authorFields,
+  ...mediaCoreFields,
   body: {
     type: String,
     required: true,
     maxLength: 1200,
   },
-  visibility: {
-    type: String,
-    enum: ["public", "private"],
-    default: "public",
-    index: true,
-  },
+  visibility: visibilityField,
   spoiler: {
     type: Boolean,
     default: false,
   },
-  likedBy: {
-    type: [String],
-    default: [],
-  },
-  savedBy: {
-    type: [String],
-    default: [],
-  },
+  ...socialFields,
 }, { timestamps: true });
 
+ReviewSchema.index({ userEmail: 1 });
+ReviewSchema.index({ visibility: 1 });
 ReviewSchema.index({ movieId: 1, mediaType: 1, visibility: 1, createdAt: -1 });
+// The last two exist on the server under names an older mongoose generated. Do not drop
+// them: MongoDB will not recreate the same key under a second name (IndexOptionsConflict 85).
 ReviewSchema.index({ visibility: 1, createdAt: -1, _id: -1 });
 ReviewSchema.index({ userEmail: 1, createdAt: -1, _id: -1 });
 

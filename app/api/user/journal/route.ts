@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import JournalEntry from "@/models/JournalEntry";
 import { withAuthedUser } from "@/lib/session";
 import { parseBody, badRequest } from "@/lib/validators";
 import { z } from "zod";
-import { isDuplicateKeyError } from "@/lib/dbConnect";
-import { mediaEquals } from "@/lib/media";
+import { markWatched } from "@/features/journal/mutations";
 
 const markWatchedSchema = z.object({
-
   movieId: z.union([z.string(), z.number()]).transform(String).pipe(z.string().max(64)),
   movieTitle: z.string().trim().min(1).max(120),
   posterPath: z.string().trim().max(500).nullish().transform((v) => v ?? null),
@@ -15,42 +12,19 @@ const markWatchedSchema = z.object({
 });
 
 export const POST = withAuthedUser(
-  async (req, { email, name }) => {
+  async (req, { email }) => {
     const body = await parseBody(req, markWatchedSchema);
     if (!body) {
       return badRequest("Movie details are required.");
     }
 
-    const markWatched = () =>
-      JournalEntry.updateOne(
-        {
-          userEmail: email,
-          movieId: body.movieId,
-          mediaType: mediaEquals(body.mediaType),
-        },
-        {
-          $setOnInsert: {
-            userEmail: email,
-            userName: name || "KinOrbia user",
-            movieId: body.movieId,
-            mediaType: body.mediaType,
-            movieTitle: body.movieTitle,
-            posterPath: body.posterPath,
-            watchedAt: new Date(),
-          },
-        },
-        { upsert: true }
-      );
-
-    try {
-      await markWatched();
-    } catch (error) {
-
-      if (!isDuplicateKeyError(error)) {
-        throw error;
-      }
-      await markWatched();
-    }
+    await markWatched({
+      userEmail: email,
+      movieId: body.movieId,
+      movieTitle: body.movieTitle,
+      posterPath: body.posterPath,
+      mediaType: body.mediaType,
+    });
 
     return NextResponse.json({ isWatched: true, message: "Marked as watched" });
   },

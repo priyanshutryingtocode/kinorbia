@@ -1,40 +1,11 @@
 import mongoose from "mongoose";
+import { authorFields, mediaRefFields, socialFields, visibilityField } from "./shared";
 
-const ListMovieSchema = new mongoose.Schema({
-  movieId: {
-    type: String,
-    required: true,
-  },
-  mediaType: {
-    type: String,
-    enum: ["movie", "tv"],
-    default: "movie",
-  },
-  title: {
-    type: String,
-    required: true,
-  },
-  posterPath: {
-    type: String,
-  },
-  voteAverage: {
-    type: Number,
-  },
-  releaseDate: {
-    type: String,
-  },
-}, { _id: false });
+// `_id: false`: a list entry is a value inside the list, not a document of its own.
+const ListMovieSchema = new mongoose.Schema({ ...mediaRefFields }, { _id: false });
 
 const MovieListSchema = new mongoose.Schema({
-  userEmail: {
-    type: String,
-    required: true,
-    index: true,
-  },
-  userName: {
-    type: String,
-    required: true,
-  },
+  ...authorFields,
   title: {
     type: String,
     required: true,
@@ -48,23 +19,15 @@ const MovieListSchema = new mongoose.Schema({
     type: [ListMovieSchema],
     default: [],
   },
-  visibility: {
-    type: String,
-    enum: ["public", "private"],
-    default: "public",
-    index: true,
-  },
-  likedBy: {
-    type: [String],
-    default: [],
-  },
-  savedBy: {
-    type: [String],
-    default: [],
-  },
+  visibility: visibilityField,
+  ...socialFields,
 }, { timestamps: true });
 
+MovieListSchema.index({ userEmail: 1 });
+MovieListSchema.index({ visibility: 1 });
 MovieListSchema.index({ "movies.movieId": 1, "movies.mediaType": 1, visibility: 1 });
+// These exist on the server under names an older mongoose generated. Do not drop them:
+// MongoDB will not recreate the same key under a second name (IndexOptionsConflict 85).
 MovieListSchema.index({ visibility: 1, createdAt: -1, _id: -1 });
 MovieListSchema.index({ userEmail: 1, createdAt: -1, _id: -1 });
 

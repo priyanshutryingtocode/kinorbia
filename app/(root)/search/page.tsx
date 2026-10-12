@@ -1,4 +1,5 @@
 import { Search } from "lucide-react";
+import { buildPageHref } from "@/lib/pageHref";
 import type { Metadata } from "next";
 import RouteShell from "@/components/RouteShell";
 import PageHeader from "@/components/PageHeader";
@@ -7,6 +8,7 @@ import LinkTabs from "@/components/LinkTabs";
 import SearchHistory from "@/components/SearchHistory";
 import SearchTrackerForm from "@/components/SearchTrackerForm";
 import EmptyState from "@/components/EmptyState";
+import RetryButton from "@/components/RetryButton";
 import { fetchSearchResults, hasAnyFilter, type SearchFilters } from "@/lib/search";
 import { fetchSearchPage } from "../../actions";
 import SearchResultCard from "@/components/SearchResultCard";
@@ -53,17 +55,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const selectedSort = typeof sort === "string" ? sort : "";
   const mediaType = type === "tv" ? "tv" : "movie";
   const isTv = mediaType === "tv";
-  // One object, read twice: the server fetch below and the `args` handed to
-  // SearchLoadMore. They were two hand-written copies of the same nine keys, so
-  // adding a filter meant editing both in this file with nothing to catch a
-  // mismatch -- and a mismatch is not cosmetic. Page 1 and page 2+ would query
-  // different filters, so "load more" would silently append results from a
-  // different search, and useLoadMore's dedupe cannot detect that.
-  //
-  // `sort` deliberately counts towards hasNoFilters: the page always sends one
-  // (defaulting to popularity), so a sort-only visit is a real search. Without it,
-  // `?sort=rating.desc` fell through to "Start discovering" and never fetched
-  // anything.
+// One object, read twice: the fetch below and the `args` handed to SearchLoadMore. Two
+    // hand-written copies let page 1 and page 2+ query different filters, so "load more"
+    // would append results from a different search.
+    //
+    // `sort` counts towards hasNoFilters: the page always sends one, so a sort-only visit
+    // is a real search. Without it `?sort=rating.desc` fell through to "Start discovering".
   const filters: SearchFilters = {
     query,
     year: releaseYear,
@@ -77,18 +74,17 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   const hasNoFilters = !hasAnyFilter(filters);
 
-  const buildTypeHref = (nextType: "movie" | "tv") => {
-    const params = new URLSearchParams();
-    if (query) params.set("q", query);
-    if (releaseYear) params.set("year", releaseYear);
-    if (minRating) params.set("minRating", minRating);
-    if (selectedGenre) params.set("genre", selectedGenre);
-    if (maxRuntime) params.set("runtime", maxRuntime);
-    if (selectedLanguage) params.set("language", selectedLanguage);
-    if (selectedSort) params.set("sort", selectedSort);
-    params.set("type", nextType);
-    return `?${params.toString()}`;
-  };
+  const buildTypeHref = (nextType: "movie" | "tv") =>
+    buildPageHref("", {
+      q: query,
+      year: releaseYear,
+      minRating,
+      genre: selectedGenre,
+      runtime: maxRuntime,
+      language: selectedLanguage,
+      sort: selectedSort,
+      type: nextType,
+    });
 
   const data = await fetchSearchResults(filters, 1);
   // Already filtered by the action, so each page arrives ready to render. A
@@ -238,6 +234,27 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           title="Start discovering"
           description={`Type a ${isTv ? "show" : "movie"} title or choose filters to begin.`}
         />
+      ) : data.failed ? (
+        // Ahead of the empty state on purpose. TMDB being unreachable is not the same as
+        // the title not existing, and saying "no movies found" for a film that does is
+        // worse than saying nothing useful at all.
+        <EmptyState
+          compact
+          headingLevel={2}
+          className="mt-8"
+          title={`Couldn't load ${isTv ? "shows" : "movies"} right now`}
+          description="This is a connection problem, not a missing title. The results are still there."
+        >
+          <RetryButton />
+        </EmptyState>
+      ) : data.undisplayable ? (
+        <EmptyState
+          compact
+          headingLevel={2}
+          className="mt-8"
+          title="No titles to show for this search"
+          description="TMDB returned matches, but none of them have artwork or a release date to render."
+        />
       ) : movies.length === 0 ? (
         <EmptyState
           compact
@@ -259,7 +276,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             description={`${movies.length} ${movies.length === 1 ? "result" : "results"}`}
             className="mt-8"
           />
-          <ul className="mt-5 poster-grid-dense">
+          <ul className="mt-5 poster-grid">
             {movies.map((movie) => (
               <SearchResultCard
                 key={`${normalizeMediaType(movie.mediaType)}-${movie.id}`}
@@ -275,6 +292,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             key={`${query}|${selectedGenre}|${releaseYear}|${selectedLanguage}|${selectedSort}|${mediaType}`}
             action={fetchSearchPage}
             args={filters}
+            initialPage={data.nextPage}
+            seed={movies}
           />
         </section>
       )}

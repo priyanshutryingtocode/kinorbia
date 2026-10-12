@@ -12,28 +12,35 @@ export type MovieSummary = {
   mediaType?: MediaType;
 };
 
-export type FavoriteMovie = {
+// The stored shape of a film or show, shared by the three places that keep one.
+// `movieId` and `title` are what everything else keys off; the rest is metadata
+// TMDB returned and would otherwise need a second lookup to render.
+type MediaRef = {
   movieId: string;
   title: string;
   posterPath: string | null;
   voteAverage: number;
   releaseDate?: string;
-  personalRating?: number;
   mediaType?: MediaType;
   genreIds?: number[];
   addedAt?: string;
 };
 
-export type WatchlistMovie = FavoriteMovie;
-
-export type ListMovie = {
-  movieId: string;
-  title: string;
-  posterPath: string | null;
-  voteAverage: number;
-  releaseDate?: string;
-  mediaType?: MediaType;
+// A favorite carries the viewer's own rating. Only something watched can be rated,
+// so this is the one place `personalRating` exists.
+export type FavoriteMovie = MediaRef & {
+  personalRating?: number;
 };
+
+// A watchlist entry is the same reference without the rating.
+//
+// Not an alias of FavoriteMovie: a watchlist entry has no `personalRating`, and
+// saying so is what stopped a serializer having to invent a zero for every row.
+export type WatchlistMovie = MediaRef;
+
+// A list entry is a reference with no per-row extras at all: a list is other
+// people's favorites, so the viewer has no rating of their own to attach.
+export type ListMovie = Omit<MediaRef, "genreIds" | "addedAt">;
 
 export type TmdbMovieDetails = MovieSummary & {
   backdrop_path: string | null;
@@ -98,7 +105,7 @@ export type ReviewItem = {
   _id: string;
   userEmail: string;
   userName: string;
-  movieTitle: string;
+  title: string;
   posterPath?: string | null;
   body: string;
   visibility: "public" | "private";
@@ -123,14 +130,16 @@ export type MovieListItem = {
   createdAt: string;
 };
 
+// A watched title in the profile's "Recent titles" grid. `key` is the mediaKey rather than
+// a document id: a watch is a state on a row, not a piece of writing, so there is no `_id`
+// to link to and nothing ever did.
 export type JournalItem = {
-  _id: string;
-  movieTitle: string;
+  key: string;
+  title: string;
   posterPath?: string | null;
   watchedAt: string;
-  createdAt: string;
-  movieId?: string;
-  mediaType?: MediaType;
+  movieId: string;
+  mediaType: MediaType;
 };
 
 export type CommentItem = {

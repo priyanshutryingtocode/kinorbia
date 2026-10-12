@@ -2,12 +2,9 @@
 
 import StatusState from "@/components/StatusState";
 
-// This route has no error boundary of its own, so a TMDB failure reached
-// Next's bare default error document. That is not a hypothetical: the details
-// fetch throws on every non-404 problem (see getMovieDetails), including a
-// network error or a 429/500 from TMDB, and it also runs from generateMetadata.
-// Sibling routes -- reviews, lists, activity -- have had a boundary all along,
-// which is why this was the odd one out rather than a deliberate choice.
+// This route had no error boundary, so a TMDB failure reached Next's bare default error
+// document. Not hypothetical: getMovieDetails throws on every non-404 problem and also runs
+// from generateMetadata. Sibling routes -- reviews, lists, activity -- always had one.
 export default function MovieDetailError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <StatusState

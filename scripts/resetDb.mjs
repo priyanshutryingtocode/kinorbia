@@ -11,16 +11,21 @@ await client.connect();
 try {
   const db = client.db();
 
-  const contentCollections = ["journalentries", "movielists", "reviews", "conversations"];
+  // `usermovies` is where favorites, watchlist and watched state now live, so emptying the
+// embedded arrays without clearing it would leave every member looking favorited while
+// their profile, counts and insights all read the rows.
+const contentCollections = ["usermovies", "movielists", "reviews", "conversations"];
   for (const name of contentCollections) {
     const before = await db.collection(name).countDocuments({});
     const result = await db.collection(name).deleteMany({});
     console.log(`${name}: ${before} docs -> removed ${result.deletedCount}`);
   }
 
+  // The counters are what the caps are enforced against, so they have to return to zero
+  // with the rows or the next member to fill a list would be told theirs is already full.
   const usersResult = await db.collection("users").updateMany(
     {},
-    { $set: { favorites: [], watchlist: [] } }
+    { $set: { favoritesCount: 0, watchlistCount: 0 } }
   );
   console.log(`users: reset content on ${usersResult.modifiedCount} docs`);
 

@@ -6,21 +6,24 @@ import { signIn } from "next-auth/react";
 export default function AuthSocialBlock({ verb }: { verb: string }) {
   return (
     <div className="space-y-3.5">
+      {/* kin-focus: this button had no visible focus ring, which made the Google
+          path unreachable by keyboard without any visual cue. Same omission as
+          AUTH_SUBMIT_CLASS, and the only reason to notice is tabbing the form. */}
       <button
         type="button"
         onClick={() => signIn("google", { callbackUrl: "/" })}
-        className="w-full flex items-center justify-center gap-3 bg-glass hover:bg-glass-hover border border-rule rounded-control py-3.5 px-4 transition-colors duration-150 group"
+        className="kin-focus group flex w-full items-center justify-center gap-3 rounded-control border border-rule bg-glass px-4 py-3 transition-colors duration-150 hover:border-rule-strong hover:bg-glass-hover"
       >
-        <Chrome className="w-5 h-5 text-content-muted group-hover:text-content transition-colors" />
-        <span className="text-sm font-medium text-content group-hover:text-content transition-colors">
+        <Chrome className="h-[18px] w-[18px] text-content-muted transition-colors group-hover:text-content" aria-hidden="true" />
+        <span className="text-[13px] font-medium text-content transition-colors">
           {verb} with Google
         </span>
       </button>
 
       <div className="flex items-center gap-4">
-        <div className="h-px bg-linear-to-r from-transparent via-rule to-transparent flex-1" />
-        <span className="text-content-subtle text-[10px] font-bold uppercase tracking-widest">Or</span>
-        <div className="h-px bg-linear-to-r from-transparent via-rule to-transparent flex-1" />
+        <div className="h-px flex-1 bg-linear-to-r from-transparent via-rule-strong to-transparent" />
+        <span className="kin-overline text-[10px] text-content-subtle">Or</span>
+        <div className="h-px flex-1 bg-linear-to-r from-transparent via-rule-strong to-transparent" />
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ export default function Loading() {
 
           <div className="mt-8">
             <Skeleton className="h-7 w-48" />
-            <div className="mt-5 poster-grid-dense">
+            <div className="mt-5 poster-grid">
               {Array.from({ length: 10 }).map((_, index) => (
                 <div key={index}>
                   <Skeleton className="aspect-2/3 w-full" />

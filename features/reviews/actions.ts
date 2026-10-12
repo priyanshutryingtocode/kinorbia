@@ -2,24 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { resolveActionArgs, withState, type ActionState } from "@/lib/actionState";
-import dbConnect from "@/lib/dbConnect";
-import Review from "@/models/Review";
-import Comment from "@/models/Comment";
-import Notification from "@/models/Notification";
 import { requireUser, getString, parseVisibility } from "@/lib/actions";
-import { findFavoriteByMediaKey } from "@/lib/reviewRatings";
 import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
 import { isObjectId } from "@/lib/objectId";
-import { normalizeMediaType } from "@/lib/media";
-
-const MAX_REVIEW_LENGTH = 1200;
-
+import { editReview, publishReview, removeReview, MAX_REVIEW_LENGTH } from "@/features/reviews/mutations";
 
 function isTruthyCheckbox(value: string) {
   return value === "on" || value === "true" || value === "1";
 }
 
-export async function createReview(stateOrFormData: ActionState | FormData, formData?: FormData): Promise<ActionState> {
+export async function createReview(
+  stateOrFormData: ActionState | FormData,
+  formData?: FormData
+): Promise<ActionState> {
   const { state, formData: resolvedFormData } = resolveActionArgs(stateOrFormData, formData);
   const { email, name } = await requireUser();
 
@@ -39,29 +34,25 @@ export async function createReview(stateOrFormData: ActionState | FormData, form
   }
 
   try {
-    await dbConnect();
-
     if (visibility === "public" && !(await isEmailVerified(email))) {
       return withState(state, "error", VERIFICATION_REQUIRED_MESSAGE);
     }
 
-    const favorite = await findFavoriteByMediaKey(email, favoriteMovieId);
-
-    if (!favorite || !favorite.personalRating || favorite.personalRating <= 0) {
-      return withState(state, "error", "Choose one of your rated movies before publishing.");
-    }
-
-    await Review.create({
-      userEmail: email,
-      userName: name,
-      movieId: favorite.movieId,
-      mediaType: normalizeMediaType(favorite.mediaType),
-      movieTitle: favorite.title,
-      posterPath: favorite.posterPath || undefined,
+    const result = await publishReview({
+      authorEmail: email,
+      authorName: name,
+      favoriteMovieId,
       body,
       visibility,
       spoiler,
     });
+
+    if (result === "no-rated-favorite") {
+      return withState(state, "error", "Choose one of your rated movies before publishing.");
+    }
+    if (result === "failed") {
+      return withState(state, "error", "We couldn't publish your review. Please try again.");
+    }
   } catch (error) {
     console.error("Error creating review:", error);
     return withState(state, "error", "We couldn't publish your review. Please try again.");
@@ -71,7 +62,10 @@ export async function createReview(stateOrFormData: ActionState | FormData, form
   return withState(state, "success", "Review published.");
 }
 
-export async function updateReview(stateOrFormData: ActionState | FormData, formData?: FormData): Promise<ActionState> {
+export async function updateReview(
+  stateOrFormData: ActionState | FormData,
+  formData?: FormData
+): Promise<ActionState> {
   const { state, formData: resolvedFormData } = resolveActionArgs(stateOrFormData, formData);
   const { email } = await requireUser();
 
@@ -91,26 +85,15 @@ export async function updateReview(stateOrFormData: ActionState | FormData, form
   }
 
   try {
-    await dbConnect();
-
     // Flipping a private review to public is the moment it becomes visible, so
     // that is where the check belongs rather than on create alone.
     if (visibility === "public" && !(await isEmailVerified(email))) {
       return withState(state, "error", VERIFICATION_REQUIRED_MESSAGE);
     }
 
-    const updateResult = await Review.updateOne(
-      { _id: reviewId, userEmail: email },
-      {
-        $set: {
-          body,
-          visibility,
-          spoiler,
-        },
-      }
-    );
+    const result = await editReview({ authorEmail: email, reviewId, body, visibility, spoiler });
 
-    if (updateResult.matchedCount === 0) {
+    if (result === "not-found") {
       return withState(state, "error", "That review is no longer available.");
     }
   } catch (error) {
@@ -123,7 +106,10 @@ export async function updateReview(stateOrFormData: ActionState | FormData, form
   return withState(state, "success", "Review updated.");
 }
 
-export async function deleteReview(stateOrFormData: ActionState | FormData, formData?: FormData): Promise<ActionState> {
+export async function deleteReview(
+  stateOrFormData: ActionState | FormData,
+  formData?: FormData
+): Promise<ActionState> {
   const { state, formData: resolvedFormData } = resolveActionArgs(stateOrFormData, formData);
   const { email } = await requireUser();
 
@@ -133,18 +119,10 @@ export async function deleteReview(stateOrFormData: ActionState | FormData, form
   }
 
   try {
-    await dbConnect();
-    const deleteResult = await Review.deleteOne({ _id: reviewId, userEmail: email });
+    const result = await removeReview({ authorEmail: email, reviewId });
 
-    if (deleteResult.deletedCount === 0) {
+    if (result === "not-found") {
       return withState(state, "error", "That review is no longer available.");
-    }
-
-    try {
-      await Comment.deleteMany({ parentType: "review", parentId: reviewId });
-      await Notification.deleteMany({ targetType: "review", targetId: reviewId });
-    } catch (error) {
-      console.error("Error cleaning up deleted review data:", error);
     }
   } catch (error) {
     console.error("Error deleting review:", error);

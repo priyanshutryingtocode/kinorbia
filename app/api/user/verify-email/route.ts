@@ -1,41 +1,24 @@
 import { NextResponse } from "next/server";
-import User from "@/models/User";
 import { withAuthedUser } from "@/lib/session";
-import { generateToken, hashToken, TOKEN_TTL_MS } from "@/lib/token";
 import { sendEmail, buildLink } from "@/lib/email";
+import { clearVerifyToken, issueVerifyToken } from "@/features/auth/mutations";
 
 // Issues a verification link on demand.
 export const POST = withAuthedUser(
   async (_req, { email }) => {
-    const user = await User.findOne({ email }).select("emailVerified verifyToken");
+    const issued = await issueVerifyToken(email);
 
-    if (user?.emailVerified) {
+    if (issued.outcome === "already-verified") {
       return NextResponse.json({ message: "Your email is already verified." });
     }
 
-    // Don't re-send while a link is still live: the old one has not expired,
-    // so a second email would only create two ways to fail.
-    if (user?.verifyToken?.expiresAt && user.verifyToken.expiresAt > new Date()) {
+    if (issued.outcome === "already-pending") {
       return NextResponse.json({ message: "A verification link is already on its way." });
     }
 
-    if (!user) {
+    if (issued.outcome === "no-account") {
       return NextResponse.json({ message: "Account not found. Sign in again." }, { status: 404 });
     }
-
-    const verifyToken = generateToken();
-
-    await User.updateOne(
-      { _id: user._id },
-      {
-        $set: {
-          verifyToken: {
-            token: hashToken(verifyToken),
-            expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
-          },
-        },
-      }
-    );
 
     try {
       await sendEmail({
@@ -44,15 +27,15 @@ export const POST = withAuthedUser(
         html: [
           "<h2>Confirm your email</h2>",
           "<p>Verifying lets you post public reviews, lists, and comments.</p>",
-          `<p><a href="${buildLink(`/api/verify-email?token=${verifyToken}`)}">Verify email</a></p>`,
+          `<p><a href="${buildLink(`/api/verify-email?token=${issued.token}`)}">Verify email</a></p>`,
           "<p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>",
         ].join("\n"),
       });
     } catch (error) {
       console.error("Failed to send verification email:", error);
       // Clear the token so a failed send doesn't leave a dead link that
-      // suppresses the cooldown above and blocks a retry.
-      await User.updateOne({ _id: user._id }, { $unset: { verifyToken: 1 } });
+      // suppresses the cooldown in issueVerifyToken and blocks a retry.
+      await clearVerifyToken(email);
       return NextResponse.json({ message: "Could not send the verification email. Try again." }, { status: 502 });
     }
 

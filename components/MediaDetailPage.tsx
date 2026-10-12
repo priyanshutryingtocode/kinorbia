@@ -12,7 +12,7 @@ import SimilarMedia from "@/components/SimilarMedia";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import { tmdbImage } from "@/lib/media";
 import type { DetailChip, DetailIcon, DetailModel } from "@/lib/mediaDetail";
-import type { PersonalMediaStatus } from "@/lib/profileData";
+import type { PersonalMediaStatus } from "@/features/media/queries";
 
 
 const CHIP_CLASS =

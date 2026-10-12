@@ -43,7 +43,7 @@ export default function ReviewCard({
         <PosterImage
           path={review.posterPath}
           width="w342"
-          alt={review.movieTitle}
+          alt={review.title}
           sizes="96px"
           className="object-cover"
         />
@@ -51,7 +51,7 @@ export default function ReviewCard({
       <div className="min-w-0 flex-1 p-4">
         <div className="flex items-start justify-between gap-3">
           <h3 className="min-w-0 wrap-break-word font-display text-lg font-medium leading-tight text-content">
-            {review.movieTitle}
+            {review.title}
           </h3>
           <VisibilityBadge visibility={review.visibility} />
         </div>

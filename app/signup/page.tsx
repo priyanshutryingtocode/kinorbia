@@ -49,28 +49,44 @@ export default function SignUpPage() {
 
   return (
     <AuthShell>
-      <h1 className="sr-only">Create your KinOrbia account</h1>
-      <div className="mx-auto w-full max-w-64 space-y-3.5">
+      {/* No `text-center` on this wrapper -- it made the header inherit centring and
+          forced the form to counteract it with `text-left`. The header now
+          declares its own centring, and the form relies on the left default.
+          The registered-success card keeps `text-center` because it is genuinely
+          all centred copy. */}
+      <div className="mx-auto w-full max-w-64">
+        {!registered && (
+          <div className="mb-5 text-center">
+            <p className="kin-overline mb-1.5 text-highlight-muted">Get started</p>
+            <h1 className="font-display text-xl font-medium leading-tight text-content">
+              Create an account
+            </h1>
+            <p className="mt-1.5 text-[13px] leading-6 text-content-muted">
+              Track what you watch and keep a journal of it.
+            </p>
+          </div>
+        )}
+
         {registered ? (
-          <div className="space-y-4 text-center">
+          <div className="space-y-3.5 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-success" />
-            <h2 className="font-display text-xl font-medium leading-tight text-content">Account created</h2>
-            <p className="text-sm text-content">
+            <h2 className="font-display text-lg font-medium leading-tight text-content">Account created</h2>
+            <p className="text-[13px] text-content">
               You can sign in now with <span className="font-semibold text-content">{email}</span>.
               Verifying your email is optional, and only needed to post publicly.
             </p>
             <Link
               href="/login"
-              className="block w-full bg-accent hover:bg-accent-hover text-on-accent font-semibold text-sm py-3.5 rounded-control transition-colors"
+              className="block w-full bg-accent hover:bg-accent-hover text-on-accent font-semibold text-[13px] py-3 rounded-control transition-colors"
             >
               Go to Sign In
             </Link>
           </div>
         ) : (
-          <>
+          <div className="space-y-3.5">
             <AuthSocialBlock verb="Sign up" />
 
-            <form onSubmit={handleSubmit} className="space-y-3.5">
+            <form onSubmit={handleSubmit} className="space-y-3.5 text-left">
               <AuthField
                 id="signup-name"
                 icon={UserIcon}
@@ -88,7 +104,6 @@ export default function SignUpPage() {
                 type="email"
                 value={email}
                 onChange={setEmail}
-                placeholder="Email address"
                 autoComplete="email"
               />
 
@@ -99,22 +114,30 @@ export default function SignUpPage() {
                 type="password"
                 value={password}
                 onChange={setPassword}
-                placeholder="Password"
                 minLength={8}
                 autoComplete="new-password"
+                hint="At least 8 characters"
               />
 
               <AuthError message={error} />
 
               <AuthSubmit loading={loading}>Create Account</AuthSubmit>
             </form>
-          </>
+          </div>
+        )}
+
+        {!registered && (
+          <p className="mt-6 text-xs text-content-subtle">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="font-medium text-highlight transition-colors hover:text-wordmark hover:underline"
+            >
+              Sign in
+            </Link>
+          </p>
         )}
       </div>
-
-      <p className="mt-6 text-xs text-content-subtle">
-        Already have an account? <Link href="/login" className="text-highlight font-medium hover:text-danger hover:underline transition-colors">Sign in</Link>
-      </p>
     </AuthShell>
   );
 }

@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
-import { pageBounds } from "@/lib/pagination";
-import dbConnect from "@/lib/dbConnect";
-import { escapeRegExp, firstValue, parsePage } from "@/lib/searchParams";
-import User from "@/models/User";
+import { firstValue, parsePage } from "@/lib/searchParams";
 import PeopleList from "@/components/PeopleList";
 import RouteShell from "@/components/RouteShell";
-import { PEOPLE_PAGE_SIZE } from "@/lib/profileData";
+import { getFollowList } from "@/features/profile/queries";
 
 const COPY = {
   followers: {
@@ -25,23 +22,6 @@ const COPY = {
 type PeopleSearchParams = {
   q?: string | string[];
   page?: string | string[];
-};
-
-type PersonRecord = {
-  _id: { toString: () => string };
-  email: string;
-  name: string;
-  username?: string | null;
-  image?: string | null;
-};
-
-type ProfileUser = {
-  email: string;
-  following?: string[] | null;
-};
-
-type ViewerUser = {
-  following?: string[] | null;
 };
 
 export default async function PeopleFollowPage({
@@ -62,64 +42,13 @@ export default async function PeopleFollowPage({
   const requestedPage = parsePage(pageParam);
   const currentEmail = session?.user?.email?.toLowerCase();
 
-  await dbConnect();
-  const user = await User.findOne({ username })
-    .select("_id email following")
-    .lean<ProfileUser | null>();
+  const list = await getFollowList({ username, mode, query, requestedPage, currentEmail });
 
-  if (!user) {
+  if (!list) {
     notFound();
   }
 
-  const profileEmail = user.email.toLowerCase();
-  const followedEmails = (user.following || []).map((email) => email.toLowerCase());
-  const searchPattern = query ? new RegExp(escapeRegExp(query), "i") : null;
-  const peopleFilter =
-    mode === "followers"
-      ? searchPattern
-        ? {
-            following: profileEmail,
-            $or: [{ name: searchPattern }, { username: searchPattern }],
-          }
-        : { following: profileEmail }
-      : searchPattern
-        ? {
-            email: { $in: followedEmails },
-            $or: [{ name: searchPattern }, { username: searchPattern }],
-          }
-        : { email: { $in: followedEmails } };
-
-  const [totalCount, currentUser] = await Promise.all([
-    User.countDocuments(peopleFilter),
-    currentEmail
-      ? User.findOne({ email: currentEmail })
-          .select("following")
-          .lean<ViewerUser | null>()
-      : Promise.resolve(null),
-  ]);
-  const { page, totalPages } = pageBounds(totalCount, requestedPage, PEOPLE_PAGE_SIZE);
-  const records = totalCount
-    ? await User.find(peopleFilter)
-        .select("_id email name username image")
-        .sort({ name: 1, username: 1, _id: 1 })
-        .skip((page - 1) * PEOPLE_PAGE_SIZE)
-        .limit(PEOPLE_PAGE_SIZE)
-        .lean<PersonRecord[]>()
-    : [];
-  const following = new Set(
-    (currentUser?.following || []).map((email) => email.toLowerCase())
-  );
-  const people = records.map((person) => {
-    const email = person.email.toLowerCase();
-    return {
-      id: person._id.toString(),
-      name: person.name,
-      username: person.username || undefined,
-      image: person.image || undefined,
-      isFollowing: following.has(email),
-      isSelf: email === currentEmail,
-    };
-  });
+  const { people, totalCount, page, totalPages } = list;
   const path = `/u/${encodeURIComponent(username)}/${mode}`;
 
   return (

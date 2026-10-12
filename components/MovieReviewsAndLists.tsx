@@ -1,14 +1,10 @@
 import Link from "next/link";
-import dbConnect from "@/lib/dbConnect";
-import { publiclyVisible } from "@/lib/visibility";
-import MovieList from "@/models/MovieList";
-import Review from "@/models/Review";
-import { mediaEquals, mediaHref, starsLabel } from "@/lib/media";
-import { buildReviewerMaps, lookupRating } from "@/lib/reviewRatings";
+import { mediaHref, starsLabel } from "@/lib/media";
+import { lookupRating } from "@/lib/reviewRatings";
+import { getMediaCommunity } from "@/features/media/queries";
 import { usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
 import { renderRichText } from "@/lib/renderRichText";
-import type { MediaType } from "@/types";
 import EmptyState from "@/components/EmptyState";
 import CommentSection from "@/components/CommentSection";
 import SpoilerText from "@/components/SpoilerText";
@@ -20,43 +16,13 @@ export default async function MovieReviewsAndLists({
   movieId: string;
   mediaType?: "movie" | "tv";
 }) {
-  await dbConnect();
-  const [publicReviews, publicLists] = await Promise.all([
-    Review.find({ movieId, mediaType: mediaEquals(mediaType), ...publiclyVisible() })
-      .select("_id userEmail userName movieId mediaType body spoiler")
-      .sort({ createdAt: -1 })
-      .limit(4)
-      .lean<{
-        _id: { toString: () => string };
-        userName: string;
-        userEmail: string;
-        movieId?: string;
-        mediaType?: MediaType;
-        body: string;
-        spoiler?: boolean;
-      }[]>(),
-    MovieList.find({ "movies.movieId": movieId, "movies.mediaType": mediaEquals(mediaType), ...publiclyVisible() })
-      .select("_id userEmail userName title description movies.movieId movies.title movies.posterPath")
-      .sort({ createdAt: -1 })
-      .limit(4)
-      .lean<{
-        _id: { toString: () => string };
-        userName: string;
-        userEmail: string;
-        title: string;
-        description?: string;
-        movies: { movieId: string; title: string; posterPath?: string | null }[];
-      }[]>(),
-  ]);
+  const community = await getMediaCommunity({ movieId, mediaType });
 
-  const { ratingMaps, usernames } = await buildReviewerMaps([
-    ...publicReviews.map((review) => review.userEmail),
-    ...publicLists.map((list) => list.userEmail),
-  ]);
-
-  if (publicReviews.length === 0 && publicLists.length === 0) {
+  if (!community) {
     return null;
   }
+
+  const { reviews: publicReviews, lists: publicLists, usernames, ratingMaps } = community;
 
   const reviewPath = mediaHref(mediaType, movieId);
 

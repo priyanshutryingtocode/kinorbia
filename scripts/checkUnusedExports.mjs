@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { walkSourceFiles } from "./walkSourceFiles.mjs";
 
-const ROOTS = ["app", "components", "lib"];
+const ROOTS = ["app", "components", "lib", "features"];
 const ROOT_FILES = ["auth.ts", "middleware.ts"].filter((f) => existsSync(f));
 const EXPORT = /^export (?:async )?(?:function|const|let|type|class) (\w+)/gm;
 

@@ -12,13 +12,21 @@ const BASE = "https://api.themoviedb.org/3";
 
 const RETRIABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 
+function getApiKey(): string {
+  const apiKey = process.env.TMDB_API_KEY;
+  if (!apiKey) {
+    throw new Error("Missing TMDB_API_KEY. Add it to the server environment.");
+  }
+  return apiKey;
+}
+
 async function tmdbFetch<T>(
   path: string,
   revalidate: number | false = 3600,
   retries = 2
 ): Promise<T | null> {
   const separator = path.includes("?") ? "&" : "?";
-  const url = `${BASE}${path}${separator}api_key=${process.env.TMDB_API_KEY}`;
+  const url = `${BASE}${path}${separator}api_key=${encodeURIComponent(getApiKey())}`;
 
   const outcome = await fetchJsonWithRetry<T>(
     url,
@@ -106,6 +114,13 @@ function normalizeTvResult(result: RawTvResult): MovieSummary {
   };
 }
 
+// TMDB search returns a long tail of titles with no artwork or date, and every grid reserves an
+// aspect-2/3 poster box -- so one renders as a grey placeholder with an "N/A" badge. Applied
+// here, at the one point every list passes through, rather than in each caller.
+function isDisplayable(movie: MovieSummary) {
+  return Boolean(movie.poster_path && movie.release_date);
+}
+
 function fetchSubResource<T>(mediaType: MediaPath, id: string, resource: string, revalidate = 3600) {
   return tmdbFetch<T>(`/${mediaType}/${safeId(id)}/${resource}?language=en-US`, revalidate);
 }
@@ -114,7 +129,7 @@ async function fetchDetailsWithStatus<T>(
   mediaType: MediaPath,
   id: string
 ): Promise<{ details: T | null; notFound: boolean }> {
-  const url = `${BASE}/${mediaType}/${safeId(id)}?api_key=${process.env.TMDB_API_KEY}`;
+  const url = `${BASE}/${mediaType}/${safeId(id)}?api_key=${encodeURIComponent(getApiKey())}`;
 
   const outcome = await fetchJsonWithRetry<T>(
     url,
@@ -143,16 +158,34 @@ function discoverQuery(genre: string | undefined, page: number) {
 }
 
 
-const asSummaries = (data: ResultList<RawTvResult> | null) => ({
-  results: data?.results?.map(normalizeTvResult) || [],
-});
+// `results` is what survives the display filter; `rawCount` is how many TMDB actually
+// returned. A page can come back with twenty titles and zero displayable ones, and a
+// caller paging until it has twenty needs to tell that from a genuinely exhausted source.
+type FilteredList<T> = { results: T[]; rawCount: number };
+
+// `null` means the fetch was exhausted, NOT that TMDB returned an empty list. Defaulting
+// `results` to [] here made a network failure indistinguishable from "no titles match", so a
+// search for a film that exists reported it did not. Movie and TV now share one shape.
+const asSummaries = (data: ResultList<RawTvResult> | null): FilteredList<MovieSummary> | null =>
+  data === null
+    ? null
+    : (() => {
+        const all = data.results?.map(normalizeTvResult) || [];
+        return { results: all.filter(isDisplayable), rawCount: all.length };
+      })();
 
 function fetchNormalizedList(mediaType: MediaPath, path: string, revalidate: number) {
   if (mediaType === "tv") {
     return tmdbFetch<ResultList<RawTvResult>>(path, revalidate).then(asSummaries);
   }
 
-  return tmdbFetch<ResultList<MovieSummary>>(path, revalidate);
+  // The movie branch used to return TMDB's list untouched, which is why a filter applied
+  // to TV results did not apply to movie results.
+  return tmdbFetch<ResultList<MovieSummary>>(path, revalidate).then((data) => {
+    if (data === null) return null;
+    const all = data.results || [];
+    return { results: all.filter(isDisplayable), rawCount: all.length };
+  });
 }
 
 function discoverByGenre(mediaType: MediaPath, genre: string | undefined, page: number) {

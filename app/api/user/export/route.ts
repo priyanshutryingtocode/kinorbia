@@ -1,42 +1,14 @@
 import { NextResponse } from "next/server";
-import User from "@/models/User";
-import JournalEntry from "@/models/JournalEntry";
-import MovieList from "@/models/MovieList";
-import Review from "@/models/Review";
 import { withAuthedUser } from "@/lib/session";
+import { buildExportBundle } from "@/features/profile/queries";
 
 export const GET = withAuthedUser(
   async (_req, { email }) => {
-    const [user, journal, reviews, lists] = await Promise.all([
+    const data = await buildExportBundle(email);
 
-      User.findOne({ email })
-        .select("-password -verifyToken -resetToken")
-        .lean(),
-      JournalEntry.find({ userEmail: email }).sort({ watchedAt: 1 }).lean(),
-      Review.find({ userEmail: email }).sort({ createdAt: 1 }).lean(),
-      MovieList.find({ userEmail: email }).sort({ createdAt: 1 }).lean(),
-    ]);
-
-    if (!user) {
+    if (!data) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
-
-    const data = {
-      exportedAt: new Date().toISOString(),
-      user: {
-        name: user.name,
-        email: user.email,
-        username: user.username,
-        bio: user.bio,
-        joinedAt: user.createdAt,
-      },
-      favorites: user.favorites || [],
-      watchlist: user.watchlist || [],
-      following: user.following || [],
-      journal,
-      reviews,
-      lists,
-    };
 
     const date = new Date().toISOString().slice(0, 10);
 

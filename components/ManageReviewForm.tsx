@@ -1,4 +1,4 @@
-import { updateReview, deleteReview } from "@/app/(root)/reviews/actions";
+import { updateReview, deleteReview } from "@/features/reviews/actions";
 import type { ReviewItem } from "@/types";
 import ActionForm from "./ActionForm";
 import SubmitButton from "./SubmitButton";

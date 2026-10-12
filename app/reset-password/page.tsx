@@ -64,10 +64,10 @@ function ResetPasswordForm() {
     return (
       <div className="mt-6 flex flex-col items-start gap-3 rounded-sheet border-success/20 bg-success/10 p-4">
         <CheckCircle2 className="h-6 w-6 text-success" />
-        <p className="text-sm text-content">
+        <p className="text-[13px] text-content">
           Your password has been updated. You can now sign in.
         </p>
-        <Link href="/login" className="text-sm font-bold text-highlight hover:text-danger hover:underline transition-colors">
+        <Link href="/login" className="text-[13px] font-bold text-highlight hover:text-wordmark hover:underline transition-colors">
           Sign in
         </Link>
       </div>
@@ -75,7 +75,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+    <form onSubmit={handleSubmit} className="mt-5 space-y-3.5">
       <AuthField
         id="reset-password"
         icon={Lock}
@@ -83,7 +83,6 @@ function ResetPasswordForm() {
         type="password"
         value={password}
         onChange={setPassword}
-        placeholder="New password"
         minLength={8}
         autoComplete="new-password"
       />
@@ -95,7 +94,6 @@ function ResetPasswordForm() {
         type="password"
         value={confirm}
         onChange={setConfirm}
-        placeholder="Confirm new password"
         minLength={8}
         autoComplete="new-password"
       />
@@ -113,14 +111,14 @@ export default function ResetPasswordPage() {
       <div className="mx-auto w-full max-w-64">
         <Link
           href="/login"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-content-muted transition hover:text-content"
+          className="mb-6 inline-flex items-center gap-2 text-[13px] text-content-muted transition hover:text-content"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to sign in
         </Link>
 
-        <h1 className="font-display text-2xl font-medium leading-tight text-content">Choose a new password</h1>
-        <p className="mt-2 text-sm text-content-muted">Enter and confirm your new password below.</p>
+        <h1 className="font-display text-xl font-medium leading-tight text-content">Choose a new password</h1>
+        <p className="mt-2 text-[13px] text-content-muted">Enter and confirm your new password below.</p>
         <Suspense fallback={null}>
           <ResetPasswordForm />
         </Suspense>

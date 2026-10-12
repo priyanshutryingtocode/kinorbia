@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { buildPageHref } from "@/lib/pageHref";
+import { getReviewIndex } from "@/features/reviews/queries";
 import { MessageSquare } from "lucide-react";
 import type { Metadata } from "next";
 import { requireUserEmail } from "@/lib/actions";
@@ -11,16 +13,10 @@ import ReviewCard from "@/components/ReviewCard";
 import SectionHeader from "@/components/SectionHeader";
 import SubmitButton from "@/components/SubmitButton";
 import VisibilityField from "@/components/VisibilityField";
-import dbConnect from "@/lib/dbConnect";
-import { visibleTo } from "@/lib/visibility";
-import { buildReviewerMaps, dedupeFavorites, lookupRating } from "@/lib/reviewRatings";
-import Review from "@/models/Review";
-import User from "@/models/User";
-import { createReview } from "./actions";
-import { serializeReview, type RawReview } from "@/lib/serialize";
+import { lookupRating } from "@/lib/reviewRatings";
+import { createReview } from "@/features/reviews/actions";
 import { normalizeMediaType, mediaKey } from "@/lib/media";
 import NumberedPagination from "@/components/NumberedPagination";
-import { INDEX_PAGE_SIZES, paginate } from "@/lib/pagination";
 import { parsePage } from "@/lib/searchParams";
 
 type ReviewsSearchParams = { page?: string };
@@ -39,43 +35,16 @@ export default async function ReviewsPage({
   const requestedPage = parsePage(params.page);
   const currentUserEmail = await requireUserEmail();
 
-  await dbConnect();
-
-  // The review window and the signed-in user's rated favorites are independent
-  // reads, so they go out together. They used to run in sequence, and against a
-  // distant cluster each round-trip is the dominant cost on this page.
-  const [reviewPage, user] = await Promise.all([
-    paginate<RawReview>(
-      Review,
-      visibleTo(currentUserEmail),
-      { createdAt: -1, _id: -1 },
-      requestedPage,
-      INDEX_PAGE_SIZES.reviews
-    ),
-    // Populates a select of rated favorites, so it needs four fields per entry --
-    // and not the whole `watchlist` array, which this previously pulled along.
-    User.findOne({ email: currentUserEmail })
-      .select("favorites.movieId favorites.mediaType favorites.personalRating favorites.title")
-      .lean<{
-        favorites?: {
-          movieId: string;
-          mediaType?: string;
-          personalRating?: number;
-          title: string;
-        }[];
-      } | null>(),
-  ]);
-
-  const reviews = reviewPage.rows.map(serializeReview);
-  // Byline targets and rating chips come from one batched read for the page
-  // rather than a lookup per card, and no longer cost a second round-trip for
-  // the same User documents.
-  const { ratingMaps, usernames } = await buildReviewerMaps(
-    reviews.map((review) => review.userEmail)
-  );
-
-  const favorites = dedupeFavorites(user?.favorites || []);
-  const ratedFavorites = favorites.filter((movie) => (movie.personalRating || 0) > 0);
+  const {
+    reviews,
+    ratedFavorites,
+    usernames,
+    ratingMaps,
+    page,
+    totalPages,
+    total,
+    pageSize,
+  } = await getReviewIndex(currentUserEmail, requestedPage);
 
   const favoriteMovieId = "review-favorite-movie";
   const reviewBodyId = "review-body";
@@ -169,8 +138,8 @@ export default async function ReviewsPage({
             eyebrow="Community desk"
             title="Latest reviews"
             description={
-              reviewPage.total > 0
-                ? `${reviewPage.total} ${reviewPage.total === 1 ? "review" : "reviews"}`
+              total > 0
+                ? `${total} ${total === 1 ? "review" : "reviews"}`
                 : "The latest public and personal reviews"
             }
           />
@@ -197,10 +166,10 @@ export default async function ReviewsPage({
           </div>
           <NumberedPagination
             label="Reviews"
-            page={reviewPage.page}
-            totalPages={reviewPage.totalPages}
-            total={reviewPage.total}
-            pageSize={INDEX_PAGE_SIZES.reviews}
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
             buildHref={reviewsHref}
           />
         </section>
@@ -210,6 +179,4 @@ export default async function ReviewsPage({
 }
 
 // Page 1 stays at the bare path so the first page keeps its canonical URL.
-function reviewsHref(page: number) {
-  return page > 1 ? `/reviews?page=${page}` : "/reviews";
-}
+const reviewsHref = (page: number) => buildPageHref("/reviews", {}, page);

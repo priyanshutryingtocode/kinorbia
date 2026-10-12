@@ -1,72 +1,36 @@
 import { NextResponse } from "next/server";
-import { randomBytes } from "node:crypto";
-import dbConnect, { isDuplicateKeyError } from "@/lib/dbConnect";
-import User from "@/models/User";
 import bcrypt from "bcryptjs";
-import { slugifyUsername, usernameCandidates } from "@/lib/userIdentity";
-import { registerSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
+import { registerSchema, parseBody, badRequest } from "@/lib/validators";
+import { slugifyUsername } from "@/lib/userIdentity";
+import { registerUser } from "@/features/auth/mutations";
 
-
+// The same answer is returned whether the address was taken, the username collided,
+// or the account was created. Anything else would let a caller learn which addresses
+// are registered.
 const GENERIC_RESPONSE = {
-  message: "Registration received. If this email is new, you can sign in now.",
+  message: "If that address can be registered, a confirmation email is on its way.",
 };
 
 export const POST = withRateLimit(
   async (req: Request) => {
+    const body = await parseBody(req, registerSchema);
+    if (!body) {
+      return badRequest("All fields are required. Name (max 60), a valid email, and a password of at least 8 characters.");
+    }
+
+    // Burned before the address is looked up, so the "already registered" branch costs
+    // the same wall-clock time as the create branch and the two cannot be told apart
+    // by their latency.
+    const hashedPassword = await bcrypt.hash(body.password, 10);
+
     try {
-      const body = await parseBody(req, registerSchema);
-
-      if (!body) {
-        return badRequest("All fields are required. Name (max 60), a valid email, and a password of at least 8 characters.");
-      }
-
-      await dbConnect();
-
-      const hashedPassword = await bcrypt.hash(body.password, 10);
-
-      const existingUser = await User.findOne({ email: body.email })
-        .select("_id")
-        .lean<{ _id: unknown } | null>();
-
-      if (existingUser) {
-        // Burn comparable CPU (bcrypt) so timing matches the create branch.
-        void hashedPassword;
-        return NextResponse.json(GENERIC_RESPONSE, { status: 202 });
-      }
-
-      const baseUsername = slugifyUsername(body.name || body.email.split("@")[0]);
-
-      let username: string | undefined;
-
-      for (const candidate of usernameCandidates(baseUsername)) {
-        if (!(await User.exists({ username: candidate }))) {
-          username = candidate;
-          break;
-        }
-      }
-
-      if (!username) {
-        username = `${baseUsername}-${randomBytes(3).toString("hex")}`;
-      }
-
-      try {
-        await User.create({
-          name: body.name,
-          email: body.email,
-          password: hashedPassword,
-          provider: "credentials",
-          username,
-        });
-      } catch (error) {
-
-        if (isDuplicateKeyError(error)) {
-          return NextResponse.json(GENERIC_RESPONSE, { status: 202 });
-        }
-        throw error;
-      }
-
-      return NextResponse.json(GENERIC_RESPONSE, { status: 202 });
+      await registerUser({
+        name: body.name,
+        email: body.email,
+        password: hashedPassword,
+        baseUsername: slugifyUsername(body.name || body.email.split("@")[0]),
+      });
     } catch (error) {
       console.error("Registration failed:", error);
 
@@ -87,6 +51,8 @@ export const POST = withRateLimit(
         { status: 500 }
       );
     }
+
+    return NextResponse.json(GENERIC_RESPONSE, { status: 202 });
   },
   { windowMs: 60 * 1000, limit: 5 }
 );

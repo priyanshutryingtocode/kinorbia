@@ -1,8 +1,12 @@
-import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
-import type { FavoriteMovie, MediaType } from "@/types";
-import { mediaKey, normalizeMediaType } from "@/lib/media";
+import type { FavoriteMovie, MediaType, WatchlistMovie } from "@/types";
+import { mediaKey } from "@/lib/media";
 import { usernameMapFromUsers } from "@/lib/profileLinks";
+import {
+  getUserMediaByKey,
+  ratingMapsForUsers,
+  type MediaRow,
+} from "@/features/media/userMovie";
 import { emailCandidates } from "@/lib/emailMatch";
 
 type ReviewForRating = {
@@ -10,30 +14,6 @@ type ReviewForRating = {
   movieId?: string;
   mediaType?: MediaType;
 };
-
-const RATING_PROJECTION =
-  "email username favorites.movieId favorites.mediaType favorites.personalRating";
-
-type FavoriteFields = {
-  email: string;
-  username?: string;
-  favorites?: Pick<FavoriteMovie, "movieId" | "mediaType" | "personalRating">[];
-};
-
-export function dedupeFavorites<T extends { movieId?: string; mediaType?: string }>(
-  favorites: T[]
-): T[] {
-  const lastIndexByKey = new Map<string, number>();
-
-  for (let index = 0; index < favorites.length; index += 1) {
-    lastIndexByKey.set(mediaKey(favorites[index].mediaType, favorites[index].movieId), index);
-  }
-
-  return favorites.filter(
-    (favorite, index) =>
-      lastIndexByKey.get(mediaKey(favorite.mediaType, favorite.movieId)) === index
-  );
-}
 
 export function buildRatingMap(
   favorites: Pick<FavoriteMovie, "movieId" | "mediaType" | "personalRating">[]
@@ -59,18 +39,41 @@ export async function findFavoriteByMediaKey(
   email: string,
   favoriteMediaKey: string
 ): Promise<FavoriteMovie | undefined> {
-  const [favMediaType, ...favIdParts] = favoriteMediaKey.split(":");
-  const favId = favIdParts.join(":");
+  const row = await getUserMediaByKey(email, favoriteMediaKey);
 
-  const user = await User.findOne({ email })
-    .select("favorites")
-    .lean<{ favorites?: FavoriteMovie[] } | null>();
+  return row ? toFavoriteMovie(row) : undefined;
+}
 
-  return (user?.favorites || []).find(
-    (movie) =>
-      movie.movieId === favId &&
-      normalizeMediaType(favMediaType) === normalizeMediaType(movie.mediaType)
-  );
+// The row already carries the six fields a FavoriteMovie has, so the hand-written
+// mapping that used to sit in lists/actions.ts lives here once instead.
+export function toFavoriteMovie(row: MediaRow): FavoriteMovie {
+  return {
+    movieId: row.movieId,
+    mediaType: row.mediaType,
+    title: row.title,
+    posterPath: row.posterPath,
+    voteAverage: row.voteAverage,
+    releaseDate: row.releaseDate ?? undefined,
+    genreIds: row.genreIds,
+    personalRating: row.personalRating,
+    addedAt: row.addedAt?.toISOString(),
+  };
+}
+
+// A watchlist entry is a reference without the viewer's own rating. Emitting
+// `personalRating` here is what `serializeWatchlist` used to have to invent a zero for,
+// and it is why `WatchlistMovie` was deliberately not an alias of `FavoriteMovie`.
+export function toWatchlistMovie(row: MediaRow): WatchlistMovie {
+  return {
+    movieId: row.movieId,
+    mediaType: row.mediaType,
+    title: row.title,
+    posterPath: row.posterPath,
+    voteAverage: row.voteAverage,
+    releaseDate: row.releaseDate ?? undefined,
+    genreIds: row.genreIds,
+    addedAt: row.addedAt?.toISOString(),
+  };
 }
 
 export async function buildReviewerMaps(
@@ -84,15 +87,12 @@ export async function buildReviewerMaps(
     return { ratingMaps: new Map(), usernames: new Map() };
   }
 
-  await dbConnect();
-  const users = await User.find({ email: { $in: candidates } })
-    .select(RATING_PROJECTION)
-    .lean<FavoriteFields[]>();
-
-  const ratingMaps = new Map<string, Map<string, number>>();
-  for (const user of users) {
-    ratingMaps.set(user.email, buildRatingMap(user.favorites || []));
-  }
+  const [users, ratingMaps] = await Promise.all([
+    User.find({ email: { $in: candidates } })
+      .select("email username")
+      .lean<{ email: string; username?: string | null }[]>(),
+    ratingMapsForUsers(candidates),
+  ]);
 
   return { ratingMaps, usernames: usernameMapFromUsers(users) };
 }

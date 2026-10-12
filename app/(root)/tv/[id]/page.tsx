@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { getPersonalMediaStatus } from "@/features/media/queries";
 import { notFound } from "next/navigation";
 import type { TmdbTvCredits, TmdbTvDetails } from "@/types";
 import type { Metadata } from "next";
@@ -18,7 +19,7 @@ import {
   topCast,
 } from "@/lib/mediaDetail";
 import { yearOf } from "@/lib/media";
-import { getPersonalMediaStatus } from "@/lib/profileData";
+
 
 async function getTvDetails(id: string): Promise<TmdbTvDetails> {
   const { tv, notFound: missing } = await getTvWithStatus(id);
@@ -89,12 +90,9 @@ export default async function TvPage({ params }: Props) {
           mediumChip: seasonsChip(tv.number_of_seasons),
         }),
         cast: topCast(credits.cast),
-        // This used to be a bare `crew: []`, on the stated reasoning that a show
-        // has no equivalent of a film's director. The payload disagrees:
-        // `created_by` and `networks` both arrive on the `tv` fetch above, and
-        // each is dropped independently, since a few shows carry a network with
-        // no creator. See creatorPanel for why there are no director or writer
-        // panels.
+        // This used to be a bare `crew: []`, on the reasoning that a show has no equivalent of
+        // a film's director. The payload disagrees: `created_by` and `networks` both arrive on
+        // the `tv` fetch above and are each dropped. See creatorPanel below.
         crew: [creatorPanel(tv.created_by), networkPanel(tv.networks)].filter(
           (panel) => panel !== null
         ),

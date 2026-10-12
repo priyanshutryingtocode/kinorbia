@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { toggleFollow, type FollowState } from "@/app/(root)/followActions";
+import { toggleFollow, type FollowState } from "@/features/profile/actions";
 import SubmitButton from "./SubmitButton";
 
 type FollowButtonProps = {

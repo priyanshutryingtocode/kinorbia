@@ -42,12 +42,14 @@ export type InsightsData = {
   topGenre: string | null;
 };
 
+// One watched title. `movieId` is required, which is why journalKey below is a single
+// lookup rather than the three-branch fallback it used to be: `movieRefSchema` validates it
+// on the way in, and the unique index means the same title cannot appear twice for a member.
 type JournalLike = {
   watchedAt: string | Date;
-  mediaType?: MediaType;
-  movieTitle: string;
-  movieId?: string;
-  _id?: string | number | { toString(): string };
+  mediaType: MediaType;
+  title: string;
+  movieId: string;
 };
 
 function pad(value: number) {
@@ -62,24 +64,8 @@ function utcDayStr(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-function journalKey(entry: JournalLike, manualOccurrences: Map<string, number>) {
-  const mediaType = normalizeMediaType(entry.mediaType);
-  const movieId = entry.movieId == null ? "" : String(entry.movieId);
-  if (movieId) {
-    return `${mediaType}:${movieId}`;
-  }
-
-  const entryId = entry._id;
-  if (entryId !== undefined && String(entryId) !== "") {
-    return `${mediaType}:entry:${String(entryId)}`;
-  }
-
-  const date = new Date(entry.watchedAt);
-  const dateKey = Number.isNaN(date.getTime()) ? String(entry.watchedAt) : date.toISOString();
-  const baseKey = `${mediaType}:manual:${entry.movieTitle}:${dateKey}`;
-  const occurrence = manualOccurrences.get(baseKey) || 0;
-  manualOccurrences.set(baseKey, occurrence + 1);
-  return `${baseKey}:${occurrence}`;
+function journalKey(entry: JournalLike) {
+  return `${entry.mediaType}:${entry.movieId}`;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -184,7 +170,6 @@ export function buildInsights(
 
   const monthCounts = new Map<string, number>();
   const dayStrs: string[] = [];
-  const manualOccurrences = new Map<string, number>();
   const watchedKeys = new Set<string>();
   let movieCount = 0;
   let showCount = 0;
@@ -196,7 +181,7 @@ export function buildInsights(
     dayStrs.push(utcDayStr(date));
 
     const mediaType = normalizeMediaType(entry.mediaType);
-    const watchedKey = journalKey(entry, manualOccurrences);
+    const watchedKey = journalKey(entry);
     if (!watchedKeys.has(watchedKey)) {
       watchedKeys.add(watchedKey);
       if (mediaType === "tv") {

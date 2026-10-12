@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuthedUser } from "@/lib/session";
 import { movieRefSchema, parseMovieBody, badRequest } from "@/lib/validators";
-import { MAX_WATCHLIST } from "@/lib/bounds";
-import { toggleEmbeddedMedia } from "@/lib/mediaListToggle";
+import { toggleMedia } from "@/features/media/userMovie";
 
 export const POST = withAuthedUser(
   async (req, { email }) => {
@@ -11,19 +10,20 @@ export const POST = withAuthedUser(
       return badRequest("A valid movie is required.");
     }
 
-    const result = await toggleEmbeddedMedia({
+    const result = await toggleMedia({
       email,
-      field: "watchlist",
-      max: MAX_WATCHLIST,
-      movieId: body.movieId,
-      mediaType: body.mediaType,
-      // No genreIds here, unlike favorites: the watchlist entry schema has no
-      // such field, so pushing one would be ignored anyway.
-      entry: {
+      state: "watchlist",
+      snapshot: {
+        movieId: body.movieId,
+        mediaType: body.mediaType,
+        // genreIds was dropped by Mongoose's strict mode while the sub-schema lacked the
+        // field. The schema declares it now, so a watchlist entry carries the same genres a
+        // favorite does -- as data seeded via the raw driver always has.
         title: body.movieTitle,
         posterPath: body.posterPath,
         voteAverage: body.voteAverage,
         releaseDate: body.releaseDate,
+        genreIds: body.genreIds,
       },
     });
 

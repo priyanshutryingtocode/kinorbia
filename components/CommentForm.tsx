@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import { MessageSquare } from "lucide-react";
-import { createComment } from "@/app/(root)/commentActions";
+import { createComment } from "@/features/comments/actions";
 import ActionForm from "./ActionForm";
 import SubmitButton from "./SubmitButton";
 

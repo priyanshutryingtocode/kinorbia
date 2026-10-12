@@ -15,25 +15,91 @@ const parseHex = (value) => {
   return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
 };
 
+// Not every token is hex: `--overlay-surface` is rgba() or var(), and parseHex returns
+// [NaN, NaN, NaN] for those. `NaN < 4.5` is false, which is a check that never fires.
+// That is not hypothetical: the auth card shipped entirely unchecked for exactly
+// this reason, and dropping its border to 0.04 alpha still reported "all tokens
+// clear WCAG AA in both themes".
+//
+// So this resolves all three forms a token can take. An unparseable value now
+// raises instead of quietly yielding NaN, because a checker that cannot measure
+// something must say so rather than pass it.
+function parseColor(value) {
+  const raw = String(value).trim();
+
+  if (raw.startsWith("#")) {
+    return parseHex(raw);
+  }
+
+  const rgb = raw.match(/^rgba?\(([^)]+)\)$/i);
+  if (rgb) {
+    const parts = rgb[1].split(",").map((part) => parseFloat(part.trim()));
+    return [parts[0], parts[1], parts[2]];
+  }
+
+  // `var(--token)`: hand back the reference so the caller can resolve it against
+  // the same theme's declarations.
+  const ref = raw.match(/^var\(\s*(--[a-z0-9-]+)\s*\)$/i);
+  if (ref) {
+    return ref[1];
+  }
+
+  throw new Error(`cannot parse colour: ${raw}`);
+}
+
+// Alpha of a colour token, defaulting to opaque. Needed because the card's own
+// surface is translucent and anything measured against it has to be painted onto
+// what the browser actually shows, not onto the raw token.
+function parseAlpha(value) {
+  const raw = String(value).trim();
+  const rgb = raw.match(/^rgba?\(([^)]+)\)$/i);
+  if (!rgb) return 1;
+  const parts = rgb[1].split(",").map((part) => part.trim());
+  return parts.length > 3 ? parseFloat(parts[3]) : 1;
+}
+
 const channel = (c) => {
   const s = c / 255;
   return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
 };
 
-const luminance = (hex) => {
-  const [r, g, b] = parseHex(hex).map(channel);
+// Accepts `#hex`, `rgb()`, `rgba()` and a bare `var(--token)` reference, which
+// `toRgb` resolves against the current theme's declarations.
+const luminance = (color, vars) => {
+  const [r, g, b] = toRgb(color, vars).map(channel);
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
 
-const contrast = (a, b) => {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+// Flattens anything parseColor returned into three 0-255 channels, following a
+// `var()` reference if that is what came back. `vars` is the current theme's
+// declarations, which is what makes a reference resolve per theme rather than
+// always to the dark value.
+function toRgb(color, vars) {
+  const parsed = Array.isArray(color) ? color : parseColor(color);
+  if (typeof parsed === "string") {
+    if (!vars) {
+      throw new Error(`cannot resolve ${parsed} without the current theme's tokens`);
+    }
+    return toRgb(parseColor(resolve(vars, parsed)), vars);
+  }
+  if (parsed.some((channel) => !Number.isFinite(channel))) {
+    throw new Error(`unparseable colour channel in ${JSON.stringify(parsed)}`);
+  }
+  return parsed;
+}
+
+const contrast = (a, b, vars) => {
+  const [hi, lo] = [luminance(a, vars), luminance(b, vars)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
 };
 
 
-const composite = (fg, bg, alpha) => {
-  const f = parseHex(fg);
-  const b = parseHex(bg);
+// Composites fg over bg at `alpha`, which is how the browser paints a token used
+// with an opacity modifier. Returns a hex so the result can be measured directly.
+// `vars` follows a `var()` reference in either argument.
+const composite = (fg, bg, alpha, vars) => {
+  const f = toRgb(fg, vars);
+  const b = toRgb(bg, vars);
   const mixed = f.map((c, i) => Math.round(c * alpha + b[i] * (1 - alpha)));
   return `#${mixed.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 };
@@ -187,7 +253,7 @@ for (const [themeName, vars] of [["dark", dark], ["light", light]]) {
   for (const token of BODY_TOKENS) {
     const value = resolve(vars, token);
     for (const surface of SURFACES) {
-      const ratio = contrast(value, resolve(vars, surface));
+      const ratio = contrast(value, resolve(vars, surface), vars);
       if (ratio < AA_BODY) {
         failures.push(
           `${themeName}: ${token} (${value}) is ${ratio.toFixed(2)}:1 on ${surface} (${resolve(vars, surface)}), below ${AA_BODY} for body text.`
@@ -199,7 +265,7 @@ for (const [themeName, vars] of [["dark", dark], ["light", light]]) {
   {
     const full = resolve(vars, GOLD_FULL);
     for (const surface of SURFACES) {
-      const ratio = contrast(full, resolve(vars, surface));
+      const ratio = contrast(full, resolve(vars, surface), vars);
       if (ratio < AA_BODY) {
         failures.push(
           `${themeName}: ${GOLD_FULL} (${full}) is ${ratio.toFixed(2)}:1 on ${surface} (${resolve(vars, surface)}), below ${AA_BODY}. ` +
@@ -210,8 +276,8 @@ for (const [themeName, vars] of [["dark", dark], ["light", light]]) {
 
     const muted = resolve(vars, GOLD_MUTED);
     for (const surface of SURFACES) {
-      const painted = composite(muted, resolve(vars, surface), GOLD_MUTED_ALPHA);
-      const ratio = contrast(painted, resolve(vars, surface));
+      const painted = composite(muted, resolve(vars, surface), GOLD_MUTED_ALPHA, vars);
+      const ratio = contrast(painted, resolve(vars, surface), vars);
       if (ratio < AA_BODY) {
         failures.push(
           `${themeName}: ${GOLD_MUTED} (${muted}) at /${GOLD_MUTED_ALPHA * 100} composites to ${painted} on ${surface} ` +
@@ -222,17 +288,92 @@ for (const [themeName, vars] of [["dark", dark], ["light", light]]) {
     }
   }
 
-  for (const token of LARGE_TOKENS) {
-    const value = resolve(vars, token);
-    for (const surface of SURFACES) {
-      const ratio = contrast(value, resolve(vars, surface));
-      if (ratio < AA_LARGE) {
+// The centred overlay panel -- the sign-in and sign-up card. Its own token
+    // rather than one of SURFACES because it is what every token painted on the
+    // auth card is actually measured against, and it is tinted: in light mode it
+    // composites --surface-raised over --canvas, which is not either of them.
+    //
+    // This was added because the card shipped unchecked. `--overlay-border` at
+    // 0.04 instead of 0.28 passed the suite cleanly, because only the tokens named
+    // above are ever measured and this pair was in none of the lists.
+    for (const token of BODY_TOKENS) {
+      const value = resolve(vars, token);
+      const ratio = contrast(value, resolve(vars, "--overlay-surface"), vars);
+      if (ratio < AA_BODY) {
         failures.push(
-          `${themeName}: ${token} (${value}) is ${ratio.toFixed(2)}:1 on ${surface} (${resolve(vars, surface)}), below ${AA_LARGE} for icons/large text.`
+          `${themeName}: ${token} (${value}) is ${ratio.toFixed(2)}:1 on the auth card ` +
+            `(${resolve(vars, "--overlay-surface")}), below ${AA_BODY}.`
         );
       }
     }
-  }
+
+    // The bronze kicker is painted on that same card at 10px, so it is measured
+    // there too rather than only against the three flat surfaces.
+    const kicker = composite(
+      resolve(vars, GOLD_MUTED),
+      resolve(vars, "--overlay-surface"),
+      GOLD_MUTED_ALPHA,
+      vars
+    );
+    const kickerRatio = contrast(kicker, resolve(vars, "--overlay-surface"), vars);
+    if (kickerRatio < AA_BODY) {
+      failures.push(
+        `${themeName}: ${GOLD_MUTED} on the auth card is ${kickerRatio.toFixed(2)}:1, below ${AA_BODY}.`
+      );
+    }
+
+    // The card's edge against the page.
+    //
+    // WCAG 1.4.11 asks 3:1 for "the visual information required to identify user
+    // interface components". This is held at AA_BODY rather than the 3:1 for a
+    // control edge, which is the same position --rule and --rule-strong take: the
+    // inputs, buttons and links inside the card each meet 3:1 against their own
+    // backgrounds and carry their own focus ring, so nothing here is identified by
+    // this line alone. What the line does is make a floating panel read as
+    // floating.
+    //
+    // Measured against --canvas, since that is what the card's edge is seen
+    // against, not against the card's own fill.
+    //
+    // This is held at AA_LARGE (3:1) rather than AA_BODY, which is the threshold
+    // WCAG 1.4.11 actually sets for the boundary of a component. Requiring 4.5
+    // instead -- which is what I tried first -- forced bronze to 0.86 (#8a6636),
+    // a solid brown hairline, for a ratio no one needs and which reads as an error
+    // state on a sign-in form. 3:1 needs 0.70 (#9c7c54) and is defensible: the
+    // card is a distinct surface, and everything inside it meets 3:1 against its
+    // own background with its own focus ring, so the edge identifies nothing on
+    // its own. The 0.28 it replaced measured 1.52:1, which was the real problem.
+    //
+    // The border is already an alpha colour in its own right, so its alpha is read
+    // rather than forced to 1 -- compositing it at 1 would paint the bronze at full
+    // strength and measure a colour the browser never shows.
+    const edgeAlpha = parseAlpha(resolve(vars, "--overlay-border"));
+    const edge = composite(
+      resolve(vars, "--overlay-border"),
+      resolve(vars, "--canvas"),
+      edgeAlpha,
+      vars
+    );
+    const edgeRatio = contrast(edge, resolve(vars, "--canvas"), vars);
+    if (edgeRatio < AA_LARGE) {
+      failures.push(
+        `${themeName}: --overlay-border is ${edgeRatio.toFixed(2)}:1 on --canvas, below ${AA_LARGE}. ` +
+          `The card's edge is what makes it read as a floating panel.`
+      );
+    }
+
+    for (const token of LARGE_TOKENS) {
+      const value = resolve(vars, token);
+      for (const surface of SURFACES) {
+        const ratio = contrast(value, resolve(vars, surface), vars);
+        if (ratio < AA_LARGE) {
+          failures.push(
+            `${themeName}: ${token} (${value}) is ${ratio.toFixed(2)}:1 on ${surface} (${resolve(vars, surface)}), ` +
+              `below ${AA_LARGE} for icons/large text.`
+          );
+        }
+      }
+    }
 
   const inkPairs = [
     ["--ink-content", "--ink", AA_BODY],
@@ -248,7 +389,7 @@ for (const [themeName, vars] of [["dark", dark], ["light", light]]) {
   ];
 
   for (const [fg, bgToken, min] of inkPairs) {
-    const ratio = contrast(resolve(vars, fg), resolve(vars, bgToken));
+    const ratio = contrast(resolve(vars, fg), resolve(vars, bgToken), vars);
     if (ratio < min) {
       failures.push(
         `${themeName} band: ${fg} (${resolve(vars, fg)}) is ${ratio.toFixed(2)}:1 on ` +
@@ -268,7 +409,7 @@ for (const [themeName, vars] of [["dark", dark], ["light", light]]) {
 
   for (const [fg, bgToken, min] of pairs) {
     const bg = bgToken.startsWith("#") ? bgToken : resolve(vars, bgToken);
-    const ratio = contrast(resolve(vars, fg), bg);
+    const ratio = contrast(resolve(vars, fg), bg, vars);
     if (ratio < min) {
       failures.push(
         `${themeName}: ${fg} (${resolve(vars, fg)}) is ${ratio.toFixed(2)}:1 on ${bg} (${bgToken}), below ${min}.`

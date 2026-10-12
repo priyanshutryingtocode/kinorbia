@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuthedUser } from "@/lib/session";
 import { movieRefSchema, parseMovieBody, badRequest } from "@/lib/validators";
-import { MAX_FAVORITES } from "@/lib/bounds";
-import { toggleEmbeddedMedia } from "@/lib/mediaListToggle";
+import { toggleMedia } from "@/features/media/userMovie";
 
 export const POST = withAuthedUser(
   async (req, { email }) => {
@@ -11,13 +10,12 @@ export const POST = withAuthedUser(
       return badRequest("A valid movie is required.");
     }
 
-    const result = await toggleEmbeddedMedia({
+    const result = await toggleMedia({
       email,
-      field: "favorites",
-      max: MAX_FAVORITES,
-      movieId: body.movieId,
-      mediaType: body.mediaType,
-      entry: {
+      state: "favorite",
+      snapshot: {
+        movieId: body.movieId,
+        mediaType: body.mediaType,
         title: body.movieTitle,
         posterPath: body.posterPath,
         voteAverage: body.voteAverage,

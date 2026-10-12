@@ -243,6 +243,170 @@ test("omitting retryStatuses retries nothing", async () => {
   }
 });
 
+// --- the outage-must-not-look-like-an-empty-result invariant -----------------------
+//
+// A search page that renders "No movies found" when TMDB is unreachable is worse than
+// one that renders nothing: it tells a member looking up a film that exists that it
+// does not. Three places have to hold, and none can be exercised without a live key.
+
+test("a TMDB outage is reported as failed, never as an empty result", () => {
+  const tmdb = readFileSync(new URL("../lib/tmdb.ts", import.meta.url), "utf8");
+  const search = readFileSync(new URL("../lib/search.ts", import.meta.url), "utf8");
+  const actions = readFileSync(new URL("../app/actions.ts", import.meta.url), "utf8");
+  const searchPage = readFileSync(new URL("../app/(root)/search/page.tsx", import.meta.url), "utf8");
+
+  // The tv normalizer used to default a null response to { results: [] }, which is the
+  // conflation in its original form: movie and tv failed differently for one outage.
+  // Asserted on behaviour rather than syntax: every route by which a null response
+  // becomes an empty list is what matters, and one of them was refactored away
+  // mid-change while this gate was green.
+  assert.match(tmdb, /data === null/, "the tv normalizer must check the response for null");
+  assert.match(tmdb, /\? null\b|return null;/, "and return null rather than defaulting to []");
+  // The conflation's fingerprint is the optional chain ON `data` itself -- reaching through a
+  // possibly-null response to a field. A `|| []` inside a branch that has already checked
+  // `data === null` is a legitimate default for a successful response carrying no results.
+  assert.doesNotMatch(
+    tmdb,
+    /data\?\.results\?\.map/,
+    "must never optional-chain through a possibly-null response; check for null first"
+  );
+  assert.doesNotMatch(
+    tmdb,
+    /data\?\.results\s*\|\|\s*\[\]/,
+    "nor via the optional-chain default, which is the same conflation"
+  );
+
+  // lib/search.ts must branch on the response being null, not on results being empty.
+  // The loader walks several TMDB pages per logical page, so the outage signal is narrower
+  // than it once was: null on the FIRST page is an outage the member should be told about,
+  // null on a later one just means the source ran out mid-fill and the titles already
+  // collected stand. Both halves are asserted so neither can be dropped.
+  assert.match(
+    search,
+    /if \(response === null\) \{[\s\S]{0,160}?failed = offset === 0;/,
+    "fetchSearchResults must set failed when the first page is null"
+  );
+  assert.match(
+    search,
+    /if \(response === null\) \{[\s\S]{0,160}?hasMore = false;/,
+    "and must stop offering more when a page comes back null"
+  );
+  assert.match(search, /failed: boolean/, "SearchPage must carry the flag");
+  assert.doesNotMatch(
+    search,
+    /\?\?\.results \|\| \[\]/,
+    "the `?.results || []` pattern is what erased the failure; it must be gone"
+  );
+
+  assert.match(actions, /if \(batch === null\) \{\s*failed = true;/, "loadBrowsePage must report a null page as failed");
+
+  // And the page must render that as an outage, ahead of the "no results" branch.
+  const outageIndex = searchPage.indexOf("data.failed");
+  // The branch order matters and the three strings have to be found unambiguously: the
+  // outage branch's copy mentions "movies found" in a comment, so matching on the word
+  // alone resolves to the wrong line.
+  const emptyIndex = searchPage.indexOf('} found`');
+  assert.ok(outageIndex > -1, "the search page must branch on data.failed");
+  assert.ok(emptyIndex > -1, "the search page must still have a genuine empty state");
+  assert.ok(
+    outageIndex < emptyIndex,
+    "the outage branch must come BEFORE the no-results branch, or the outage never renders"
+  );
+  assert.match(searchPage, /Couldn't load/, "the outage branch needs its own copy");
+  assert.match(searchPage, /<RetryButton \/>/, "and a retry affordance");
+
+  // Posterless titles. TMDB's long tail has no artwork, and every grid reserves an
+  // aspect-2/3 poster box regardless, so an unfiltered result is a grid of grey
+  // placeholders with N/A badges -- which is what searching Avengers actually produced.
+  assert.match(tmdb, /function isDisplayable/, "the display filter must live in the tmdb layer");
+
+  // Both branches, counted. One occurrence is not enough: the original defect was
+  // precisely that TV filtered and movie did not, so "the filter exists somewhere" is the
+  // same weak assertion that let it through.
+  const filterSites = (tmdb.match(/results: all\.filter\(isDisplayable\)/g) || []).length;
+  assert.equal(
+    filterSites,
+    2,
+    `both the tv and movie branches must filter; found ${filterSites} of 2`
+  );
+  assert.match(
+    tmdb,
+    /rawCount: all\.length/,
+    "the pre-filter count must survive, or a page of posterless titles reads as an exhausted source"
+  );
+  assert.match(
+    actions,
+    /if \(batch\.rawCount === 0\)/,
+    "loadBrowsePage must end the source on an empty RAW page, not a filtered one"
+  );
+  assert.match(search, /undisplayable/, "fetchSearchResults must distinguish matches-with-no-artwork from no matches");
+  const undisplayableIndex = searchPage.indexOf("data.undisplayable");
+  assert.ok(undisplayableIndex > -1, "the search page must render that case");
+  assert.ok(
+    outageIndex < undisplayableIndex && undisplayableIndex < emptyIndex,
+    "outage, then undisplayable, then genuinely empty -- in that order"
+  );
+});
+
+// --- search page fill --------------------------------------------------------
+//
+// The grid bug this guards: a "load more" used to return one TMDB page of 20 minus
+// whatever the poster filter dropped, and search used to render `.poster-grid-dense`
+// (2/3/4/5/6 columns), which 20 does not divide. Any count that is not a multiple of the
+// grid's column counts leaves a ragged final row. These assert the two things that
+// actually fix it -- the target divides every column count, and the loader fills to that
+// target across several upstream pages.
+
+test("search page size divides every poster-grid column count", () => {
+  const search = readFileSync(new URL("../lib/search.ts", import.meta.url), "utf8");
+  const match = search.match(/SEARCH_PAGE_SIZE\s*=\s*(\d+)/);
+  assert.ok(match, "lib/search.ts should declare SEARCH_PAGE_SIZE");
+
+  const size = Number(match[1]);
+  // Keep in step with .poster-grid in app/globals.css.
+  for (const columns of [2, 4, 5]) {
+    assert.equal(
+      size % columns,
+      0,
+      `a page of ${size} leaves a short final row at ${columns} columns`
+    );
+  }
+});
+
+test("search fills the page across TMDB pages instead of returning a single one", () => {
+  const search = readFileSync(new URL("../lib/search.ts", import.meta.url), "utf8");
+
+  assert.ok(
+    /for\s*\(\s*let offset\s*=\s*0;[\s\S]*?offset \+= 1\s*\)/.test(search),
+    "fetchSearchResults should loop over successive TMDB pages"
+  );
+  assert.ok(
+    /filtered\.length < SEARCH_PAGE_SIZE/.test(search),
+    "the loop condition should be the post-filter count, not the raw one"
+  );
+  assert.ok(
+    /filtered\.slice\(0, SEARCH_PAGE_SIZE\)/.test(search),
+    "the result must be trimmed to the page size; batches overshoot and 64 is ragged at 6 columns"
+  );
+  assert.ok(
+    /MAX_EMPTY_PAGES/.test(search),
+    "a run of unusable pages must be bounded, or an obscure query crawls the catalogue"
+  );
+});
+
+test("search resumes where the previous batch stopped and never repeats a title", () => {
+  const search = readFileSync(new URL("../lib/search.ts", import.meta.url), "utf8");
+
+  assert.ok(
+    /nextPage:\s*page \+ consumed/.test(search),
+    "one logical page spans several TMDB pages, so advancing by 1 re-fetches titles on screen"
+  );
+  assert.ok(
+    /exclude/.test(search) && /seen\.has/.test(search),
+    "the client cursor overlaps the server-rendered batch and must exclude what is already shown"
+  );
+});
+
 // --- run ---------------------------------------------------------------------
 
 let failed = 0;

@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import dbConnect from "@/lib/dbConnect";
-import User from "@/models/User";
 import { z } from "zod";
-import { parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
-import { generateToken, hashToken, TOKEN_TTL_MS } from "@/lib/token";
+import { parseBody, badRequest } from "@/lib/validators";
 import { sendEmail, buildLink } from "@/lib/email";
+import { generateToken } from "@/lib/token";
+import { issueResetToken } from "@/features/auth/mutations";
 
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email().max(254).toLowerCase(),
@@ -16,32 +15,15 @@ const BCRYPT_COST = 10;
 
 export const POST = withRateLimit(
   async (req: Request) => {
+    const body = await parseBody(req, forgotPasswordSchema);
+    if (!body) {
+      return badRequest("A valid email is required.");
+    }
+
     try {
-      const body = await parseBody(req, forgotPasswordSchema);
-      if (!body) {
-        return badRequest("A valid email is required.");
-      }
+      const issued = await issueResetToken(body.email);
 
-      await dbConnect();
-      const user = await User.findOne({ email: body.email }).select("email provider");
-
-      if (user?.provider === "credentials") {
-        const resetToken = generateToken();
-        const resetTokenHash = hashToken(resetToken);
-        const resetTokenExpiresAt = new Date(Date.now() + TOKEN_TTL_MS);
-
-        await User.updateOne(
-          { _id: user._id },
-          {
-            $set: {
-              resetToken: {
-                token: resetTokenHash,
-                expiresAt: resetTokenExpiresAt,
-              },
-            },
-          }
-        );
-
+      if (issued.outcome === "issued") {
         try {
           await sendEmail({
             to: body.email,
@@ -49,7 +31,7 @@ export const POST = withRateLimit(
             html: [
               "<h2>Reset your password</h2>",
               "<p>Click the link below to choose a new password. This link expires in 1 hour.</p>",
-              `<p><a href="${buildLink(`/reset-password?token=${resetToken}`)}">Reset password</a></p>`,
+              `<p><a href="${buildLink(`/reset-password?token=${issued.token}`)}">Reset password</a></p>`,
               "<p>If you did not request this, you can ignore this email.</p>",
             ].join("\n"),
           });
@@ -57,7 +39,8 @@ export const POST = withRateLimit(
           console.error("Failed to send reset email:", error);
         }
       } else {
-
+        // No account, or one without a password. Burn comparable CPU so the response
+        // time does not reveal which addresses are registered.
         await bcrypt.hash(generateToken(), BCRYPT_COST);
       }
 

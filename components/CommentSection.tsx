@@ -1,8 +1,5 @@
 import { auth } from "@/auth";
-import dbConnect from "@/lib/dbConnect";
-import Comment from "@/models/Comment";
-import type { CommentItem } from "@/types";
-import { serializeComment, type RawComment } from "@/lib/serialize";
+import { getCommentThread } from "@/features/comments/queries";
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
 
@@ -16,15 +13,7 @@ export default async function CommentSection({ parentType, parentId, path }: Com
   const session = await auth();
   const currentUserEmail = session?.user?.email?.toLowerCase();
 
-  await dbConnect();
-  const rawComments = await Comment.find({ parentType, parentId })
-    .sort({ createdAt: 1 })
-    .limit(200)
-    .lean<RawComment[]>();
-
-  const comments: CommentItem[] = rawComments.map((comment) =>
-    serializeComment(comment, parentType, parentId)
-  );
+  const comments = await getCommentThread({ parentType, parentId });
 
   if (comments.length === 0 && !currentUserEmail) {
     return null;

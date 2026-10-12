@@ -12,35 +12,43 @@ import {
 import { mediaKey } from "@/lib/media";
 import { fetchSearchResults, type SearchFilters } from "@/lib/search";
 
-export type BrowsePage = { results: MovieSummary[]; hasMore: boolean; nextPage?: number };
+// `failed` says a page fetch was exhausted rather than empty. The browse page already
+  // said "Couldn't load" on an empty grid, but it could not tell the two apart -- so a
+  // title list that genuinely ran out looked the same as a TMDB outage.
+export type BrowsePage = {
+  results: MovieSummary[];
+  hasMore: boolean;
+  nextPage?: number;
+  failed: boolean;
+};
 
-// One "load more" click adds exactly TMDB_PAGE_SIZE (20) *new* titles.
-//
-// Exactly 20 matters: the browse grid is 2, 4 or 5 columns and 20 divides all
-// three, so any other count leaves a short final row.
-//
-// Returning one page's contents is not enough. TMDB's popularity ranking shifts
-// between requests, so a page fetched a second after the previous one repeats
-// titles already on screen -- measured at four to nine of twenty. Client-side
-// dedupe kept the cards honest but left the total at 40-minus-an-arbitrary-number,
-// which is the ragged row this prevents. So the filtering happens here, where
-// the count can still be corrected: the loop pulls until it holds 20 unique
-// titles or the source runs out, and reports where to resume.
-//
-// Two consequences, both accepted. A page's unused tail is skipped, so six titles
-// on page 3 that were already shown never appear -- invisible in a
-// ten-thousand-title list, and nothing is persisted either way. And `fetchPage`
-// may resolve to null, since `tmdbFetch` swallows transport errors rather than
-// throwing, so a failure is not an exception the hook can catch.
+// One "load more" click adds exactly TMDB_PAGE_SIZE (20) *new* titles. 20 divides
+  // the browse grid's 2, 4 and 5 columns; any other count leaves a short final row.
+  //
+  // Dedupe happens here rather than on the client: TMDB's ranking shifts between requests
+  // and repeats 4-9 of every 20, leaving the total short by an arbitrary amount.
+  //
+  // Consequence, accepted: a page's unused tail is skipped, so titles already shown never
+  // reappear. Invisible in a ten-thousand-title list; nothing is persisted either way.
+  //
+  // fetchPage resolves to null when TMDB is exhausted rather than throwing, so the failure
+  // is read off the value and reported -- absorbing it made an outage look like the end of
+  // the catalogue.
+  //
+  // Consecutive pages allowed to yield nothing displayable before giving up. Posterless titles
+  // cluster, so one empty page is not an exhausted source -- but 500 is not an empty genre's answer either.
+const MAX_EMPTY_PAGES = 5;
+
 async function loadBrowsePage(
   startPage: number,
-  fetchPage: (page: number) => Promise<{ results?: MovieSummary[] } | null>,
+  fetchPage: (page: number) => Promise<{ results?: MovieSummary[]; rawCount: number } | null>,
   exclude: string[]
 ): Promise<BrowsePage & { nextPage: number }> {
   const seen = new Set(exclude);
   const results: MovieSummary[] = [];
   let page = startPage;
   let hasMore = true;
+  let failed = false;
 
   while (results.length < TMDB_PAGE_SIZE) {
 
@@ -51,7 +59,13 @@ async function loadBrowsePage(
 
     const batch = await fetchPage(page);
 
-    if (!batch?.results) {
+    if (batch === null) {
+      failed = true;
+      break;
+    }
+
+    if (!batch.results) {
+      hasMore = false;
       break;
     }
 
@@ -68,7 +82,17 @@ async function loadBrowsePage(
       }
     }
 
-    if (batch.results.length === 0) {
+// "TMDB returned nothing" ends the source; "TMDB returned titles and none are displayable"
+      // does not. The tmdb layer drops posterless titles, so a page of twenty junk entries
+      // arrives as an empty list, and treating that as the end would truncate a genre.
+    if (batch.rawCount === 0) {
+      hasMore = false;
+      break;
+    }
+
+    if (batch.results.length === 0 && page - startPage >= MAX_EMPTY_PAGES) {
+      // Nothing displayable across a run of pages: stop rather than crawl the catalogue
+      // for a grid that will stay empty.
       hasMore = false;
       break;
     }
@@ -76,7 +100,7 @@ async function loadBrowsePage(
     page += 1;
   }
 
-  return { results, hasMore, nextPage: page };
+  return { results, hasMore, nextPage: page, failed };
 }
 
 function toPageNumber(value: unknown): number {
@@ -118,7 +142,8 @@ export async function fetchTvShows(args: BrowseArgs): Promise<BrowsePage> {
 
 export async function fetchSearchPage({
   page,
+  exclude,
   ...filters
-}: SearchFilters & { page: number }) {
-  return fetchSearchResults(filters, toPageNumber(page));
+}: SearchFilters & { page: number; exclude?: string[] }) {
+  return fetchSearchResults(filters, toPageNumber(page), exclude);
 }

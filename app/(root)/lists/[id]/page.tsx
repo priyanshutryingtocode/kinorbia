@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getListDetail } from "@/features/lists/queries";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
@@ -11,14 +12,10 @@ import SectionHeader from "@/components/SectionHeader";
 import SocialActionButton from "@/components/SocialActionButton";
 import PosterImage from "@/components/PosterImage";
 import VisibilityBadge from "@/components/VisibilityBadge";
-import dbConnect from "@/lib/dbConnect";
 import { formatDate, mediaHref, mediaKey, normalizeMediaType, yearOf } from "@/lib/media";
 import { isObjectId } from "@/lib/objectId";
-import { visibleTo } from "@/lib/visibility";
-import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
+import { usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
-import { serializeList, type RawMovieList } from "@/lib/serialize";
-import MovieList from "@/models/MovieList";
 import type { ListMovie } from "@/types";
 
 export const metadata: Metadata = {
@@ -62,12 +59,9 @@ function ListPoster({ movie }: { movie: ListMovie }) {
 }
 
 export default async function ListDetailPage({ params }: ListDetailPageProps) {
-  // Nullable, not `requireUserEmail()`. The query below treats a public list as
-  // readable by anyone, and the page renders its discussion for one -- but this
-  // used to redirect anonymous visitors to /login before the lookup even ran, so
-  // a public list linked from the public activity feed, or from the "In Lists"
-  // row on a public film page, was unreachable without an account. `activity` and
-  // `u/[username]` already resolve the session this way for the same reason.
+  // Nullable, not `requireUserEmail()`. The query treats a public list as readable by anyone,
+  // but this used to redirect anonymous visitors to /login before the lookup ran, making a
+  // public list unreachable. `activity` and `u/[username]` resolve the session this way too.
   const session = await auth();
   const currentUserEmail = session?.user?.email ?? null;
 
@@ -76,20 +70,13 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
     notFound();
   }
 
-  await dbConnect();
-  const rawList = await MovieList.findOne({
-    _id: id,
-    ...visibleTo(currentUserEmail),
-  }).lean<RawMovieList | null>();
+  const detail = await getListDetail(id, currentUserEmail);
 
-  if (!rawList) {
+  if (!detail) {
     notFound();
   }
 
-  const list = serializeList(rawList);
-  // One author, one lookup.
-  const usernames = await buildUsernameMap([list.userEmail]);
-  const countLabel = `${list.movies.length} ${list.movies.length === 1 ? "title" : "titles"}`;
+  const { list, usernames, countLabel } = detail;
 
   return (
     <RouteShell spacing="extended" width="page">

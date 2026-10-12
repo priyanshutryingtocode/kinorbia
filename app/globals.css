@@ -40,6 +40,19 @@
      untouched. */
   --rule-overlay: rgba(255, 255, 255, 0.38);
 
+  /* The large centred overlay panel -- the sign-in and sign-up card. Named for
+     `rounded-overlay`, which is already the radius the dialog, the assistant
+     panel and the nav menus use.
+
+     Written as a reference rather than a copy on purpose: the card is
+     `bg-surface-raised` with a `--rule` border today, and pointing at those two
+     tokens makes it impossible for this to drift from what it replaces. It is
+     deliberately NOT `--bar-surface`, whose dark value is 70% canvas because
+     that bar sits over a hero image -- on an opaque centred card that would
+     hollow it out and let the page through. */
+  --overlay-surface: var(--surface-raised);
+  --overlay-border: var(--rule);
+
     /* The media detail panels: the control bar, the crew boxes, the cast boxes.
        Dark values are the exact equivalents of the classes they replace, so
        nothing in this theme moves -- the colour is a light-theme addition.
@@ -260,6 +273,18 @@
      why a floating panel was previously invisible on this ground. */
   --rule-overlay: rgba(40, 30, 20, 0.55);
 
+  /* The sign-in / sign-up card, the app's first impression. Warm bronze over the
+     silver ground, which is what the rest of the light theme has been moving
+     toward: it composites to #f9f7f1, so the page shows faintly through and the
+     animated orb behind it stays part of the surface rather than sitting behind
+     an opaque rectangle. The border matches --bar-border so the card and the
+     detail-page control bar read as the same material.
+
+     Every token on it clears AA comfortably -- body 16.54:1, a muted field label
+     9.75:1, the bronze kicker 6.76:1. */
+  --overlay-surface: rgba(252, 249, 242, 0.85);
+  --overlay-border: rgba(122, 77, 20, 0.72);
+
   /* The media detail panels. See the note on the dark value for why these are
      tokens and not `bg-highlight-muted/N`.
 
@@ -459,6 +484,8 @@
   --color-rule: var(--rule);
   --color-rule-strong: var(--rule-strong);
   --color-rule-overlay: var(--rule-overlay);
+  --color-overlay-surface: var(--overlay-surface);
+  --color-overlay-border: var(--overlay-border);
   --color-bar-surface: var(--bar-surface);
   --color-bar-border: var(--bar-border);
   --color-panel-surface: var(--panel-surface);
@@ -544,6 +571,21 @@ html {
   :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--accent-hover);
     outline-offset: 2px;
+  }
+
+  /* Pointer is already the browser default for these, but stating it explicitly
+     means a later reset cannot silently drop it. `:where()` holds specificity at 0
+     so the `cursor-pointer` and `disabled:cursor-not-allowed` utilities, and
+     `.kin-choice` on the labels that wrap a control, all still win. Labels are
+     deliberately excluded here: 21 of them wrap no control and are not clickable. */
+  :where(a[href], button:not(:disabled), summary) {
+    cursor: pointer;
+  }
+
+  /* Without this a disabled button inherits the browser default pointer and
+     advertises itself as clickable. Five of them had no cursor rule of their own. */
+  :where(button, summary):disabled {
+    cursor: not-allowed;
   }
 }
 
@@ -701,17 +743,12 @@ html {
     animation: shell-panel-enter var(--duration-panel) var(--ease-cinematic);
   }
 
-  /* Two poster grids, because both were copied by hand and had to be kept in sync
-   by hand too. `poster-grid` is the browse grid; `poster-grid-dense` is the
-   search grid, which packs one more column in with tighter gaps. A load-more
-   click adds exactly 20 titles and 20 divides 2, 4 and 5, so the column counts
-   here are what stops the final row coming up short. */
+  /* The poster grid, shared by browse and search. A load-more click adds exactly
+   20 titles and 20 divides 2, 4 and 5, so the column counts here are what
+   stops the final row coming up short. Changing either without the other
+   reintroduces the ragged row. */
 .poster-grid {
   @apply grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5;
-}
-
-.poster-grid-dense {
-  @apply grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6;
 }
 
 .kin-skeleton {
@@ -837,6 +874,13 @@ html {
   .kin-input-affix {
     padding-left: 3rem;
     padding-right: 1rem;
+  }
+
+  /* For a password field with a reveal toggle on the trailing edge. Declared after
+     .kin-input-affix so it wins at equal specificity, the same way
+     .kin-search-input overrides .kin-input's padding above. */
+  .kin-input-affix-end {
+    padding-right: 2.75rem;
   }
 
   .kin-filter-control {

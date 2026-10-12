@@ -3,12 +3,6 @@ import RouteShell from "@/components/RouteShell";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
-import dbConnect from "@/lib/dbConnect";
-import type { ProfileIdentity } from "@/lib/profileData";
-import { publiclyVisible } from "@/lib/visibility";
-import MovieList from "@/models/MovieList";
-import Review from "@/models/Review";
-import User from "@/models/User";
 import EmptyState from "@/components/EmptyState";
 import FollowButton from "@/components/FollowButton";
 import ProfileHeader from "@/components/ProfileHeader";
@@ -17,93 +11,41 @@ import ProfilePanel from "@/components/ProfilePanel";
 import SpoilerText from "@/components/SpoilerText";
 import { renderRichText } from "@/lib/renderRichText";
 import { mediaHref, mediaKey, normalizeMediaType, starsLabel } from "@/lib/media";
-import { buildRatingMap, dedupeFavorites } from "@/lib/reviewRatings";
-import type { FavoriteMovie, MediaType } from "@/types";
+import { getPublicProfileData } from "@/features/profile/queries";
 
 export const dynamic = "force-dynamic";
 
-// ProfileIdentity plus this page's own favorite slice. The eight shared fields
-// were written out again here, so a field added to the identity -- or removed
-// from it -- silently failed to reach the public profile.
-type PublicProfileUser = ProfileIdentity & {
-  favorites?: FavoriteMovie[];
-};
-
-type PublicReview = {
-  _id: { toString: () => string };
-  movieTitle: string;
-  movieId?: string;
-  mediaType?: MediaType;
-  body: string;
-  spoiler?: boolean;
-  createdAt: Date;
-};
-
-type PublicList = {
-  _id: { toString: () => string };
-  title: string;
-  description?: string;
-  movieCount: number;
-  createdAt: Date;
-};
-
-type PublicProfilePageProps = {
+export default async function PublicProfilePage({
+  params,
+}: {
   params: Promise<{ username: string }>;
-};
-
-export default async function PublicProfilePage({ params }: PublicProfilePageProps) {
+}) {
   const { username: rawUsername } = await params;
   const username = rawUsername.toLowerCase();
   const session = await auth();
   const currentEmail = session?.user?.email?.toLowerCase();
 
-  await dbConnect();
-  // `favorites` rides along with the profile read instead of a second lookup by
-  // the same document's unique email.
-  const user = await User.findOne({ username })
-    .select("_id name email bio image username createdAt following favorites")
-    .lean<PublicProfileUser | null>();
+  const data = await getPublicProfileData({ username, currentEmail });
 
-  if (!user?.email) {
+  if (!data) {
     notFound();
   }
 
-  const targetEmail = user.email.toLowerCase();
-  const isSelf = currentEmail === targetEmail;
-  const followingEmails = [...new Set((user.following || []).map((email) => email.toLowerCase()))];
-  const [
+  const {
+    user,
+    favorites,
+    favoriteCount,
+    ratingMap,
     publicReviewCount,
     publicListCount,
     reviews,
     lists,
     followerCount,
     followingCount,
-    currentUser,
-  ] = await Promise.all([
-Review.countDocuments({ userEmail: targetEmail, ...publiclyVisible() }),
-      MovieList.countDocuments({ userEmail: targetEmail, ...publiclyVisible() }),
-      Review.find({ userEmail: targetEmail, ...publiclyVisible() })
-      .select("_id movieTitle movieId mediaType body spoiler createdAt")
-      .sort({ createdAt: -1, _id: -1 })
-      .limit(6)
-      .lean<PublicReview[]>(),
-    MovieList.aggregate<PublicList>([
-      { $match: { userEmail: targetEmail, ...publiclyVisible() } },
-      { $sort: { createdAt: -1, _id: -1 } },
-      { $limit: 6 },
-      { $project: { title: 1, description: 1, createdAt: 1, movieCount: { $size: { $ifNull: ["$movies", []] } } } },
-    ]),
-    User.countDocuments({ following: targetEmail }),
-    followingEmails.length ? User.countDocuments({ email: { $in: followingEmails } }) : Promise.resolve(0),
-    isSelf || !currentEmail
-      ? Promise.resolve(null)
-      : User.findOne({ email: currentEmail }).select("following").lean<{ following?: string[] } | null>(),
-  ]);
+    isFollowing,
+  } = data;
 
-  const allFavorites = dedupeFavorites(user.favorites || []);
-  const favorites = allFavorites.slice(0, 6);
-  const ratingMap = buildRatingMap(allFavorites);
-  const isFollowing = Boolean(currentUser?.following?.some((email) => email.toLowerCase() === targetEmail));
+  const isSelf = currentEmail === user.email;
 
   return (
     <RouteShell spacing="extended" width="frame">
@@ -146,7 +88,7 @@ Review.countDocuments({ userEmail: targetEmail, ...publiclyVisible() }),
         ariaLabel="Public profile metrics"
         className="mt-6"
         metrics={[
-          { label: "Favorites", value: allFavorites.length, emphasis: "red" },
+          { label: "Favorites", value: favoriteCount, emphasis: "red" },
           { label: "Public reviews", value: publicReviewCount, emphasis: "neutral" },
           { label: "Public lists", value: publicListCount, emphasis: "gold" },
         ]}
@@ -157,7 +99,7 @@ Review.countDocuments({ userEmail: targetEmail, ...publiclyVisible() }),
           id="favorites"
           eyebrow="Curated"
           title="Favorite films and shows"
-          description={favorites.length < allFavorites.length ? `Showing ${favorites.length} of ${allFavorites.length} titles.` : "A considered selection of movies and shows."}
+          description={favorites.length < favoriteCount ? `Showing ${favorites.length} of ${favoriteCount} titles.` : "A considered selection of movies and shows."}
         >
           {favorites.length ? (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
@@ -212,7 +154,7 @@ Review.countDocuments({ userEmail: targetEmail, ...publiclyVisible() }),
                             href={href}
                             className="kin-focus rounded-sm font-display text-base font-medium text-content transition-colors hover:text-highlight"
                           >
-                            {review.movieTitle}
+                            {review.title}
                           </Link>
                         </h3>
                         {rating > 0 && (

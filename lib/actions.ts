@@ -1,18 +1,30 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
 import { isObjectId } from "@/lib/objectId";
+import {
+  requireCurrentUser,
+  AuthenticationRequiredError,
+} from "@/lib/authUser";
 
 export async function requireUser() {
-  const session = await auth();
-  if (!session?.user?.email) {
-    redirect("/login");
+  try {
+    const user = await requireCurrentUser();
+    return {
+      email: user.email,
+      // `requireCurrentUser` returns a nullable name, but 11 call sites destructure
+      // `name` and four of them persist it (userName / actorName). Re-applying the
+      // fallback here keeps those writes producing "KinOrbia user" rather than null.
+      name: user.name || "KinOrbia user",
+    };
+  } catch (error) {
+    // Only the auth failure becomes a redirect. `redirect()` signals by throwing, and
+    // it is called inside this catch so the NEXT_REDIRECT error still propagates
+    // outward to Next rather than being re-caught here.
+    if (error instanceof AuthenticationRequiredError) {
+      redirect("/login");
+    }
+    throw error;
   }
-
-  return {
-    email: session.user.email.toLowerCase(),
-    name: session.user.name || "KinOrbia user",
-  };
 }
 
 export function getString(formData: FormData, key: string) {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type PagerEdgeProps = {
   direction: "previous" | "next";
@@ -15,19 +16,20 @@ export default function PagerEdge({
 }: PagerEdgeProps) {
   const isPrevious = direction === "previous";
   const label = isPrevious ? "Previous" : "Next";
-  const glyph = isPrevious ? "←" : "→";
+  // The chevron points outward on both sides: left of Previous, right of Next.
+  const Icon = isPrevious ? ChevronLeft : ChevronRight;
   const labelClass = href ? "hidden sm:inline" : "sr-only sm:not-sr-only";
-  const glyphNode = <span aria-hidden="true">{glyph}</span>;
+  const iconNode = <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />;
   const labelNode = <span className={labelClass}>{label}</span>;
   const content = isPrevious ? (
     <>
-      {glyphNode}
+      {iconNode}
       {labelNode}
     </>
   ) : (
     <>
       {labelNode}
-      {glyphNode}
+      {iconNode}
     </>
   );
 

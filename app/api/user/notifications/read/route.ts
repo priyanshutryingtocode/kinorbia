@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import Notification from "@/models/Notification";
 import { withAuthedUser } from "@/lib/session";
+import { markNotificationsRead } from "@/features/social/mutations";
 
 export const POST = withAuthedUser(
   async (req, { email }) => {
@@ -9,14 +9,9 @@ export const POST = withAuthedUser(
     const rawId = typeof body?.id === "string" ? body.id.trim() : "";
     const id = mongoose.isValidObjectId(rawId) ? rawId : "";
 
-    if (id) {
-      await Notification.updateOne({ _id: id, userEmail: email }, { $set: { read: true } });
-    } else {
-      await Notification.updateMany(
-        { userEmail: email, read: false },
-        { $set: { read: true } }
-      );
-    }
+    // No valid id means "mark everything", which is the same call with no id rather
+    // than a second code path.
+    await markNotificationsRead(email, id || undefined);
 
     return NextResponse.json({ ok: true });
   },

@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { getPersonalMediaStatus } from "@/features/media/queries";
 import { notFound } from "next/navigation";
 import type { TmdbMovieCredits, TmdbMovieDetails } from "@/types";
 import type { Metadata } from "next";
@@ -18,7 +19,7 @@ import {
   topCast,
 } from "@/lib/mediaDetail";
 import { yearOf } from "@/lib/media";
-import { getPersonalMediaStatus } from "@/lib/profileData";
+
 
 async function getMovieDetails(id: string): Promise<TmdbMovieDetails> {
   const { movie, notFound: missing } = await getMovieWithStatus(id);
@@ -89,10 +90,9 @@ export default async function MoviePage({ params }: Props) {
           mediumChip: runtimeChip(movie.runtime),
         }),
         cast: topCast(credits.cast),
-        // crewByJob is an exact match on TMDB's `job`, so this pair catches the
-        // plain "Director" and "Producer" credits only -- every Executive and
-        // Co-Producer on the film is omitted. Left as-is for now; widening it
-        // changes what every movie page shows, so it wants its own change.
+        // crewByJob is an exact match on TMDB's `job`, catching plain "Director" and "Producer"
+        // only -- Executive and Co-Producer are omitted. Widening changes every movie page,
+        // so it wants its own change.
         crew: [
           crewPanel("Director", crewByJob(credits.crew, "Director")),
           crewPanel("Producer", crewByJob(credits.crew, "Producer")),

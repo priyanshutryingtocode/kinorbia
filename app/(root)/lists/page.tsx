@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { buildPageHref } from "@/lib/pageHref";
+import { getListIndex } from "@/features/lists/queries";
 import Link from "next/link";
 import {ChevronDown, Film, Plus} from "lucide-react";
 import { requireUserEmail } from "@/lib/actions";
@@ -15,21 +17,15 @@ import SubmitButton from "@/components/SubmitButton";
 import PosterImage from "@/components/PosterImage";
 import VisibilityBadge from "@/components/VisibilityBadge";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
-import dbConnect from "@/lib/dbConnect";
-import { visibleTo } from "@/lib/visibility";
 import {formatDate, mediaHref, mediaKey} from "@/lib/media";
-import { buildUsernameMap, usernameFor } from "@/lib/profileLinks";
+import { usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
-import { serializeFavorites, serializeList, type RawFavoriteMovie, type RawMovieList } from "@/lib/serialize";
 import NumberedPagination from "@/components/NumberedPagination";
-import { INDEX_PAGE_SIZES, paginate } from "@/lib/pagination";
 import { parsePage } from "@/lib/searchParams";
 
 type ListsSearchParams = { page?: string };
-import MovieList from "@/models/MovieList";
-import User from "@/models/User";
 import type { FavoriteMovie, ListMovie, MovieListItem } from "@/types";
-import { createMovieList, deleteMovieList, updateMovieList } from "./actions";
+import { createMovieList, deleteMovieList, updateMovieList } from "@/features/lists/actions";
 
 export const metadata: Metadata = {
   title: "Lists",
@@ -225,24 +221,15 @@ export default async function ListsPage({
   const requestedPage = parsePage(params.page);
   const currentUserEmail = await requireUserEmail();
 
-  await dbConnect();
-
-  const [listPage, user] = await Promise.all([
-    paginate<RawMovieList>(
-      MovieList,
-      visibleTo(currentUserEmail),
-      { createdAt: -1, _id: -1 },
-      requestedPage,
-      INDEX_PAGE_SIZES.lists
-    ),
-    User.findOne({ email: currentUserEmail }).select("favorites").lean<{
-      favorites?: RawFavoriteMovie[];
-    } | null>(),
-  ]);
-  const lists = listPage.rows.map(serializeList);
-  // Byline targets for the page, in one read.
-  const usernames = await buildUsernameMap(lists.map((list) => list.userEmail));
-  const favorites = serializeFavorites(user?.favorites);
+  const {
+    lists,
+    favorites,
+    usernames,
+    page,
+    totalPages,
+    total,
+    pageSize,
+  } = await getListIndex(currentUserEmail, requestedPage);
 
   return (
     <RouteShell spacing="extended" width="page">
@@ -353,10 +340,10 @@ export default async function ListsPage({
           )}
           <NumberedPagination
             label="Lists"
-            page={listPage.page}
-            totalPages={listPage.totalPages}
-            total={listPage.total}
-            pageSize={INDEX_PAGE_SIZES.lists}
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
             buildHref={listsHref}
           />
         </section>
@@ -366,6 +353,4 @@ export default async function ListsPage({
 }
 
 // Page 1 stays at the bare path so the first page keeps its canonical URL.
-function listsHref(page: number) {
-  return page > 1 ? `/lists?page=${page}` : "/lists";
-}
+const listsHref = (page: number) => buildPageHref("/lists", {}, page);

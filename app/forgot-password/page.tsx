@@ -44,26 +44,26 @@ export default function ForgotPasswordPage() {
       <div className="mx-auto w-full max-w-64">
         <Link
           href="/login"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-content-muted transition hover:text-content"
+          className="mb-6 inline-flex items-center gap-2 text-[13px] text-content-muted transition hover:text-content"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to sign in
         </Link>
 
-        <h1 className="font-display text-2xl font-medium leading-tight text-content">Reset your password</h1>
-        <p className="mt-2 text-sm text-content-muted">
+        <h1 className="font-display text-xl font-medium leading-tight text-content">Reset your password</h1>
+        <p className="mt-2 text-[13px] text-content-muted">
           Enter your email and we&apos;ll send you a link to set a new password.
         </p>
 
         {sent ? (
           <div className="mt-6 flex flex-col items-start gap-3 rounded-sheet border-success/20 bg-success/10 p-4">
             <CheckCircle2 className="h-6 w-6 text-success" />
-            <p className="text-sm text-content">
+            <p className="text-[13px] text-content">
               If an account exists for that email, a reset link has been sent. Check your inbox.
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-5 space-y-3.5">
             <AuthField
               id="forgot-email"
               icon={Mail}
@@ -71,7 +71,6 @@ export default function ForgotPasswordPage() {
               type="email"
               value={email}
               onChange={setEmail}
-              placeholder="Email address"
               autoComplete="email"
             />
 
@@ -83,7 +82,7 @@ export default function ForgotPasswordPage() {
 
         <p className="mt-6 text-xs text-content-subtle">
           Remembered it?{" "}
-          <Link href="/login" className="text-highlight font-medium hover:text-danger hover:underline transition-colors">
+          <Link href="/login" className="text-highlight font-medium hover:text-wordmark hover:underline transition-colors">
             Sign in
           </Link>
         </p>

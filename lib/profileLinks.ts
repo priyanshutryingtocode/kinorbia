@@ -2,7 +2,7 @@ import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 
 export function usernameMapFromUsers(
-  users: { email: string; username?: string }[]
+  users: { email: string; username?: string | null }[]
 ): Map<string, string> {
   const map = new Map<string, string>();
   for (const user of users) {

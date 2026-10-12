@@ -285,11 +285,21 @@ function spreadDates(count, spanDays, rng) {
   return offsets.sort((a, b) => b - a);
 }
 
-async function tmdbPage(path, page) {
+// TMDB resets the connection often enough that a single attempt loses roughly one page in
+// eight here. Returning [] on that is not a neutral failure: `fetchPool` treats an empty
+// page as the end of that source, so one reset silently truncated the pool and the seed
+// aborted with "Not enough titles" -- a network blip reported as a data problem.
+//
+// Retry the transport errors that are worth retrying, and only those. A 401 or a 404 will
+// not fix itself and retrying just delays the real message.
+const RETRYABLE = new Set(["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "EAI_AGAIN", "UND_ERR_SOCKET"]);
+
+async function tmdbPage(path, page, attempt = 1) {
   const url = `https://api.themoviedb.org/3${path}?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`;
+  const MAX_ATTEMPTS = 4;
 
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
     if (!res.ok) {
       console.warn(`  TMDB ${path} page ${page} -> HTTP ${res.status}`);
       return [];
@@ -297,6 +307,16 @@ async function tmdbPage(path, page) {
     const data = await res.json();
     return Array.isArray(data.results) ? data.results : [];
   } catch (error) {
+    const code = error?.cause?.code ?? error?.code;
+    const retryable = RETRYABLE.has(code) || error?.name === "TimeoutError";
+    if (retryable && attempt < MAX_ATTEMPTS) {
+      // Linear backoff: short enough that a transient reset costs a second, long enough that
+      // a real outage fails in well under a minute rather than hanging.
+      const wait = 800 * attempt;
+      console.warn(`  TMDB ${path} page ${page} -> ${code ?? error?.message}; retry ${attempt}/${MAX_ATTEMPTS - 1} in ${wait}ms`);
+      await new Promise((resolve) => setTimeout(resolve, wait));
+      return tmdbPage(path, page, attempt + 1);
+    }
     console.warn(`  TMDB ${path} page ${page} failed: ${error?.message || error}`);
     return [];
   }
@@ -772,7 +792,83 @@ function buildConversation(moviePool, tvPool, rng) {
   };
 }
 
-function buildUserDocs(users) {
+function buildUserMovieDocs(users) {
+  const docs = new Map();
+
+  // One row per (email, movieId, mediaType), the same shape `backfillUserMovie.mjs`
+  // writes. Favorites, watchlist and watched state are served from this collection now, so
+  // a seeded member whose rows were never written would show an empty profile, no counts
+  // and no insights while their own document still claimed 30 favorites.
+  const ensure = (email, entry) => {
+    const key = `${email}|${entry.mediaType}|${entry.movieId}`;
+    if (!docs.has(key)) {
+      docs.set(key, {
+        userEmail: email,
+        movieId: entry.movieId,
+        mediaType: entry.mediaType,
+        title: entry.title,
+        posterPath: entry.posterPath ?? null,
+        voteAverage: entry.voteAverage ?? 0,
+        releaseDate: entry.releaseDate ?? null,
+        genreIds: entry.genreIds ?? [],
+        favorite: { addedAt: null, personalRating: 0 },
+        watchlist: { addedAt: null },
+        watched: { watchedAt: null },
+        createdAt: entry.addedAt ?? new Date(),
+        updatedAt: entry.addedAt ?? new Date(),
+      });
+    }
+    const row = docs.get(key);
+    // Whichever source mentions the title last wins the metadata, so a favorite and a
+    // watchlist entry for the same title cannot disagree about its poster or genres.
+    if (entry.title) row.title = entry.title;
+    if (entry.posterPath !== undefined) row.posterPath = entry.posterPath;
+    if (entry.voteAverage !== undefined) row.voteAverage = entry.voteAverage;
+    if (entry.releaseDate !== undefined) row.releaseDate = entry.releaseDate;
+    if (entry.genreIds?.length) row.genreIds = entry.genreIds;
+    return row;
+  };
+
+  for (const user of users) {
+    for (const entry of user.favorites) {
+      ensure(user.email, entry).favorite = {
+        addedAt: entry.addedAt,
+        personalRating: entry.personalRating || 0,
+      };
+    }
+    for (const entry of user.watchlist) {
+      ensure(user.email, entry).watchlist = { addedAt: entry.addedAt };
+    }
+    for (const entry of user.journal) {
+      ensure(user.email, { ...entry, addedAt: entry.watchedAt }).watched = {
+        watchedAt: entry.watchedAt,
+      };
+    }
+  }
+
+  return [...docs.values()];
+}
+
+function buildMediaCounters(users, userMovieDocs) {
+  const byEmail = new Map();
+  for (const row of userMovieDocs) {
+    const entry = byEmail.get(row.userEmail) ?? { favoritesCount: 0, watchlistCount: 0 };
+    if (row.favorite.addedAt) entry.favoritesCount += 1;
+    if (row.watchlist.addedAt) entry.watchlistCount += 1;
+    byEmail.set(row.userEmail, entry);
+  }
+
+  // Derived from the rows rather than from `user.favorites.length`, so a member who
+  // favorited the same title twice is counted once -- which is the whole point of the
+  // unique index, and what the caps are enforced against.
+  return users.map((user) => ({
+    email: user.email,
+    ...(byEmail.get(user.email) ?? { favoritesCount: 0, watchlistCount: 0 }),
+  }));
+}
+
+function buildUserDocs(users, mediaCounters = []) {
+  const counters = new Map(mediaCounters.map((c) => [c.email, c]));
   return users.map((user) => ({
     _id: user._id,
     name: user.name,
@@ -783,9 +879,11 @@ function buildUserDocs(users) {
     bio: user.bio,
     provider: "credentials",
     emailVerified: new Date(),
-    favorites: user.favorites,
-    watchlist: user.watchlist,
     following: user.following,
+    // The caps are enforced against these, so they have to be right at seed time or the
+    // first member to fill a list gets told theirs is already full.
+    favoritesCount: counters.get(user.email)?.favoritesCount ?? 0,
+    watchlistCount: counters.get(user.email)?.watchlistCount ?? 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   }));
@@ -959,7 +1057,8 @@ try {
     },
   ];
 
-  const userDocs = buildUserDocs(users);
+  const userMovieDocs = buildUserMovieDocs(users);
+  const userDocs = buildUserDocs(users, buildMediaCounters(users, userMovieDocs));
 
   const genreCoverage = [
     moviePool.filter((m) => m.genreIds.length > 0).length / moviePool.length,
@@ -1032,7 +1131,6 @@ try {
 
     const demoEmails = DEMO_USERS.map((config) => config.email);
     for (const name of [
-      "journalentries",
       "reviews",
       "movielists",
       "conversations",
@@ -1043,19 +1141,12 @@ try {
     }
     await db.collection("users").deleteMany({ email: { $in: demoEmails } });
 
-    const journalDocs = users.flatMap((user) =>
-      user.journal.map((entry) => ({
-        _id: newId(),
-        userEmail: user.email,
-        userName: user.name,
-        ...entry,
-        createdAt: entry.watchedAt,
-        updatedAt: entry.watchedAt,
-      }))
-    );
-
+    // Watch history is written into `usermovies` by buildUserMovieDocs above, which folds
+    // each member's journal entries into the `watched` state of the same row that holds
+    // their favorite and watchlist state. There is no separate journal collection to seed.
+    await db.collection("usermovies").deleteMany({ userEmail: { $in: demoEmails } });
     await db.collection("users").insertMany(userDocs);
-    await db.collection("journalentries").insertMany(journalDocs);
+    await db.collection("usermovies").insertMany(userMovieDocs);
     await db.collection("reviews").insertMany(reviews);
     await db.collection("movielists").insertMany(lists);
     await db.collection("conversations").insertMany(conversations);
@@ -1067,7 +1158,7 @@ try {
     const totals = {};
     for (const name of [
       "users",
-      "journalentries",
+      "usermovies",
       "reviews",
       "movielists",
       "conversations",
@@ -1079,7 +1170,7 @@ try {
 
     console.log("\nSeed complete.");
     console.log(
-      `Totals -> users:${totals.users} journalentries:${totals.journalentries} ` +
+      `Totals -> users:${totals.users} ` +
         `reviews:${totals.reviews} movielists:${totals.movielists} conversations:${totals.conversations} ` +
         `comments:${totals.comments} notifications:${totals.notifications}`
     );

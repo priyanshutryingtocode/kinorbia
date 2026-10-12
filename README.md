@@ -1,83 +1,131 @@
 # Kinorbia
 
-Kinorbia is a modern, full-stack movie/show discovery, tracking, and journaling platform. Built with Next.js and designed with a sleek, immersive aesthetic using Tailwind CSS v4, it allows users to explore movies, curate personalized lists, write reviews, and maintain a cinematic journal.
+A movie and TV tracking app: discover titles, rate and review them, build lists, and keep
+a watch history. Next.js App Router, TypeScript, Tailwind CSS v4, MongoDB via Mongoose,
+NextAuth.
 
-Demo users (password demo1234 for all, log in via email + password):
-- demo1@kinorbia.dev — Ava Moreno (ava.moreno)
-- demo2@kinorbia.dev — Leo Kim (leo.kim)
-- demo3@kinorbia.dev — Maya Patel (maya.patel)
+Demo accounts (password `demo1234` for all — sign in with email + password):
 
-## 🚀 Features
+- `demo1@kinorbia.dev` — Ava Moreno
+- `demo2@kinorbia.dev` — Leo Kim
+- `demo3@kinorbia.dev` — Maya Patel
 
-* **Movie/Show Discovery:** Search and browse through an extensive database of movies and shows, including similar recommendations.
-* **User Authentication:** Secure login and registration flows powered by NextAuth.js.
-* **Personalized Profiles:** Manage your favorite movies/shows, custom lists, and track your cinematic journey.
-* **Cinematic Journal:** Write and maintain a personal journal of your movie-watching experiences.
-* **Reviews & Ratings:** Rate movies/shows and write comprehensive reviews to share your thoughts.
-* **Curated Lists:** Create, manage, and customize movie/show lists for different moods or genres.
-* **Modern UI/UX:** A clean, responsive interface utilizing Tailwind CSS v4 utility classes and optimized components.
+## Features
 
-## 🛠️ Tech Stack
+- **Discover** — TMDB search, browse and genre discovery for movies and shows, plus
+  per-title recommendations.
+- **Track** — favorites, a watchlist, and a watch history, each first-write-wins by date.
+- **Rate and review** — rating is 1–10 (shown as 0.5–5 stars) and requires the title be
+  marked watched first. A review requires a rated favorite, resolved server-side from the
+  submitted key rather than trusted form fields.
+- **Lists** — public or private curated lists with an ordering that survives edits.
+- **Social** — follow members, like and comment, with a notification feed.
+- **Assistant** — a Gemini-backed chat that answers from the signed-in member's own
+  favorites and watch history.
+- **Auth** — email + password or Google, with email verification and password reset.
+- **Export** — everything a member has written or saved, as one downloadable JSON file.
 
-* **Framework:** Next.js (App Router)
-* **Language:** TypeScript
-* **Styling:** Tailwind CSS v4
-* **Database:** MongoDB (via Mongoose)
-* **Authentication:** NextAuth.js
+## Getting started
 
-## 📦 Getting Started
+Requires Node 18+ and a MongoDB database (Atlas or local).
 
-### Prerequisites
+```bash
+npm install
+```
 
-* Node.js (v18 or higher recommended)
-* MongoDB Database (e.g., MongoDB Atlas)
+Create `.env.local`:
 
-### Installation
+```env
+MONGODB_URI=your_mongodb_connection_string
+AUTH_SECRET=your_auth_secret
+TMDB_API_KEY=your_tmdb_api_key
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-username/kinorbia.git
-    cd kinorbia
-    ```
+Optional features each need one more key:
 
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
+```env
+GOOGLE_CLIENT_ID=...            # Google sign-in
+GOOGLE_CLIENT_SECRET=...
+RESEND_API_KEY=...              # email verification + password reset
+EMAIL_FROM=KinOrbia <onboarding@resend.dev>
+UPSTASH_REDIS_REST_URL=...      # rate limiting
+UPSTASH_REDIS_REST_TOKEN=...
+GEMINI_API_KEY=...              # the assistant
+GEMINI_MODEL=gemini-2.5-flash
+```
 
-3.  **Set up environment variables:**
-    Create a `.env.local` file in the root directory and add the following variables:
-    ```env
-    MONGODB_URI=your_mongodb_connection_string
-    AUTH_SECRET=your_auth_secret
-    # Add any external Movie API keys here if applicable
-    ```
-    *Email verification and password reset use [Resend](https://resend.com). Add:*
-    ```env
-    RESEND_API_KEY=your_resend_api_key
-    EMAIL_FROM=KinOrbia <onboarding@resend.dev>
-    # Base URL used to build verify/reset links (defaults to VERCEL_URL or http://localhost:3000)
-    NEXT_PUBLIC_APP_URL=http://localhost:3000
-    ```
+Then:
 
-4.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
-    Open [http://localhost:3000](http://localhost:3000) with your browser to see the application in action.
+```bash
+npm run dev
+```
 
-## 📂 Project Structure
+Seed data is available via `npm run seed:data` (add `--dry-run` to preview).
 
-* `/app`: Next.js App Router containing pages, API routes, layouts, and Server Actions.
-* `/components`: Reusable React components (`MovieCard`, `MovieCarousel`, `Navbar`, etc.).
-* `/models`: Mongoose database schemas (`User`, `MovieList`, `JournalEntry`, `Review`).
-* `/lib`: Utility functions, configuration, and database connection logic (`dbConnect.ts`).
-* `/types`: Global TypeScript type definitions.
+## Project structure
 
-## 🤝 Contributing
+| Path | Contents |
+| --- | --- |
+| `/app` | Pages, layouts and API routes. No database access and no models — routes parse, delegate and map HTTP. |
+| `/features` | One folder per domain, holding whichever of `queries.ts` (reads), `mutations.ts` (writes), `actions.ts` (server actions) and `serializers.ts` that domain needs. |
+| `/lib` | Shared utilities, the TMDB client, auth config and `dbConnect.ts`. |
+| `/models` | Mongoose schemas. |
+| `/components` | Reusable React components. |
+| `/scripts` | Gates and one-shot maintenance tools (see below). |
 
-Contributions, issues, and feature requests are welcome!
+## Data model
 
-## 📝 License
+One `usermovies` document per `(userEmail, movieId, mediaType)` holds all three states a
+member can hold towards a title:
 
-This project is open-source and available under the MIT License.
+```js
+{ userEmail, movieId, mediaType, /* TMDB snapshot */,
+  favorite: { addedAt, personalRating },
+  watchlist: { addedAt },
+  watched:  { watchedAt } }
+```
+
+A unique index on those three fields makes duplicates impossible. `User.favorites`,
+`User.watchlist` and the `journalentries` collection were dropped in favour of this;
+`favoritesCount`/`watchlistCount` on the member are what the caps are enforced against.
+
+## Gates
+
+Run before committing. All are read-only except where noted.
+
+| Command | Checks |
+| --- | --- |
+| `npm run check:mutations` | 27 invariants against live Atlas, each in a transaction that is aborted. 0 rows persist. |
+| `npm run check:retry` | TMDB fetches retry transport failures, and search pages fill to a row-multiple of their grid. |
+| `npm run check:unused` | Exports nothing else reads. |
+| `npm run check:contrast` | Every colour pair meets its WCAG ratio. |
+| `npm run check:indexes` | Declared indexes match the server. `--strict` exits 1 on unexplained drift. |
+| `npm run check:media-counts` | The favorite/watchlist counters match the rows. `--strict` gates; `--fix` reconciles. |
+| `npm run lint` | ESLint, zero warnings tolerated. |
+
+The counters and indexes drift silently if a write path bypasses the transactional
+helpers, which is why `check:media-counts` and `check:indexes` exist rather than a
+general test suite.
+
+## Maintenance scripts
+
+One-shot, run deliberately. The `drop:*` scripts are destructive.
+
+| Command | Effect |
+| --- | --- |
+| `npm run backfill:user-movie` | Populate `usermovies` from the legacy embedded arrays. |
+| `npm run backfill:title` | Fill missing `title` on existing rows. |
+| `npm run drop:media` | Drop `User.favorites` / `User.watchlist`. |
+| `npm run drop:journal` | Drop the `journalentries` collection. |
+| `npm run check:watched-parity` | Verify watched parity during the migration. |
+| `npm run reset:db` | Wipe and reseed. |
+
+### Deleting a Mongoose model
+
+Mongoose's `autoIndex` **creates a collection**. Deleting a model's source file is not
+enough — a stale `.next` cache still references it, and the next build recompiles the
+model and silently recreates its collection against the live database.
+
+After deleting a model: `rm -rf .next` and rebuild. Verify with `npm run check:indexes`,
+which reports indexes the schema no longer declares.
