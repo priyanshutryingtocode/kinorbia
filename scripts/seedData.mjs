@@ -806,7 +806,9 @@ function buildUserMovieDocs(users) {
         userEmail: email,
         movieId: entry.movieId,
         mediaType: entry.mediaType,
-        title: entry.title,
+        // Guarded like the update below: `title` is required on the schema, and a null here
+          // would insert a document the model would refuse and every grid would render blank.
+          title: entry.title || "Untitled",
         posterPath: entry.posterPath ?? null,
         voteAverage: entry.voteAverage ?? 0,
         releaseDate: entry.releaseDate ?? null,

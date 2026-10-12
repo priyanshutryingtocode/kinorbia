@@ -71,11 +71,14 @@ async function main() {
       `  ${await db.collection("usermovies").countDocuments({})} usermovies row(s), which is the only remaining copy`
     );
 
-    if (!total) {
-      console.log("");
-      console.log("Nothing to drop: the collection is already empty or absent.");
-      return;
-    }
+// Absent is the only "nothing to do". An EMPTY collection is not: the shell is the
+      // leftover we want gone, and a stale .next build recompiling the deleted model
+      // recreates it. Bailing on empty would leave exactly that artifact in place.
+      if (!(await db.listCollections({ name: "journalentries" }).hasNext())) {
+        console.log("");
+        console.log("Nothing to drop: the collection is already absent.");
+        return;
+      }
 
     if (DRY) {
       console.log("");

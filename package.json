@@ -15,13 +15,15 @@
     "seed:data:dry": "node --env-file=.env.local scripts/seedData.mjs --dry-run",
     "backfill:verified": "node --env-file=.env.local scripts/backfillVerified.mjs",
     "backfill:title": "node --env-file=.env.local scripts/backfillMovieTitle.mjs",
+    "backfill:null-titles": "node --env-file=.env.local scripts/backfillNullTitles.mjs",
     "check:mutations": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkMutations.mjs",
     "backfill:user-movie": "node --env-file=.env.local scripts/backfillUserMovie.mjs",
     "drop:media": "node --env-file=.env.local scripts/dropEmbeddedMedia.mjs",
     "check:watched-parity": "node --env-file=.env.local scripts/verifyWatchedParity.mjs",
     "drop:journal": "node --env-file=.env.local scripts/dropJournalCollection.mjs",
     "check:indexes": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkIndexes.mjs",
-    "check:media-counts": "node --env-file=.env.local scripts/checkMediaCounts.mjs"
+    "check:media-counts": "node --env-file=.env.local scripts/checkMediaCounts.mjs",
+    "check:db": "node --env-file=.env.local scripts/checkDbIntegrity.mjs"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2",

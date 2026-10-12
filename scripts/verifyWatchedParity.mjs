@@ -39,16 +39,23 @@ async function main() {
     const entries = db.collection("journalentries");
     const rows = db.collection("usermovies");
 
-    // Gone: the completed state. Parity holds vacuously, so this passes.
+    // Gone, or emptied: both are the completed state. Parity holds vacuously, so this passes.
+    // An empty collection is not the absent one: MongoDB drops a collection outright, but
+    // anything that recreates it (a stale .next build recompiling the deleted model) leaves
+    // an empty shell behind, and the reverse-direction check below then reads 0 matched
+    // against 452 watched rows and calls all of them unbacked.
     const journalExists = await db.listCollections({ name: "journalentries" }).hasNext();
+    const journalCount = journalExists
+      ? await db.collection("journalentries").countDocuments({})
+      : 0;
 
     console.log(`Target: ${describeTarget()}`);
     console.log(`Mode:   ${REPORT ? "REPORT" : "REPORT + GATE"} (read-only)`);
     console.log("");
 
-    if (!journalExists) {
+    if (!journalExists || journalCount === 0) {
       const watched = await rows.countDocuments({ "watched.watchedAt": { $ne: null } });
-      console.log("journalentries: absent (dropped)");
+      console.log(`journalentries: ${journalExists ? "present but empty" : "absent (dropped)"}`);
       console.log(`Watched rows in usermovies: ${watched}`);
       console.log("");
       console.log("Nothing to compare. Watch history lives in usermovies and the migration is done.");

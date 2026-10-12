@@ -265,16 +265,21 @@ async function main() {
 
   // The caps are enforced against the member's counters, so they are derived from the
   // collection rather than the per-user loop above.
+  //
+  // `$type` rather than `$ne: [field, null]`: inside `$sum` the latter is true for a field
+  // that is ABSENT, not merely null, so a row with no watchlist sub-document at all is
+  // counted as watchlisted. Measured on the live collection that overcounted watchlist by
+  // exactly the number of rows missing the field (2), while `countDocuments` on the same
+  // rows correctly returned 0. Query FILTERS behave correctly -- only the aggregation
+  // expression is wrong, so the filters elsewhere in this file are fine as they are.
+  const isDate = (field) => ({ $sum: { $cond: [{ $eq: [{ $type: `$${field}` }, "date"] }, 1, 0] } });
+
   const perUser = await target.aggregate([
     {
       $group: {
         _id: "$userEmail",
-        favoritesCount: {
-          $sum: { $cond: [{ $ne: ["$favorite.addedAt", null] }, 1, 0] },
-        },
-        watchlistCount: {
-          $sum: { $cond: [{ $ne: ["$watchlist.addedAt", null] }, 1, 0] },
-        },
+        favoritesCount: isDate("favorite.addedAt"),
+        watchlistCount: isDate("watchlist.addedAt"),
       },
     },
   ]).toArray();
@@ -292,21 +297,21 @@ async function main() {
   console.log(`Counters set on ${perUser.length} member(s).`);
   console.log("");
 
-  // Re-derived from the target, not from what the write reported.
-  const after = await target.aggregate([
-    {
-      $group: {
-        _id: null,
-        total: { $sum: 1 },
-        // Compared against null, not $type: the $project always emits
-        // `favorite.addedAt`, so $type says "null" where "missing" is meant.
-        favorite: { $sum: { $cond: [{ $ne: ["$favorite.addedAt", null] }, 1, 0] } },
-        watchlist: { $sum: { $cond: [{ $ne: ["$watchlist.addedAt", null] }, 1, 0] } },
-        watched: { $sum: { $cond: [{ $ne: ["$watched.watchedAt", null] }, 1, 0] } },
-        rated: { $sum: { $cond: [{ $gt: [{ $ifNull: ["$favorite.personalRating", 0] }, 0] }, 1, 0] } },
+  // Re-derived from the target, not from what the write reported. $type for the same
+    // reason as the counters above: no $project runs before this $group, so a missing
+    // field is missing, and $ne: [field, null] would count it as set.
+    const after = await target.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          favorite: isDate("favorite.addedAt"),
+          watchlist: isDate("watchlist.addedAt"),
+          watched: isDate("watched.watchedAt"),
+          rated: { $sum: { $cond: [{ $gt: [{ $ifNull: ["$favorite.personalRating", 0] }, 0] }, 1, 0] } },
+        },
       },
-    },
-  ]).toArray();
+    ]).toArray();
 
   const a = after[0] || {};
   console.log("Audit (read back from the target):");

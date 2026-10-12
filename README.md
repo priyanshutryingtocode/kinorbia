@@ -102,11 +102,12 @@ Run before committing. All are read-only except where noted.
 | `npm run check:contrast` | Every colour pair meets its WCAG ratio. |
 | `npm run check:indexes` | Declared indexes match the server. `--strict` exits 1 on unexplained drift. |
 | `npm run check:media-counts` | The favorite/watchlist counters match the rows. `--strict` gates; `--fix` reconciles. |
+| `npm run check:db` | Referential integrity and schema conformance: orphaned rows, missing titles, rows over cap, collections with no model. `--strict` exits 1 on any error. |
 | `npm run lint` | ESLint, zero warnings tolerated. |
 
 The counters and indexes drift silently if a write path bypasses the transactional
-helpers, which is why `check:media-counts` and `check:indexes` exist rather than a
-general test suite.
+helpers, which is why `check:media-counts`, `check:indexes` and `check:db` exist rather
+than a general test suite.
 
 ## Maintenance scripts
 
@@ -116,6 +117,7 @@ One-shot, run deliberately. The `drop:*` scripts are destructive.
 | --- | --- |
 | `npm run backfill:user-movie` | Populate `usermovies` from the legacy embedded arrays. |
 | `npm run backfill:title` | Fill missing `title` on existing rows. |
+| `npm run backfill:null-titles` | Re-fetch `usermovies.title` from TMDB where it is null. Dry run unless `-- --yes`. |
 | `npm run drop:media` | Drop `User.favorites` / `User.watchlist`. |
 | `npm run drop:journal` | Drop the `journalentries` collection. |
 | `npm run check:watched-parity` | Verify watched parity during the migration. |
