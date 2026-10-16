@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const COPY: BrowseCopy = {
   headingNoun: "Shows",
   ledeGenre: "Explore TV shows in your selected genre.",
-  ledeDefault: "Trending shows from around the globe",
+  ledeDefault: "Popular shows from around the globe",
   emptyTitle: "Couldn't load shows right now",
   emptyDescription: "Popular shows are temporarily unavailable. Refresh to try again.",
 };

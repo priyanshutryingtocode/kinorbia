@@ -10,6 +10,7 @@
     "check:contrast": "node scripts/checkContrast.mjs",
     "check:unused": "node scripts/checkUnusedExports.mjs",
     "check:retry": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/checkFetchRetry.mjs",
+    "check:feed": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkFeedCursor.mjs",
     "reset:db": "node --env-file=.env.local scripts/resetDb.mjs",
     "seed:data": "node --env-file=.env.local scripts/seedData.mjs",
     "seed:data:dry": "node --env-file=.env.local scripts/seedData.mjs --dry-run",
@@ -23,7 +24,11 @@
     "drop:journal": "node --env-file=.env.local scripts/dropJournalCollection.mjs",
     "check:indexes": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkIndexes.mjs",
     "check:media-counts": "node --env-file=.env.local scripts/checkMediaCounts.mjs",
-    "check:db": "node --env-file=.env.local scripts/checkDbIntegrity.mjs"
+    "check:db": "node --env-file=.env.local scripts/checkDbIntegrity.mjs",
+    "check:serialization": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkSerialization.mjs",
+    "backfill:review-titles": "node --env-file=.env.local scripts/backfillReviewTitles.mjs",
+    "check:privacy": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkPrivacy.mjs --strict",
+    "check:export": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkExport.mjs"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2",

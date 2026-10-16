@@ -24,6 +24,9 @@ type MediaRef = {
   mediaType?: MediaType;
   genreIds?: number[];
   addedAt?: string;
+  // 0 when unrated. Present on a watchlist entry only when the title is also a favorite,
+  // since favorite and watchlist are states on the same row.
+  personalRating?: number;
 };
 
 // A favorite carries the viewer's own rating. Only something watched can be rated,
@@ -40,7 +43,12 @@ export type WatchlistMovie = MediaRef;
 
 // A list entry is a reference with no per-row extras at all: a list is other
 // people's favorites, so the viewer has no rating of their own to attach.
-export type ListMovie = Omit<MediaRef, "genreIds" | "addedAt">;
+//
+// Each omitted key is one `mediaRefFields` (models/shared.ts) does not declare, so
+// Mongoose strips it on write. `personalRating` matters most: both list writers map
+// through `toFavoriteMovie`, which emits it, so it would be sent and silently dropped
+// on every create and update. Keep this Omit in step with `mediaRefFields`.
+export type ListMovie = Omit<MediaRef, "genreIds" | "addedAt" | "personalRating">;
 
 export type TmdbMovieDetails = MovieSummary & {
   backdrop_path: string | null;
@@ -68,6 +76,35 @@ export type TmdbVideo = {
   type: string;
   official?: boolean;
   published_at?: string;
+};
+
+// "day" or "week": TMDB's only two trending windows. Not open-ended, because the value is
+// interpolated into a request path.
+export type TrendingWindow = "day" | "week";
+
+// One service a title can be watched on. `stream` is subscription (TMDB calls it flatrate);
+// rent and buy are purchases.
+export type WatchProvider = {
+  name: string;
+  kind: "stream" | "rent" | "buy";
+  logoPath: string | null;
+};
+
+type TmdbProviderEntry = {
+  provider_name?: string;
+  logo_path?: string | null;
+};
+
+type TmdbProviderRegion = {
+  flatrate?: TmdbProviderEntry[] | null;
+  rent?: TmdbProviderEntry[] | null;
+  buy?: TmdbProviderEntry[] | null;
+};
+
+// The raw /watch/providers payload: a map of ISO country code to that country's offers.
+export type TmdbWatchProviders = {
+  id?: number;
+  results?: Record<string, TmdbProviderRegion> | null;
 };
 
 export type TmdbCredits = {

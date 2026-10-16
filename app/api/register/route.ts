@@ -4,6 +4,7 @@ import { withRateLimit } from "@/lib/rateLimit";
 import { registerSchema, parseBody, badRequest } from "@/lib/validators";
 import { slugifyUsername } from "@/lib/userIdentity";
 import { registerUser } from "@/features/auth/mutations";
+import { logger } from "@/lib/logger";
 
 // The same answer is returned whether the address was taken, the username collided,
 // or the account was created. Anything else would let a caller learn which addresses
@@ -32,7 +33,7 @@ export const POST = withRateLimit(
         baseUsername: slugifyUsername(body.name || body.email.split("@")[0]),
       });
     } catch (error) {
-      console.error("Registration failed:", error);
+      logger.error("Registration failed:", { error: error });
 
       if (error instanceof Error && error.name === "MongooseServerSelectionError") {
         return NextResponse.json(

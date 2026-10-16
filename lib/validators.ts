@@ -20,6 +20,13 @@ export const updateProfileSchema = z.object({
   bio: z.string().trim().max(160).optional().default(""),
 });
 
+export const shareActivitySchema = z.object({
+  // Its own endpoint rather than a field on updateProfileSchema: changing who sees your
+  // watch history does not require resubmitting a name and bio, and the one-time prompt
+  // has no name to send.
+  share: z.coerce.boolean(),
+});
+
 export const registerSchema = z.object({
   name: z.string().trim().min(1).max(60),
   email: z.string().trim().email().max(254).toLowerCase(),

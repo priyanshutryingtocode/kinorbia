@@ -49,6 +49,15 @@ const UserSchema = new mongoose.Schema({
   verifyToken: tokenField,
   resetToken: tokenField,
   following: { type: [String], default: [] },
+
+  // Whether titles this member marks watched are broadcast to people who follow them.
+  // Opt-in: marking watched is bookkeeping, so nothing is shared until they say so.
+  //
+  // `shareActivityAsked` is what makes "the first time" implementable. Without it, `false`
+  // means both "declined" and "never asked", and the prompt reappears on every watch.
+  // Undefined is never-asked; true/false are answered and never asked again.
+  shareActivity: { type: Boolean, default: false },
+  shareActivityAsked: { type: Boolean },
 }, { timestamps: true });
 
 UserSchema.index({ following: 1 });

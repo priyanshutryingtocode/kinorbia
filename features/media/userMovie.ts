@@ -1,5 +1,6 @@
 import "server-only";
 
+import { mediaKey, normalizeMediaType } from "@/lib/media";
 import dbConnect from "@/lib/dbConnect";
 import { MAX_FAVORITES, MAX_WATCHLIST } from "@/lib/bounds";
 import { emailCandidates, emailMatch } from "@/lib/emailMatch";
@@ -329,25 +330,38 @@ export async function toggleMedia(
 }
 
 export async function markWatched(
-  userEmail: string,
-  write: MediaSnapshot & { watchedAt?: Date },
-  { session }: { session?: ClientSession } = {}
-): Promise<void> {
-  await dbConnect();
+    userEmail: string,
+    write: MediaSnapshot,
+    { session }: { session?: ClientSession } = {}
+  ): Promise<void> {
+    await dbConnect();
 
-  requireTitle(write);
+    requireTitle(write);
 
-  const watchedAt = write.watchedAt ?? new Date();
+    // No client-supplied date, deliberately. A backdated watch would sort into the past of
+  // every follower's feed and break keyset ordering, and `$min` would make it permanent --
+  // so the only way to change it would be a data migration. Add backdating later as its
+  // own field if it is ever wanted, rather than reusing the sort key.
+  const watchedAt = new Date();
+
+    // Read here rather than passed in, so the one place that decides whether a watch is
+    // broadcast is also the place that writes it. The prompt then only has to record the
+    // answer; every subsequent watch picks it up without the caller knowing the rule.
+    const member = await User.findOne({ email: userEmail })
+      .select("shareActivity")
+      .session(session ?? null)
+      .lean<{ shareActivity?: boolean } | null>();
+    const broadcast = Boolean(member?.shareActivity);
 
   // `$min` not `$set`: first-write-wins, or re-marking moves the date the streaks are
   // built from. `$setOnInsert` cannot carry it alone -- a title can already exist as a
   // favorite and be watched for the first time, with no insert to ride on.
   await UserMovie.updateOne(
     { userEmail, movieId: write.movieId, mediaType: write.mediaType },
-    {
-      $min: { "watched.watchedAt": watchedAt },
-      $set: providedFields(write),
-      $setOnInsert: { userEmail, movieId: write.movieId, mediaType: write.mediaType },
+{
+$min: { "watched.watchedAt": watchedAt },
+        $set: { ...providedFields(write), "watched.broadcast": broadcast },
+        $setOnInsert: { userEmail, movieId: write.movieId, mediaType: write.mediaType },
     },
     { upsert: true, ...(session ? { session } : {}) }
   );
@@ -366,6 +380,22 @@ const EMPTY_STATUS: MemberMediaStatus = {
   isWatchlisted: false,
   isWatched: false,
 };
+
+// Whether this member has been asked about watch sharing yet. Undefined means never
+// asked, which is the only thing that should make the prompt appear -- separate from
+// getMediaStatus because this is a preference, not a state of the title.
+export async function hasBeenAskedAboutSharing(
+  userEmail: string | null | undefined
+): Promise<boolean> {
+  if (!userEmail) return true; // Signed out: never prompt.
+  await dbConnect();
+
+  const member = await User.findOne({ email: userEmail })
+    .select("shareActivityAsked")
+    .lean<{ shareActivityAsked?: boolean } | null>();
+
+  return Boolean(member?.shareActivityAsked);
+}
 
 export async function getMediaStatus(
   userEmail: string,
@@ -404,7 +434,9 @@ export async function getMediaStatus(
 }
 // --- reads ---------------------------------------------------------------------
 
-type MediaState = "favorite" | "watchlist" | "watched" | "rated";
+// Exported so an HTTP caller can narrow a query-string value against the same union rather
+// than casting it past the type system.
+export type MediaState = "favorite" | "watchlist" | "watched" | "rated";
 
 export type MediaRow = {
   movieId: string;
@@ -416,6 +448,9 @@ export type MediaRow = {
   genreIds: number[];
   personalRating: number;
   addedAt: Date | null;
+  // Stamped at write time from the member's shareActivity flag. A member asking for their own
+  // data is entitled to the per-row record of what they consented to share, so this is exported.
+  broadcast: boolean;
 };
 
 // listUserMedia("watched") already resolves addedAt to watchedAt, so this only reshapes.
@@ -425,6 +460,27 @@ export type WatchedRow = {
   title: string;
   posterPath: string | null;
   watchedAt: Date;
+  // Carried so an export is not the one place that cannot say what a watched title was, or
+  // whether it was shared. The journal and insight views read none of this.
+  voteAverage: number;
+  releaseDate: string | null;
+  genreIds: number[];
+  personalRating: number;
+  broadcast: boolean;
+};
+
+// Facets narrow a member's own library. Deliberately not free-text: this is not
+// `/search`, it is the shape of "show me the part of my shelf I am asking for".
+export type LibrarySort = "recent" | "rating" | "title" | "year";
+
+export type LibraryFacets = {
+  /** TMDB genre id. A title counts when it carries this genre at all. */
+  genre?: number;
+  /** Inclusive lower bound on the member's own 1..10 rating. */
+  minRating?: number;
+  /** Release year, matched as a half-open range over the ISO date string. */
+  year?: number;
+  sort?: LibrarySort;
 };
 
 type ListOptions = {
@@ -432,10 +488,11 @@ type ListOptions = {
   skip?: number;
   limit?: number;
   session?: ClientSession;
+  facets?: LibraryFacets;
 };
 
 const ROW_PROJECTION =
-  "movieId mediaType title posterPath voteAverage releaseDate genreIds favorite.personalRating favorite.addedAt watchlist.addedAt watched.watchedAt";
+  "movieId mediaType title posterPath voteAverage releaseDate genreIds favorite.personalRating favorite.addedAt watchlist.addedAt watched.watchedAt watched.broadcast";
 
 function stateFilter(state: MediaState, mediaType?: MediaType) {
   const filter: Record<string, unknown> = {};
@@ -449,6 +506,29 @@ function stateFilter(state: MediaState, mediaType?: MediaType) {
   return filter;
 }
 
+function facetFilter(facets?: LibraryFacets) {
+  const filter: Record<string, unknown> = {};
+  if (!facets) return filter;
+
+  // Stored as an array, so equality matches "carries this genre anywhere in the list".
+  if (facets.genre !== undefined) filter.genreIds = facets.genre;
+
+  if (facets.minRating !== undefined) {
+    filter["favorite.personalRating"] = { $gte: facets.minRating, $gt: 0 };
+  }
+
+  if (facets.year !== undefined) {
+    // releaseDate is an ISO "YYYY-MM-DD..." string, so a lexicographic range is a date range
+    // and avoids needing a Date parse per row.
+    filter.releaseDate = {
+      $gte: `${facets.year}-01-01`,
+      $lt: `${facets.year + 1}-01-01`,
+    };
+  }
+
+  return filter;
+}
+
 // Newest first for whichever state was fetched; `_id` decides rows sharing an addedAt.
 function stateSort(state: MediaState) {
   const path =
@@ -456,12 +536,21 @@ function stateSort(state: MediaState) {
   return { [path]: -1 as const, _id: -1 as const };
 }
 
+// Every sort ends in `_id` so a facet page cannot reshuffle between requests when two rows
+// tie on the sort key -- the same guarantee the feed cursor depends on.
+function facetSort(state: MediaState, sort?: LibrarySort) {
+  if (sort === "rating") return { "favorite.personalRating": -1 as const, _id: -1 as const };
+  if (sort === "title") return { title: 1 as const, _id: 1 as const };
+  if (sort === "year") return { releaseDate: -1 as const, _id: -1 as const };
+  return stateSort(state);
+}
+
 // addedAt is the date of the state fetched FOR: a title on both lists has two real dates,
 // and reporting the wrong one labels the grid with a date it was not ordered by.
 function toMediaRow(row: Record<string, unknown>, state: MediaState): MediaRow {
   const favorite = (row.favorite ?? {}) as { addedAt?: Date; personalRating?: number };
   const watchlist = (row.watchlist ?? {}) as { addedAt?: Date };
-  const watched = (row.watched ?? {}) as { watchedAt?: Date };
+  const watched = (row.watched ?? {}) as { watchedAt?: Date; broadcast?: boolean };
 
   return {
     movieId: row.movieId as string,
@@ -478,21 +567,26 @@ function toMediaRow(row: Record<string, unknown>, state: MediaState): MediaRow {
         : state === "watched"
           ? watched.watchedAt ?? null
           : favorite.addedAt ?? null,
+    broadcast: Boolean(watched.broadcast),
   };
 }
 
 export async function listUserMedia(
   email: string,
   state: MediaState,
-  { mediaType, skip = 0, limit = 0, session }: ListOptions = {}
+  { mediaType, skip = 0, limit = 0, session, facets }: ListOptions = {}
 ): Promise<{ rows: MediaRow[]; total: number }> {
   await dbConnect();
-  const filter = { userEmail: email, ...stateFilter(state, mediaType) };
+  const filter = {
+    userEmail: email,
+    ...stateFilter(state, mediaType),
+    ...facetFilter(facets),
+  };
 
   const [rows, total] = await Promise.all([
     UserMovie.find(filter)
       .select(ROW_PROJECTION)
-      .sort(stateSort(state))
+      .sort(facetSort(state, facets?.sort))
       .skip(skip)
       .limit(limit)
       .session(session ?? null)
@@ -515,6 +609,11 @@ export async function listWatchHistory(
     title: row.title,
     posterPath: row.posterPath,
     watchedAt: row.addedAt as Date,
+    voteAverage: row.voteAverage,
+    releaseDate: row.releaseDate,
+    genreIds: row.genreIds,
+    personalRating: row.personalRating,
+    broadcast: row.broadcast,
   }));
 }
 
@@ -544,7 +643,7 @@ export async function getUserMediaByKey(
   const row = await UserMovie.findOne({
     userEmail: email,
     movieId: mediaKey.slice(separator + 1),
-    mediaType: mediaKey.slice(0, separator) === "tv" ? "tv" : "movie",
+    mediaType: normalizeMediaType(mediaKey.slice(0, separator)),
   })
     .select(ROW_PROJECTION)
     .session(session ?? null)
@@ -585,7 +684,7 @@ export async function ratingMapsForUsers(
       byKey = new Map<string, number>();
       maps.set(row.userEmail, byKey);
     }
-    byKey.set(`${row.mediaType === "tv" ? "tv" : "movie"}:${row.movieId}`, rating);
+    byKey.set(mediaKey(row.mediaType, row.movieId), rating);
   }
 
   return maps;

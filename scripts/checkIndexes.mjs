@@ -49,6 +49,7 @@ async function declaredIndexes() {
       name: options.name ?? mongooseName(fields),
       key: fields,
       unique: Boolean(options.unique),
+      partial: options.partialFilterExpression ?? null,
     })),
   }));
 
@@ -82,17 +83,31 @@ async function main() {
   try {
     for (const model of declared) {
       const live = (await db.collection(model.name).indexes()).filter((i) => i.name !== "_id_");
-      const liveByKey = new Map(live.map((i) => [JSON.stringify(i.key), i]));
+      // Identity is key PLUS partial filter. Two indexes differing only by their filter
+      // are different indexes -- the activity feed's `watched.broadcast` one and a plain
+      // one on the same fields -- so keying on the pattern alone would let one mask the
+      // other and hide a mismatch.
+      const identity = (i) => JSON.stringify([i.key, i.partialFilterExpression ?? null]);
+      const liveById = new Map(live.map((i) => [identity(i), i]));
 
       console.log(`${model.name}:`);
 
       for (const want of model.declared) {
         const key = JSON.stringify(want.key);
-        const have = liveByKey.get(key);
+        const have = liveById.get(JSON.stringify([want.key, want.partial]));
 
         if (!have) {
-          console.log(`  MISSING   ${want.name}  ${key}`);
-          unknown += 1;
+          // The common cause is a live index on the same key with a different filter.
+          const sameKey = live.find((i) => JSON.stringify(i.key) === key);
+          if (sameKey) {
+            console.log(`  FILTER    ${want.name}  ${key}`);
+            console.log(`            server: ${JSON.stringify(sameKey.partialFilterExpression ?? null)}`);
+            console.log(`            schema: ${JSON.stringify(want.partial)}`);
+            unknown += 1;
+          } else {
+            console.log(`  MISSING   ${want.name}  ${key}`);
+            unknown += 1;
+          }
           continue;
         }
         if (have.name === want.name) {
@@ -109,9 +124,9 @@ async function main() {
 
       // An index the schema does not declare at all. Not automatically wrong -- a partial
       // or TTL index added by hand is legitimate -- but it should be a decision.
-      const declaredKeys = new Set(model.declared.map((d) => JSON.stringify(d.key)));
+      const declaredIds = new Set(model.declared.map((d) => JSON.stringify([d.key, d.partial])));
       for (const index of live) {
-        if (!declaredKeys.has(JSON.stringify(index.key)) && !KNOWN[index.name]) {
+        if (!declaredIds.has(identity(index)) && !KNOWN[index.name]) {
           console.log(`  UNDECLARED ${index.name}  ${JSON.stringify(index.key)}`);
           unknown += 1;
         }

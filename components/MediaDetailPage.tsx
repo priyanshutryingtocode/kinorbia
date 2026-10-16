@@ -9,6 +9,7 @@ import TmdbPosterImage from "@/components/TmdbPosterImage";
 import TrailerButton from "@/components/TrailerButton";
 import PageContainer from "@/components/PageContainer";
 import SimilarMedia from "@/components/SimilarMedia";
+import WatchProviderRow from "@/components/WatchProviderRow";
 import MovieReviewsAndLists from "@/components/MovieReviewsAndLists";
 import { tmdbImage } from "@/lib/media";
 import type { DetailChip, DetailIcon, DetailModel } from "@/lib/mediaDetail";
@@ -45,12 +46,17 @@ function Chip({ chip }: { chip: DetailChip }) {
 }
 
 export default async function MediaDetailPage({
-  model,
-  personal,
-}: {
-  model: DetailModel;
-  personal: PersonalMediaStatus;
-}) {
+    model,
+    personal,
+    askAboutSharing = false,
+  }: {
+    model: DetailModel;
+    personal: PersonalMediaStatus;
+    // Whether this member has never been asked about sharing watch activity. Passed in
+    // rather than read here so the detail page owns the one extra query and this
+    // component stays a pure function of its props.
+    askAboutSharing?: boolean;
+  }) {
   const { summary } = model;
   const backdrop = tmdbImage(model.backdropPath, "w1280");
   const poster = tmdbImage(model.posterPath, "w500");
@@ -117,7 +123,11 @@ export default async function MediaDetailPage({
                   <TrailerButton videoKey={model.trailerKey} title={model.title} />
                 )}
                 <FavoriteButton movie={summary} initialIsFavorite={personal.isFavorite} />
-                <WatchedButton movie={summary} initialIsWatched={personal.isWatched} />
+                <WatchedButton
+                    movie={summary}
+                    initialIsWatched={personal.isWatched}
+                    askAboutSharing={askAboutSharing}
+                  />
                 <WatchlistButton movie={summary} initialIsWatchlisted={personal.isWatchlisted} />
                 <div className="mt-3 w-full sm:mt-0 sm:w-auto sm:flex-1 sm:min-w-0">
                   <MovieRatingControl
@@ -133,19 +143,24 @@ export default async function MediaDetailPage({
               {model.overview}
             </p>
 
-            {model.crew.length > 0 && (
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                {model.crew.map((panel) => (
-                  <div key={panel.label} className="rounded-sheet border border-panel-border bg-panel-surface p-4">
-                    <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-highlight-muted">
-                      {panel.label}
-                    </h3>
-                    <p className="text-base font-semibold text-content">{panel.names}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+              {model.crew.length > 0 && (
+                <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                  {model.crew.map((panel) => (
+                    <div key={panel.label} className="rounded-sheet border border-panel-border bg-panel-surface p-4">
+                      <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-highlight-muted">
+                        {panel.label}
+                      </h3>
+                      <p className="text-base font-semibold text-content">{panel.names}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <WatchProviderRow
+                providers={model.watchProviders}
+                hasData={model.watchProviderData}
+              />
+            </div>
         </div>
 
         {model.cast.length > 0 && (

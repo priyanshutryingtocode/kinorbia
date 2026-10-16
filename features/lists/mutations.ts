@@ -10,6 +10,7 @@ import MovieList from "@/models/MovieList";
 import Notification from "@/models/Notification";
 import type { ClientSession } from "mongoose";
 import type { ListMovie } from "@/types";
+import { logger } from "@/lib/logger";
 
 type MutationOptions = { session?: ClientSession };
 
@@ -58,7 +59,8 @@ export async function createList(
       ],
       session ? { session } : {}
     );
-  } catch {
+  } catch (error) {
+    logger.error("Error creating list:", { error });
     return "failed";
   }
 
@@ -166,7 +168,7 @@ export async function removeList(
       Notification.deleteMany({ targetType: "list", targetId: input.listId }, opts),
     ]);
   } catch (error) {
-    console.error("Error cleaning up deleted list data:", error);
+    logger.error("Error cleaning up deleted list data:", { error: error });
   }
 
   return "ok";

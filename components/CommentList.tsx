@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDate } from "@/lib/media";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { deleteComment } from "@/features/comments/actions";
@@ -35,7 +36,7 @@ export default function CommentList({ comments, currentUserEmail, path }: Commen
                 <p className="min-w-0 text-xs">
                   <span className="font-semibold text-content">{comment.userName}</span>
                   <time className="ml-2 text-content-subtle" dateTime={comment.createdAt}>
-                    {new Date(comment.createdAt).toLocaleDateString()}
+                    {formatDate(comment.createdAt)}
                   </time>
                 </p>
                 {comment.userEmail === currentUserEmail && (

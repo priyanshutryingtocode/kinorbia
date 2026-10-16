@@ -289,7 +289,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               only when `hasNoFilters` is already false, so the check was always
               true. */}
           <SearchLoadMore
-            key={`${query}|${selectedGenre}|${releaseYear}|${selectedLanguage}|${selectedSort}|${mediaType}`}
+            // Derived from `filters` rather than hand-listing the values. The key used to
+              // omit minRating and maxRuntime, so changing only "Minimum rating" kept the
+              // previous filter's appended results and its page cursor. Anything that changes
+              // the query now necessarily changes the key.
+              key={JSON.stringify(filters)}
             action={fetchSearchPage}
             args={filters}
             initialPage={data.nextPage}

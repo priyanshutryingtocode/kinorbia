@@ -12,18 +12,37 @@ Demo accounts (password `demo1234` for all — sign in with email + password):
 
 ## Features
 
-- **Discover** — TMDB search, browse and genre discovery for movies and shows, plus
-  per-title recommendations.
+- **Trending** — the landing page. What everyone is watching this week, filterable by
+  movie/show and by TMDB's day/week window, loaded 20 at a time. It is the one page that
+  renders identically for a signed-out visitor, because nothing on it reads your library.
+- **Discover** — TMDB search, browse and genre discovery at `/movies` and `/shows`, plus
+  per-title recommendations. Genre browsing is linkable (`/movies?genre=28`), so any genre
+  view can be shared, bookmarked or prefetched.
 - **Track** — favorites, a watchlist, and a watch history, each first-write-wins by date.
+- **Library facets** — the profile shelf narrows by genre, minimum personal rating and
+  release year, and sorts by recency, rating, title or year. Paging a narrowed shelf keeps the
+  narrowing.
+- **For you** — taste-based recommendations built from what you have actually watched: genres
+  weighted by how often you watch them, then tilted by the ratings you gave, so a genre you
+  keep rating poorly is down-weighted. Explains itself rather than being a black box, and
+  stays empty until there is enough history to be worth guessing from.
+- **Where to watch** — streaming, rent and buy services on every title page, grouped by kind.
 - **Rate and review** — rating is 1–10 (shown as 0.5–5 stars) and requires the title be
   marked watched first. A review requires a rated favorite, resolved server-side from the
   submitted key rather than trusted form fields.
 - **Lists** — public or private curated lists with an ordering that survives edits.
 - **Social** — follow members, like and comment, with a notification feed.
+- **Friends activity** — one feed of reviews, lists and watches from the members you follow, paged by an opaque cursor. Sharing what you watch is opt-in, and reaches only your followers: never the public Community feed.
+- **Read APIs** — the browser reads through server components, so most of the app's reads had
+  no HTTP path at all. `GET /api/user/media`, `/api/user/feed`, `/api/user/me`,
+  `/api/user/recommendations` and `/api/movie/search` expose the same domain functions over
+  HTTP as thin transport wrappers — no duplicated logic, no bypassed validation.
 - **Assistant** — a Gemini-backed chat that answers from the signed-in member's own
   favorites and watch history.
 - **Auth** — email + password or Google, with email verification and password reset.
 - **Export** — everything a member has written or saved, as one downloadable JSON file.
+- **Observability** — structured JSON logging with automatic redaction of emails, secret
+  keys and URL query secrets.
 
 ## Getting started
 
@@ -69,7 +88,7 @@ Seed data is available via `npm run seed:data` (add `--dry-run` to preview).
 | --- | --- |
 | `/app` | Pages, layouts and API routes. No database access and no models — routes parse, delegate and map HTTP. |
 | `/features` | One folder per domain, holding whichever of `queries.ts` (reads), `mutations.ts` (writes), `actions.ts` (server actions) and `serializers.ts` that domain needs. |
-| `/lib` | Shared utilities, the TMDB client, auth config and `dbConnect.ts`. |
+| `/lib` | Shared utilities, the TMDB client, auth config and `dbConnect.ts`. `tasteProfile.ts` holds the recommendation scorer as pure functions — no database, no network — so the interesting part can be checked by hand. |
 | `/models` | Mongoose schemas. |
 | `/components` | Reusable React components. |
 | `/scripts` | Gates and one-shot maintenance tools (see below). |
@@ -102,12 +121,20 @@ Run before committing. All are read-only except where noted.
 | `npm run check:contrast` | Every colour pair meets its WCAG ratio. |
 | `npm run check:indexes` | Declared indexes match the server. `--strict` exits 1 on unexplained drift. |
 | `npm run check:media-counts` | The favorite/watchlist counters match the rows. `--strict` gates; `--fix` reconciles. |
-| `npm run check:db` | Referential integrity and schema conformance: orphaned rows, missing titles, rows over cap, collections with no model. `--strict` exits 1 on any error. |
+| `npm run check:db` | Referential integrity and schema conformance: orphaned rows, missing titles, rows over cap, collections with no model, broadcast rows without consent. `--strict` exits 1 on any error. |
+| `npm run check:feed` | The activity feed's cursor: every visible row served exactly once, no repeats, no ordering breaks, nothing the visibility filter excludes. |
+| `npm run check:privacy` | No member's data export carries another member's email address. Runs `--strict`, so a leak exits 1. |
+| `npm run check:export` | Every field a member owns is actually in their export: exact key sets per section, no secrets, section counts matching the database, and nothing but JSON-native values. |
+| `npm run check:serialization` | No raw ObjectId or `Date` crosses into a client payload from the feed, comment threads or profile pages. |
 | `npm run lint` | ESLint, zero warnings tolerated. |
 
-The counters and indexes drift silently if a write path bypasses the transactional
-helpers, which is why `check:media-counts`, `check:indexes` and `check:db` exist rather
-than a general test suite.
+`watched.broadcast` is stamped at write time from the member's `shareActivity` flag, so the
+feed never looks up a follower's preference; turning the flag off clears the stamp with one
+`updateMany`. `check:db` asserts no broadcast row survives for a member whose flag is off.
+
+The counters, indexes and cursor all drift silently if a write path bypasses the
+transactional helpers, which is why the `check:*` scripts exist rather than a general
+test suite.
 
 ## Maintenance scripts
 

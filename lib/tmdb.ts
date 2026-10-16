@@ -5,8 +5,12 @@ import type {
   TmdbTvDetails,
   TmdbTvCredits,
   TmdbVideo,
+  TmdbWatchProviders,
+  WatchProvider,
+  TrendingWindow,
 } from "@/types";
 import { fetchJsonWithRetry } from "@/lib/httpRetry";
+import { logger } from "@/lib/logger";
 
 const BASE = "https://api.themoviedb.org/3";
 
@@ -34,12 +38,16 @@ async function tmdbFetch<T>(
     {
       retries,
       retryStatuses: RETRIABLE_STATUS,
-      onExhausted: ({ url: failed, attempts, status, cause }) => {
-        console.warn(
-          `TMDB gave up after ${attempts} attempt(s): ${failed}` +
-            (status === null ? ` (${describeCause(cause)})` : ` (HTTP ${status})`)
-        );
-      },
+        onExhausted: ({ url: failed, attempts, status, cause }) => {
+          logger.warn("TMDB gave up", {
+            url: failed,
+            attempts,
+            status,
+            // describeCause reads the transport-level code; the raw cause is not logged
+            // because it can carry a URL with the api_key in it.
+            cause: status === null ? describeCause(cause) : undefined,
+          });
+        },
     }
   );
 
@@ -136,12 +144,14 @@ async function fetchDetailsWithStatus<T>(
     { next: { revalidate: 3600 } },
     {
       retryStatuses: RETRIABLE_STATUS,
-      onExhausted: ({ url: failed, attempts, status, cause }) => {
-        console.warn(
-          `TMDB details gave up after ${attempts} attempt(s): ${failed}` +
-            (status === null ? ` (${describeCause(cause)})` : ` (HTTP ${status})`)
-        );
-      },
+        onExhausted: ({ url: failed, attempts, status, cause }) => {
+          logger.warn("TMDB details gave up", {
+            url: failed,
+            attempts,
+            status,
+            cause: status === null ? describeCause(cause) : undefined,
+          });
+        },
     }
   );
 
@@ -257,6 +267,27 @@ export const getMovieCredits = (id: string) =>
 export const getMovieVideos = (id: string) =>
   fetchSubResource<{ results?: TmdbVideo[] } | null>("movie", id, "videos");
 
+export const getMovieProviders = (id: string) =>
+  fetchSubResource<TmdbWatchProviders | null>("movie", id, "watch/providers");
+
+// --- trending ---
+//
+// TMDB splits trending into day and week. The week window is the default here because a
+// "trending" rail refreshed every few minutes is noise; the week list is stable enough that
+// two visitors an hour apart see roughly the same shelf, which is what makes it read as a
+// standing rail rather than a ticker.
+export const getTrendingMovies = (window: TrendingWindow = "week", page = 1) =>
+  fetchNormalizedList(
+    "movie",
+    `/trending/movie/${window}?language=en-US&page=${safePage(page)}`,
+    // A short revalidate: the whole point of trending is that it moves, and an hour-long
+    // cache would make the rail stale enough to be worth removing.
+    900
+  );
+
+export const getTrendingTv = (window: TrendingWindow = "week", page = 1) =>
+  fetchNormalizedList("tv", `/trending/tv/${window}?language=en-US&page=${safePage(page)}`, 900);
+
 // --- TV ---
 
 export const getPopularTv = (page = 1) =>
@@ -287,6 +318,75 @@ export const getTvCredits = (id: string) =>
 
 export const getTvVideos = (id: string) =>
   fetchSubResource<{ results?: TmdbVideo[] } | null>("tv", id, "videos");
+
+export const getTvProviders = (id: string) =>
+  fetchSubResource<TmdbWatchProviders | null>("tv", id, "watch/providers");
+
+// --- where to stream ------------------------------------------------------
+
+/**
+ * Flatten TMDB's watch/providers payload into the services available in ONE country.
+ *
+ * TMDB nests this by ISO country, and within a country splits flatrate (subscription) from
+ * rent and buy. The caller picks the country (see lib/region.ts).
+ *
+ * There is deliberately no fallback to another region. An earlier version fell back to
+ * whichever key came first, which meant a viewer whose region had no data was shown another
+ * country's catalogue -- a viewer in Berlin told a film streams on US services. An empty
+ * array is the honest answer and is rendered as such, distinctly from a failed fetch.
+ *
+ * Deduplicated because TMDB lists one service under several offer types and billing
+ * variants ("Paramount Plus Premium" and "Paramount Plus Essential" are the same service),
+ * and "Netflix, Netflix, Netflix" is worse than no row at all. Those variants are NOT merged
+ * into one entry: guessing at provider names would risk telling someone a title is on a
+ * service it is not on.
+ */
+export function summarizeWatchProviders(
+  payload: TmdbWatchProviders | null,
+  region: string
+): WatchProvider[] {
+  const offers = payload?.results?.[region];
+  if (!offers) return [];
+
+  const seen = new Set<string>();
+  const providers: WatchProvider[] = [];
+
+  for (const entry of offers.flatrate ?? []) {
+    if (!entry?.provider_name || seen.has(entry.provider_name)) continue;
+    seen.add(entry.provider_name);
+    providers.push({ name: entry.provider_name, kind: "stream", logoPath: entry.logo_path ?? null });
+  }
+  for (const entry of offers.rent ?? []) {
+    if (!entry?.provider_name || seen.has(entry.provider_name)) continue;
+    seen.add(entry.provider_name);
+    providers.push({ name: entry.provider_name, kind: "rent", logoPath: entry.logo_path ?? null });
+  }
+  for (const entry of offers.buy ?? []) {
+    if (!entry?.provider_name || seen.has(entry.provider_name)) continue;
+    seen.add(entry.provider_name);
+    providers.push({ name: entry.provider_name, kind: "buy", logoPath: entry.logo_path ?? null });
+  }
+
+  return providers;
+}
+
+/**
+ * Did TMDB answer at all for this title?
+ *
+ * The narrow question behind a rendering decision, not a filter: an empty provider list and
+ * a failed fetch look identical otherwise, and they are different things to a viewer. One
+ * means "not on any service where you are", the other means "we could not check".
+ */
+export function hasWatchProviderData(payload: TmdbWatchProviders | null): boolean {
+  const results = payload?.results;
+  if (!results) return false;
+
+  return Object.values(results).some((offers) =>
+    Boolean(offers.flatrate?.length || offers.rent?.length || offers.buy?.length)
+  );
+}
+
+
 
 export function pickMainTrailer(videos: TmdbVideo[] | undefined | null): TmdbVideo | null {
   if (!videos || videos.length === 0) {

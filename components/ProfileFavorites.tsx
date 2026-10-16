@@ -1,11 +1,13 @@
 "use client";
 
+import { movieRefPayload } from "@/lib/mediaDetail";
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Film, Loader2, Star, X } from "lucide-react";
+import { Film, Loader2, X } from "lucide-react";
 import MovieCard, { type MovieProp } from "@/components/MovieCard";
 import AccessibleDialog from "@/components/AccessibleDialog";
+import StarRating from "@/components/StarRating";
 import { useToast } from "@/components/ToastProvider";
 import { mediaKey, normalizeMediaType } from "@/lib/media";
 import type { FavoriteMovie } from "@/types";
@@ -14,6 +16,14 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
   const [selectedMovie, setSelectedMovie] = useState<MovieProp | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Stars, not the stored score. This control used to be ten buttons labelled 1-10 against a
+  // "Choose a score from 1 to 10" prompt, while the movie page rated on 0.5-5 stars. Seeded
+  // at 2.5 like MovieRatingControl so opening an unrated title starts in the middle rather
+  // than on the minimum.
+  const [draftStars, setDraftStars] = useState(2.5);
+  // An unrated title seeds at 2.5, which maps to a real score (5 of 10). Without this, Save was
+  // live on a freshly opened dialog and one click wrote a rating the member never picked.
+  const [touched, setTouched] = useState(false);
   const router = useRouter();
   const { showToast } = useToast();
 
@@ -24,7 +34,14 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
     }
   }, [loading]);
 
-  const handleRate = async (rating: number) => {
+  const openDialog = useCallback((movie: MovieProp) => {
+    setSelectedMovie(movie);
+    setDraftStars(movie.personalRating ? movie.personalRating / 2 : 2.5);
+    setTouched(false);
+    setError("");
+  }, []);
+
+  const handleRate = async (stars: number) => {
     if (!selectedMovie) {
       return;
     }
@@ -32,17 +49,14 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
     setLoading(true);
     setError("");
 
+    // The wire format stays 1-10: the schema, starsLabel and the facet filter all read it.
+    const rating = Math.round(stars * 2);
+
     try {
       const res = await fetch("/api/user/rating", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          movieId: selectedMovie.id,
-          movieTitle: selectedMovie.title,
-          posterPath: selectedMovie.poster_path,
-          rating,
-          mediaType: normalizeMediaType(selectedMovie.mediaType),
-        }),
+        body: JSON.stringify({ ...movieRefPayload(selectedMovie), rating }),
       });
 
       if (!res.ok) {
@@ -68,7 +82,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
       <div className="flex flex-col items-center justify-center gap-4 rounded-sm border-y border-dashed border-rule bg-glass px-6 py-10 text-center text-content-subtle">
         <Film className="h-12 w-12 opacity-30" aria-hidden="true" />
         <p>You have not added any favorites yet.</p>
-        <Link href="/" className="kin-focus rounded-sm text-sm font-semibold text-accent-text transition">
+        <Link href="/movies" className="kin-focus rounded-sm text-sm font-semibold text-accent-text transition">
           Browse movies and shows
         </Link>
       </div>
@@ -91,7 +105,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
               personalRating: favorite.personalRating || 0,
               mediaType: normalizeMediaType(favorite.mediaType),
             }}
-            onRateClick={setSelectedMovie}
+            onRateClick={openDialog}
           />
         ))}
       </div>
@@ -118,33 +132,47 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
               <h2 id="rate-title-dialog" className="mt-1 font-display text-2xl font-medium text-content">
                 {selectedMovie.title}
               </h2>
-              <p className="mt-2 text-sm text-content-subtle">Choose a score from 1 to 10.</p>
-            </div>
+                <p className="mt-2 text-sm text-content-subtle">
+                  Drag or use the arrow keys to rate out of five stars.
+                </p>
+              </div>
 
-            <div className="mt-6 grid grid-cols-5 gap-2" role="group" aria-label={`Rating for ${selectedMovie.title}`}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
-                <button
-                  key={rating}
-                  type="button"
-                  onClick={() => handleRate(rating)}
+              <div className="mt-6 flex flex-col items-center gap-3">
+                <StarRating
+                  value={draftStars}
+                  onChange={(stars) => {
+                    setDraftStars(stars);
+                    setTouched(true);
+                  }}
+                  label={`Rate ${selectedMovie.title}`}
                   disabled={loading}
-                  aria-label={`Rate ${selectedMovie.title} ${rating} out of 10`}
-                  aria-pressed={selectedMovie.personalRating === rating}
-                  className={`kin-focus flex h-11 items-center justify-center rounded-full border text-sm font-bold transition disabled:opacity-50 ${
-                    selectedMovie.personalRating === rating
-                      ? "border-highlight bg-highlight text-on-highlight"
-                      : "border-rule bg-surface text-content hover:border-highlight/50 hover:text-highlight"
-                  }`}
+                  className="w-auto min-w-0"
+                />
+                <p className="text-sm font-medium text-content">{draftStars.toFixed(1)} stars</p>
+                <button
+                  type="button"
+                  onClick={() => handleRate(draftStars)}
+                  disabled={
+                    loading || !touched || Math.round(draftStars * 2) === selectedMovie.personalRating
+                  }
+                  className="kin-focus rounded-full border border-rule bg-glass-strong px-5 py-2 text-sm font-semibold text-content transition hover:bg-glass-strong disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {rating}
+                  Save
                 </button>
-              ))}
-            </div>
+              </div>
 
-            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-content-subtle">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin text-highlight" /> : <Star className="h-4 w-4 text-highlight" />}
-              {loading ? "Saving rating..." : "Ratings are shown out of five stars."}
-            </div>
+
+            {/* A status line, rendered only while a save is in flight. It used to render
+                unconditionally and state "Ratings are shown out of five stars" -- which
+                contradicted the 1-10 buttons above it, the "1 to 10" prompt, and their own
+                aria-labels. The scale belongs with the prompt, so this now says only what
+                is happening right now. */}
+            {loading && (
+              <div className="mt-5 flex items-center justify-center gap-2 text-xs text-content-subtle">
+                <Loader2 className="h-4 w-4 animate-spin text-highlight" aria-hidden="true" />
+                Saving rating...
+              </div>
+            )}
 
             {error && (
               <p role="alert" className="mt-4 rounded-sheet border border-accent/20 bg-accent-hover/10 px-3 py-2 text-sm text-danger">

@@ -10,7 +10,7 @@ import ProfileMetricRail from "@/components/ProfileMetricRail";
 import ProfilePanel from "@/components/ProfilePanel";
 import SpoilerText from "@/components/SpoilerText";
 import { renderRichText } from "@/lib/renderRichText";
-import { mediaHref, mediaKey, normalizeMediaType, starsLabel } from "@/lib/media";
+import { countLabel, mediaHref, mediaKey, normalizeMediaType, starsLabel } from "@/lib/media";
 import { getPublicProfileData } from "@/features/profile/queries";
 
 export const dynamic = "force-dynamic";
@@ -200,7 +200,7 @@ export default async function PublicProfilePage({
                         {list.title}
                       </h3>
                       <span className="shrink-0 text-xs text-content-muted">
-                        {list.movieCount} titles
+                        {countLabel(list.movieCount, "title")}
                       </span>
                     </div>
                     {list.description && (

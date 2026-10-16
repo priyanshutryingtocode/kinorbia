@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import { withRateLimit } from "@/lib/rateLimit";
 import { getCurrentUser, type SessionUser } from "@/lib/authUser";
+import { logger } from "@/lib/logger";
 
 export function withAuthedUser(
   handler: (req: Request, user: SessionUser) => Promise<Response>,
@@ -18,7 +19,7 @@ export function withAuthedUser(
         await dbConnect();
         return await handler(req, user);
       } catch (error) {
-        console.error(`Error ${options.errorLabel}:`, error);
+        logger.error(`Error ${options.errorLabel}:`, { error: error });
         return NextResponse.json({ message: `Error ${options.errorLabel}` }, { status: 500 });
       }
     },

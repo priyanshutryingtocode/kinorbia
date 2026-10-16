@@ -13,6 +13,7 @@ import {
   type Role,
 } from "@/lib/assistant/conversation";
 import type { MovieSummary } from "@/types";
+import { logger } from "@/lib/logger";
 
 
 async function searchTmdbTitle(title: string, mediaType: "movie" | "tv" = "movie") {
@@ -53,7 +54,7 @@ export const GET = withRateLimit(
       const conv = await getConversationMessages(email);
       return NextResponse.json({ messages: serializeMessages(conv?.messages) });
     } catch (error) {
-      console.error("Error loading assistant history:", error);
+      logger.error("Error loading assistant history:", { error: error });
       return NextResponse.json({ message: "Error loading assistant history" }, { status: 500 });
     }
   },
@@ -131,7 +132,7 @@ export const POST = withRateLimit(
 
       return NextResponse.json({ reply, movies });
     } catch (error) {
-      console.error("Movie assistant error:", error);
+      logger.error("Movie assistant error:", { error: error });
 
       if (error instanceof Error && error.message === "Missing GEMINI_API_KEY") {
         return NextResponse.json(

@@ -17,7 +17,7 @@ import SubmitButton from "@/components/SubmitButton";
 import PosterImage from "@/components/PosterImage";
 import VisibilityBadge from "@/components/VisibilityBadge";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
-import {formatDate, mediaHref, mediaKey} from "@/lib/media";
+import { countLabel, formatDate, mediaHref, mediaKey } from "@/lib/media";
 import { usernameFor } from "@/lib/profileLinks";
 import UserNameLink from "@/components/UserNameLink";
 import NumberedPagination from "@/components/NumberedPagination";
@@ -66,14 +66,14 @@ function ListRow({
   const previews = list.movies.slice(0, 5);
   const isOwner = list.userEmail.toLowerCase() === currentUserEmail;
   const defaultSelected = list.movies.map((movie) => mediaKey(movie.mediaType, movie.movieId));
-  const countLabel = `${list.movies.length} ${list.movies.length === 1 ? "title" : "titles"}`;
+  const label = countLabel(list.movies.length, "title");
 
   return (
     <article className="kin-editorial-row flex-col gap-5 py-5 sm:flex-row sm:justify-between">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <VisibilityBadge visibility={list.visibility} />
-          <span className="text-xs text-content-subtle">{countLabel}</span>
+          <span className="text-xs text-content-subtle">{label}</span>
         </div>
         <h3 className="mt-2 font-display text-xl font-medium leading-tight text-content">
           <Link
@@ -302,7 +302,7 @@ export default async function ListsPage({
                   less legible one, so softening that way walks the link down to
                   roughly 3.2:1 on hover -- the same trap the kickers had. */}
               <Link
-                href="/"
+                href="/movies"
                 className="kin-focus rounded-sm text-sm font-semibold text-highlight hover:text-highlight-muted"
               >
                 Browse titles

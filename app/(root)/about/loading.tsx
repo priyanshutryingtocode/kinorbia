@@ -16,7 +16,7 @@ export default function Loading() {
             <Skeleton className="mb-2 h-3 w-20" />
             <Skeleton className="h-8 w-32" />
             <div className="kin-editorial-list mt-6">
-              {Array.from({ length: 5 }).map((_, index) => (
+              {Array.from({ length: 8 }).map((_, index) => (
                 <div key={index} className="kin-editorial-row gap-4 py-6 sm:gap-6">
                   <Skeleton className="h-8 w-14 shrink-0" />
                   <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-6">
@@ -26,6 +26,12 @@ export default function Loading() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="mt-12">
+            <Skeleton className="mb-3 h-3 w-24" />
+            <Skeleton className="h-5 w-full max-w-2xl" />
+            <Skeleton className="mt-3 h-5 w-full max-w-xl" />
           </div>
         </SkeletonRegion>
     </RouteShell>

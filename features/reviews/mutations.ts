@@ -7,6 +7,7 @@ import Comment from "@/models/Comment";
 import Notification from "@/models/Notification";
 import Review from "@/models/Review";
 import type { ClientSession } from "mongoose";
+import { logger } from "@/lib/logger";
 
 export const MAX_REVIEW_LENGTH = 1200;
 
@@ -57,7 +58,10 @@ export async function publishReview(
       ],
       session ? { session } : {}
     );
-  } catch {
+  } catch (error) {
+    // The member gets a generic retry, but not silently: a rejected write with no log is
+    // indistinguishable from a database blip once it is in production.
+    logger.error("Error creating review:", { error });
     return "failed";
   }
 
@@ -111,7 +115,7 @@ export async function removeReview(
     await Comment.deleteMany({ parentType: "review", parentId: input.reviewId }, opts);
     await Notification.deleteMany({ targetType: "review", targetId: input.reviewId }, opts);
   } catch (error) {
-    console.error("Error cleaning up deleted review data:", error);
+    logger.error("Error cleaning up deleted review data:", { error: error });
   }
 
   return "ok";

@@ -24,7 +24,10 @@ if (!URI || !TMDB_API_KEY) {
 const missing = { title: null };
 const empty = { title: "" };
 const whitespace = { title: { $regex: /^\s+$/ } };
-const BROKEN = { $or: [missing, empty, whitespace] };
+// A placeholder counts as missing. A seed fallback wrote 67 of these, which passed every
+// "is the field present" check and rendered as "Untitled" on the activity feed.
+const placeholder = { title: "Untitled" };
+const BROKEN = { $or: [missing, empty, whitespace, placeholder] };
 
 async function tmdbTitle(movieId, mediaType) {
   const path = mediaType === "tv" ? `/tv/${encodeURIComponent(movieId)}` : `/movie/${encodeURIComponent(movieId)}`;

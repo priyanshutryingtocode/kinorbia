@@ -14,7 +14,7 @@ export default function NotFound() {
         <Link href="/search" className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-on-accent transition hover:bg-accent-hover">
           Search films
         </Link>
-        <Link href="/" className="rounded-full border border-rule bg-surface px-6 py-3 text-sm font-semibold text-content transition hover:bg-surface-raised">
+        <Link href="/movies" className="rounded-full border border-rule bg-surface px-6 py-3 text-sm font-semibold text-content transition hover:bg-surface-raised">
           Browse Popular
         </Link>
       </div>

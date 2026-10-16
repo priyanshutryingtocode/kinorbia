@@ -6,6 +6,7 @@ import { parseBody, badRequest } from "@/lib/validators";
 import { sendEmail, buildLink } from "@/lib/email";
 import { generateToken } from "@/lib/token";
 import { issueResetToken } from "@/features/auth/mutations";
+import { logger } from "@/lib/logger";
 
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email().max(254).toLowerCase(),
@@ -36,7 +37,7 @@ export const POST = withRateLimit(
             ].join("\n"),
           });
         } catch (error) {
-          console.error("Failed to send reset email:", error);
+          logger.error("Failed to send reset email:", { error: error });
         }
       } else {
         // No account, or one without a password. Burn comparable CPU so the response
@@ -48,7 +49,7 @@ export const POST = withRateLimit(
         message: "If an account exists for that email, a reset link has been sent.",
       });
     } catch (error) {
-      console.error("Error sending password reset:", error);
+      logger.error("Error sending password reset:", { error: error });
       return NextResponse.json({ message: "Error sending password reset" }, { status: 500 });
     }
   },

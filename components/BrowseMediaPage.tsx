@@ -56,13 +56,13 @@ export default async function BrowseMediaPage({
         </p>
       </div>
 
-      {!genre && (
-        <Suspense fallback={<RecommendationsSkeleton />}>
-          <Recommendations mediaType={mediaType} />
-        </Suspense>
-      )}
+        {!genre && (
+          <Suspense fallback={<RecommendationsSkeleton />}>
+            <Recommendations mediaType={mediaType} />
+          </Suspense>
+        )}
 
-      <GenreFilter mediaType={mediaType} />
+        <GenreFilter mediaType={mediaType} currentGenre={genre ?? ""} />
 
       {results.length > 0 ? (
         <MovieGrid key={genre || "all"} initialItems={results as MovieSummary[]} action={action} args={{ genre }} />

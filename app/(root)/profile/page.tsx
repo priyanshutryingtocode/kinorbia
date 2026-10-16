@@ -11,8 +11,8 @@ import {Download, ExternalLink} from "lucide-react";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/dbConnect";
 import { buildInsights, yearsFromJournal } from "@/lib/insights";
-import {formatDate, mediaHref, mediaKey, normalizeMediaType} from "@/lib/media";
-import { firstValue, parsePage, parseYear } from "@/lib/searchParams";
+import { countLabel, formatDate, mediaHref, mediaKey, normalizeMediaType } from "@/lib/media";
+import { firstValue, libraryFacetQuery, parseLibraryFacets, parsePage, parseYear } from "@/lib/searchParams";
 
 import { buildUsernameMap } from "@/lib/profileLinks";
 import EmptyState from "@/components/EmptyState";
@@ -25,6 +25,10 @@ import ProfileMetricRail from "@/components/ProfileMetricRail";
 import ProfilePagination from "@/components/ProfilePagination";
 import ProfilePanel from "@/components/ProfilePanel";
 import ProfileTabs, { PROFILE_TABS, type ProfileTab } from "@/components/ProfileTabs";
+import ShareActivityToggle from "@/components/ShareActivityToggle";
+import SearchResultCard from "@/components/SearchResultCard";
+import LibraryFilters from "@/components/LibraryFilters";
+import { getTasteRecommendations } from "@/features/media/recommendations";
 import ProfileVerifyBanner from "@/components/ProfileVerifyBanner";
 import { isEmailVerified } from "@/lib/verification";
 import ReviewCard from "@/components/ReviewCard";
@@ -41,6 +45,9 @@ type ProfileSearchParams = {
   tab?: string | string[];
   page?: string | string[];
   year?: string | string[];
+  genre?: string | string[];
+  minRating?: string | string[];
+  sort?: string | string[];
 };
 
 function parseTab(value: string | string[] | undefined): ProfileTab {
@@ -48,6 +55,17 @@ function parseTab(value: string | string[] | undefined): ProfileTab {
   return PROFILE_TABS.some((entry) => entry.key === tab)
     ? (tab as ProfileTab)
     : "overview";
+}
+
+// One place for both shelves: a shelf narrowed to zero by a filter must not claim to be
+// empty, because the member's own next move (widen the filter, not add titles) depends
+// on which of the two it is.
+function ShelfEmpty({ filtered, emptyTitle, emptyDescription }: { filtered: boolean; emptyTitle: string; emptyDescription: string }) {
+  return filtered ? (
+    <EmptyState compact title="Nothing matches your filters" description="Try widening or clearing them." />
+  ) : (
+    <EmptyState compact title={emptyTitle} description={emptyDescription} />
+  );
 }
 
 function WatchedCard({ item }: { item: JournalItem }) {
@@ -108,7 +126,7 @@ function CompactList({ list }: { list: MovieListItem }) {
     <Link href={`/lists/${list._id}`} className="kin-focus group block border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/25">
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-display text-lg font-semibold text-content group-hover:text-highlight">{list.title}</h3>
-        <span className="shrink-0 text-xs text-content-muted">{list.movies.length} titles</span>
+        <span className="shrink-0 text-xs text-content-muted">{countLabel(list.movies.length, "title")}</span>
       </div>
       {list.description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-content-muted">{list.description}</p>}
     </Link>
@@ -188,8 +206,12 @@ function WatchlistGrid({ items }: { items: WatchlistMovie[] }) {
             title: movie.title,
             poster_path: movie.posterPath,
             vote_average: movie.voteAverage,
-            release_date: movie.releaseDate,
-            mediaType: normalizeMediaType(movie.mediaType),
+              release_date: movie.releaseDate,
+                // A watchlist title that is also a favorite shows its badge. Unrated rows pass
+                // undefined so MovieCard omits the chip: it guards on `!== undefined`, so a
+                // plain 0 rendered a "Rate" button here with no onRateClick behind it.
+                personalRating: movie.personalRating || undefined,
+                mediaType: normalizeMediaType(movie.mediaType),
           }}
         />
       ))}
@@ -221,6 +243,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   let panel;
   let selectedYear: number | undefined;
 
+  // Library facets only apply to the two tabs that read a personal shelf. Parsed once here
+  // so the filter bar, the query and the pagination links all see the same narrowed set.
+  const facets = parseLibraryFacets(params);
+  // Any facet that narrows to nothing makes the shelf empty without it being empty. Saying
+  // "your watchlist is empty" to someone holding 30 titles is a lie they can act on wrongly.
+  const shelfFiltered = libraryFacetQuery(facets).size > 0;
+
   if (tab === "overview") {
     const [overview, emailVerified] = await Promise.all([
       getProfileOverview(email),
@@ -237,20 +266,58 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <ProfileInsights insights={insights} years={years} selectedYear={selectedYear} favorites={source.favorites} userEmail={email} />
       </ProfilePanel>
     );
+  } else if (tab === "foryou") {
+    const taste = await getTasteRecommendations(email);
+    panel = (
+      <ProfilePanel
+        id="foryou"
+        eyebrow="Based on what you have watched"
+        title="For you"
+        description="Scored against the genres and ratings in your watch history."
+      >
+        {!taste.profile.ready ? (
+          <EmptyState
+            compact
+            title="Not enough history yet"
+            description={`Recommendations appear once you have watched a few more titles. ${taste.profile.sampleSize} so far.`}
+          />
+        ) : taste.recommendations.length === 0 ? (
+          <EmptyState
+            compact
+            title="Nothing to suggest yet"
+            description="Watch or rate a few more titles and this fills in."
+          />
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {taste.recommendations.map((item) => (
+              <SearchResultCard
+                key={`${item.mediaType}-${item.id}`}
+                movie={item}
+              />
+            ))}
+          </ul>
+        )}
+      </ProfilePanel>
+    );
   } else if (tab === "favorites") {
-    const result = await getFavoritePage(email, requestedPage);
+    const result = await getFavoritePage(email, requestedPage, facets);
     panel = (
       <ProfilePanel id="favorites" eyebrow="Personal shelf" title="Favorites" description="Rate the titles you love and keep your personal ratings up to date.">
-        {result.total ? <ProfileFavorites initialFavorites={result.items} /> : <EmptyState compact title="No favorites yet" description="Add movies and shows to build your personal shelf." />}
-        <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.favorites} />
+        <LibraryFilters tab={tab} facets={facets} showRating />
+        {result.total ? <ProfileFavorites initialFavorites={result.items} /> : <ShelfEmpty filtered={shelfFiltered} emptyTitle="No favorites yet" emptyDescription="Add movies and shows to build your personal shelf." />}
+        <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.favorites} facets={facets} />
       </ProfilePanel>
     );
   } else if (tab === "watchlist") {
-    const result = await getWatchlistPage(email, requestedPage);
+    const result = await getWatchlistPage(email, requestedPage, facets);
     panel = (
       <ProfilePanel id="watchlist" eyebrow="Up next" title="Watchlist" description="The movies and shows you are planning to watch next.">
-        {result.total ? <WatchlistGrid items={result.items} /> : <EmptyState compact title="Your watchlist is empty" description="Add titles from any movie or show page." />}
-        <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.watchlist} />
+        {/* A rating filter stays visible even when nothing is rated: otherwise the control
+            vanishes, the pill with it, and the filter runs invisibly against a shelf it
+            cannot match. Better the member can see it and take it off. */}
+        <LibraryFilters tab={tab} facets={facets} showRating={(result.ratedCount ?? 0) > 0 || facets.minRating !== undefined} />
+        {result.total ? <WatchlistGrid items={result.items} /> : <ShelfEmpty filtered={shelfFiltered} emptyTitle="Your watchlist is empty" emptyDescription="Add titles from any movie or show page." />}
+        <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.watchlist} facets={facets} />
       </ProfilePanel>
     );
   } else if (tab === "reviews") {
@@ -271,6 +338,46 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.lists} />
       </ProfilePanel>
     );
+  } else if (tab === "settings") {
+    panel = (
+      <ProfilePanel
+        id="settings"
+        eyebrow="Preferences"
+        title="Settings"
+        description="Who can see your activity, and a copy of everything you have here."
+      >
+        <div className="max-w-2xl space-y-8">
+          <section aria-labelledby="settings-sharing">
+            <h2 id="settings-sharing" className="kin-overline mb-3 text-highlight-muted">
+              Sharing
+            </h2>
+            <ShareActivityToggle initialShare={Boolean(identity.shareActivity)} />
+            <p className="mt-3 text-xs leading-5 text-content-muted">
+              Turning this on applies to titles you mark watched from now on. Turning it off also
+              removes what has already been shared.
+            </p>
+          </section>
+
+          <section aria-labelledby="settings-data" className="border-t border-rule pt-8">
+            <h2 id="settings-data" className="kin-overline mb-3 text-highlight-muted">
+              Your data
+            </h2>
+            <a
+              href="/api/user/export"
+              className="kin-focus inline-flex items-center gap-2 rounded-full border border-rule bg-surface px-4 py-2 text-sm font-semibold text-content transition hover:border-highlight/30 hover:text-content"
+            >
+              <Download className="h-4 w-4" />
+              Download my data
+            </a>
+            <p className="mt-3 max-w-prose text-xs leading-5 text-content-muted">
+              A JSON file of your profile, favourites, watchlist, watch history, reviews and lists.
+              It contains your own data only. People you follow appear by username, and anyone who
+              liked or saved your writing is counted rather than named. Up to 5 downloads a minute.
+            </p>
+          </section>
+        </div>
+      </ProfilePanel>
+    );
   }
 
   const relationships = await relationshipPromise;
@@ -287,10 +394,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       >
         {identity.username && <Link href={`/u/${encodeURIComponent(identity.username)}`} className="kin-focus inline-flex items-center gap-2 rounded-full border border-rule bg-surface px-4 py-2 text-sm font-semibold text-content transition hover:border-highlight/30 hover:text-content"><ExternalLink className="h-4 w-4" />Public profile</Link>}
         <ProfileActions user={{ name: identity.name || sessionName || "KinOrbia user", bio: identity.bio || "", username: identity.username }} />
-        <a href="/api/user/export" className="kin-focus inline-flex items-center gap-2 rounded-full border border-rule bg-surface px-4 py-2 text-sm font-semibold text-content transition hover:border-highlight/30 hover:text-content"><Download className="h-4 w-4" />Export data</a>
       </ProfileHeader>
 
-      <div className="sticky top-20 z-30 -mx-4 mt-5 border-y border-rule bg-canvas/95 px-4 py-2 backdrop-blur-xl sm:mx-0 sm:px-0">
+      <div className="kin-sticky-bar sticky top-20 z-30 -mx-4 mt-5 border-y border-rule bg-canvas/80 px-4 py-2 backdrop-blur-xl sm:mx-0 sm:px-0">
         <ProfileTabs current={tab} year={selectedYear} />
       </div>
 

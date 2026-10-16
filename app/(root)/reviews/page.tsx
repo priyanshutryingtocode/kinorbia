@@ -125,7 +125,7 @@ export default async function ReviewsPage({
               title="Rate a movie first"
               description="Your rating lives on each movie page. Rate a title, then return here to review it."
             >
-              <Link href="/" className="kin-focus text-sm font-semibold text-highlight-vivid underline-offset-4 hover:underline">
+              <Link href="/movies" className="kin-focus text-sm font-semibold text-highlight-vivid underline-offset-4 hover:underline">
                 Browse movies to rate
               </Link>
             </EmptyState>

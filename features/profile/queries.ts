@@ -1,7 +1,7 @@
 import "server-only";
 
 import dbConnect from "@/lib/dbConnect";
-import { escapeRegExp } from "@/lib/searchParams";
+import { escapeRegExp, type LibraryFacetParams } from "@/lib/searchParams";
 import { buildWatchStreaks } from "@/lib/insights";
 import { pageBounds, paginate } from "@/lib/pagination";
 import { mediaKey } from "@/lib/media";
@@ -72,7 +72,7 @@ export async function getPublicProfileData({
   await dbConnect();
 
   const user = await User.findOne({ username })
-    .select("_id name email bio image username createdAt following")
+    .select("_id name email bio image username createdAt following shareActivity")
     .lean<PublicProfileUser | null>();
 
   if (!user?.email) {
@@ -270,6 +270,7 @@ type ProfileIdentity = {
   username?: string;
   createdAt?: Date;
   following?: string[];
+  shareActivity?: boolean;
 };
 
 type ProfileOverviewData = {
@@ -291,6 +292,9 @@ type ProfilePage<T> = {
   total: number;
   page: number;
   totalPages: number;
+  // How many rows in the UNFILTERED set carry a personal rating. Only meaningful for the
+  // watchlist, where it decides whether the rating facet is offered at all.
+  ratedCount?: number;
 };
 
 type InsightsSource = {
@@ -386,38 +390,66 @@ export async function getInsightsSource(email: string): Promise<InsightsSource> 
 
 export async function getFavoritePage(
   email: string,
-  requestedPage: number
+  requestedPage: number,
+  facets?: LibraryFacetParams
 ): Promise<ProfilePage<FavoriteMovie>> {
-  return mediaPage(email, "favorite", requestedPage, PROFILE_PAGE_SIZES.favorites);
+  return mediaPage(email, "favorite", requestedPage, PROFILE_PAGE_SIZES.favorites, facets);
 }
 
 export async function getWatchlistPage(
   email: string,
-  requestedPage: number
+  requestedPage: number,
+  facets?: LibraryFacetParams
 ): Promise<ProfilePage<WatchlistMovie>> {
-  return mediaPage(email, "watchlist", requestedPage, PROFILE_PAGE_SIZES.watchlist);
+  return mediaPage(email, "watchlist", requestedPage, PROFILE_PAGE_SIZES.watchlist, facets);
 }
 
 async function mediaPage(
   email: string,
   state: "favorite" | "watchlist",
   requestedPage: number,
-  pageSize: number
+  pageSize: number,
+  facets?: LibraryFacetParams
 ): Promise<ProfilePage<FavoriteMovie | WatchlistMovie>> {
-  const first = await listUserMedia(email, state, { skip: (requestedPage - 1) * pageSize, limit: pageSize });
+  const options = { facets } as const;
+  const first = await listUserMedia(email, state, {
+    ...options,
+    skip: (requestedPage - 1) * pageSize,
+    limit: pageSize,
+  });
 
   // Only a favorite carries a rating, and addedAt is the watchlist date on the watchlist
   // tab (see toMediaRow).
   const toItem = state === "watchlist" ? toWatchlistMovie : toFavoriteMovie;
 
+  // A watchlist title can be rated when it is also a favorite -- both states live on the same
+  // usermovies row. Counted over the WHOLE unfiltered set rather than the current page:
+  // whether to offer the rating facet cannot depend on which page you landed on, or the same
+  // member would see it on page 1 and not on page 3. A countDocuments, not a row fetch --
+  // the watchlist is capped at 2500 and counting in JS would read all of it.
+  const ratedCount =
+    state === "watchlist"
+      ? await UserMovie.countDocuments({
+          userEmail: email,
+          "watchlist.addedAt": { $ne: null },
+          "favorite.personalRating": { $gt: 0 },
+        })
+      : undefined;
+
   // Clamped like paginate: an out-of-range page re-reads the last real page.
   const bounds = pageBounds(first.total, requestedPage, pageSize);
   if (bounds.page === requestedPage) {
-    return { items: first.rows.map(toItem), ...bounds, total: first.total };
+    return { items: first.rows.map(toItem), ...bounds, total: first.total, ratedCount };
   }
 
-  const last = await listUserMedia(email, state, { skip: (bounds.page - 1) * pageSize, limit: pageSize });
-  return { items: last.rows.map(toItem), ...bounds, total: last.total };
+  // Narrowing by facet can leave the member on a page that no longer exists, so the clamped
+  // read has to carry the same facets or it would silently fall back to the full library.
+  const last = await listUserMedia(email, state, {
+    ...options,
+    skip: (bounds.page - 1) * pageSize,
+    limit: pageSize,
+  });
+  return { items: last.rows.map(toItem), ...bounds, total: last.total, ratedCount };
 }
 
 export async function getReviewPage(email: string, requestedPage: number) {
@@ -445,30 +477,106 @@ export async function getListPage(email: string, requestedPage: number): Promise
   return { items: rows.map(serializeList), ...bounds };
 }
 
+// A review as exported: the author's own content, plus COUNTS of who engaged with it.
+// Never the identity of anyone else -- see toExportReview.
+type ExportReview = {
+  _id: string;
+  userName: string;
+  posterPath?: string | null;
+  title: string;
+  movieId?: string;
+  mediaType?: string;
+  body: string;
+  spoiler?: boolean;
+  visibility: string;
+  createdAt?: string;
+  updatedAt?: string;
+  likesCount: number;
+  savesCount: number;
+};
+
+type ExportList = {
+  _id: string;
+  userName: string;
+  title: string;
+  description?: string;
+  visibility: string;
+  // mediaType is what makes a list entry usable: `mediaKey` is `mediaType:movieId`, so an
+  // entry without it is ambiguous between a movie and a show. TMDB movie and TV id spaces
+  // overlap numerically, so this is not recoverable from the id.
+  movies: {
+    movieId: string;
+    mediaType: string;
+    title: string;
+    posterPath?: string | null;
+    voteAverage?: number;
+    releaseDate?: string;
+  }[];
+  createdAt?: string;
+  updatedAt?: string;
+  likesCount: number;
+  savesCount: number;
+};
+
 type ExportBundle = {
   exportedAt: string;
   user: {
+    _id: string;
     name: string;
     email: string;
     username?: string;
     bio?: string;
-    joinedAt: Date;
+    image?: string | null;
+    provider?: string;
+    emailVerified?: string;
+    // Consent state. Not a counter or a cache -- it is the member's own decision, and they
+    // cannot meaningfully exercise it without seeing it.
+    shareActivity?: boolean;
+    shareActivityAsked?: boolean;
+    joinedAt: string;
+    updatedAt?: string;
   };
   favorites: ReturnType<typeof toExportFavorite>[];
-  watchlist: ReturnType<typeof toExportMedia>[];
+  watchlist: ReturnType<typeof toExportWatchlistMedia>[];
+  // Usernames, never email addresses. See toExportFollowing.
   following: string[];
+  // Inbound follows are a count only. Who follows you is not your relationship to export, and
+  // listing it would disclose handles for people who never interacted with you.
+  followersCount: number;
   watched: ReturnType<typeof toExportWatched>[];
-  reviews: unknown[];
-  lists: unknown[];
+  reviews: ExportReview[];
+  lists: ExportList[];
 };
 
-// Everything a member has written or saved, in one document. Secrets are projected out rather
-// than deleted afterwards, so a forgotten destructure cannot leak them. Media sections keep
-// their flat shape, so an export stays readable by whatever consumed the old one.
+// Everything a member has written or saved, in one document. Media sections keep their flat
+// shape, so an export stays readable by whatever consumed the old one.
+//
+// Two different projections, because the risk is not uniform. The member's OWN User document is
+// read with `select("-password -verifyToken -resetToken")`, so a secret cannot be read at all.
+// Reviews and lists are read through an aggregation that emits an explicit field list, and
+// `likedBy`/`savedBy` are reduced to counts INSIDE the database: those two arrays hold other
+// members' email addresses, so they never leave Mongo to be handled correctly further down.
+// A hand-written mapper is not a privacy boundary -- one forgotten destructure leaks 132
+// addresses, which is exactly what happened here once. `following` maps emails to usernames for
+// the same reason.
+const EXPORT_REVIEW_PROJECTION = {
+  userEmail: 1, userName: 1, movieId: 1, title: 1, posterPath: 1, mediaType: 1,
+  body: 1, visibility: 1, spoiler: 1, createdAt: 1, updatedAt: 1,
+  likesCount: { $size: { $ifNull: ["$likedBy", []] } },
+  savesCount: { $size: { $ifNull: ["$savedBy", []] } },
+};
+
+const EXPORT_LIST_PROJECTION = {
+  userEmail: 1, userName: 1, title: 1, description: 1, movies: 1, visibility: 1,
+  createdAt: 1, updatedAt: 1,
+  likesCount: { $size: { $ifNull: ["$likedBy", []] } },
+  savesCount: { $size: { $ifNull: ["$savedBy", []] } },
+};
+
 export async function buildExportBundle(email: string): Promise<ExportBundle | null> {
   await dbConnect();
 
-  const [user, favorites, watchlist, watched, reviews, lists] = await Promise.all([
+  const [user, favorites, watchlist, watched, reviews, lists, followersCount] = await Promise.all([
     // The media state comes from the listUserMedia calls below, not from here.
     User.findOne({ email })
       .select("-password -verifyToken -resetToken")
@@ -476,39 +584,133 @@ export async function buildExportBundle(email: string): Promise<ExportBundle | n
     listUserMedia(email, "favorite"),
     listUserMedia(email, "watchlist"),
     listWatchHistory(email),
-    Review.find({ userEmail: email }).sort({ createdAt: 1 }).lean(),
-    MovieList.find({ userEmail: email }).sort({ createdAt: 1 }).lean(),
+    Review.aggregate([
+      { $match: { userEmail: email } },
+      { $sort: { createdAt: 1 } },
+      { $project: EXPORT_REVIEW_PROJECTION },
+    ]),
+    MovieList.aggregate([
+      { $match: { userEmail: email } },
+      { $sort: { createdAt: 1 } },
+      { $project: EXPORT_LIST_PROJECTION },
+    ]),
+    // Inbound, so it cannot come off the member document the way `following` does.
+    User.countDocuments({ following: email }),
   ]);
 
   if (!user) {
     return null;
   }
 
+  const following = await toExportFollowing(user.following ?? []);
+
   return {
     exportedAt: new Date().toISOString(),
     user: {
+      _id: String(user._id),
       name: user.name,
       email: user.email,
       username: user.username,
       bio: user.bio,
-      joinedAt: user.createdAt,
+      image: user.image ?? null,
+      provider: user.provider,
+      emailVerified:
+        user.emailVerified instanceof Date ? user.emailVerified.toISOString() : undefined,
+      shareActivity: Boolean(user.shareActivity),
+      shareActivityAsked: Boolean(user.shareActivityAsked),
+      joinedAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : "",
+      updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : undefined,
     },
     favorites: favorites.rows.map(toExportFavorite),
-    watchlist: watchlist.rows.map(toExportMedia),
-    following: user.following || [],
+    watchlist: watchlist.rows.map(toExportWatchlistMedia),
+    following,
+    followersCount,
     watched: watched.map(toExportWatched),
-    reviews,
-    lists,
+    reviews: reviews.map(toExportReview),
+    lists: lists.map(toExportList),
+  };
+}
+
+// Usernames, not emails. A member's follow list is their own data, but the entries are other
+// people's email addresses, and an export is a file that gets forwarded and attached to
+// tickets.
+//
+// `username` is sparse, so a member without one is omitted rather than falling back to their
+// address -- the fallback would reintroduce exactly the leak this function exists to close.
+async function toExportFollowing(emails: string[]): Promise<string[]> {
+  if (emails.length === 0) return [];
+
+  const followed = await User.find({ email: { $in: emails } })
+    .select("username")
+    .lean<{ username?: string }[]>();
+
+  const usernames = followed.map((doc) => doc.username).filter((name): name is string => Boolean(name));
+
+  return usernames.sort((a, b) => a.localeCompare(b));
+}
+
+// The counts arrive already computed by the aggregation projection, because likedBy/savedBy
+// are other members' addresses and must not be read into the process at all. The member gets
+// what an export is for -- how well their content did -- without a list of who touched it.
+function toExportReview(row: Record<string, unknown>): ExportReview {
+  return {
+    _id: String(row._id),
+    userName: String(row.userName ?? ""),
+    title: String(row.title ?? ""),
+    posterPath: (row.posterPath ?? null) as string | null,
+    movieId: row.movieId as string | undefined,
+    mediaType: row.mediaType as string | undefined,
+    body: String(row.body ?? ""),
+    spoiler: Boolean(row.spoiler),
+    visibility: String(row.visibility ?? "public"),
+    createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : undefined,
+    updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : undefined,
+    likesCount: Number(row.likesCount ?? 0),
+    savesCount: Number(row.savesCount ?? 0),
+  };
+}
+
+function toExportList(row: Record<string, unknown>): ExportList {
+  const movies = Array.isArray(row.movies) ? row.movies : [];
+
+  return {
+    _id: String(row._id),
+    userName: String(row.userName ?? ""),
+    title: String(row.title ?? ""),
+    description: row.description as string | undefined,
+    visibility: String(row.visibility ?? "public"),
+    movies: movies.map((entry) => {
+      const movie = (entry ?? {}) as Record<string, unknown>;
+      return {
+        movieId: String(movie.movieId ?? ""),
+        mediaType: String(movie.mediaType ?? "movie"),
+        title: String(movie.title ?? ""),
+        posterPath: (movie.posterPath ?? null) as string | null,
+        voteAverage: typeof movie.voteAverage === "number" ? movie.voteAverage : undefined,
+        releaseDate: movie.releaseDate as string | undefined,
+      };
+    }),
+    createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : undefined,
+    updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : undefined,
+    likesCount: Number(row.likesCount ?? 0),
+    savesCount: Number(row.savesCount ?? 0),
   };
 }
 
 // Flat, matching the other exported sections: `watchedAt` at the top level, not nested.
+// `broadcast` is the per-row record of what the member agreed to share publicly, so it belongs
+// here: without it an export cannot answer "which of my watches did I broadcast?".
 function toExportWatched(row: WatchedRow) {
   return {
     movieId: row.movieId,
     mediaType: row.mediaType,
     title: row.title,
     posterPath: row.posterPath,
+    voteAverage: row.voteAverage,
+    releaseDate: row.releaseDate,
+    genreIds: row.genreIds,
+    personalRating: row.personalRating,
+    broadcast: row.broadcast,
     watchedAt: row.watchedAt.toISOString(),
   };
 }
@@ -530,4 +732,14 @@ function toExportMedia(row: MediaRow) {
 
 function toExportFavorite(row: MediaRow) {
   return { ...toExportMedia(row), personalRating: row.personalRating };
+}
+
+// A watchlist entry can carry a rating when the title is also a favorite -- favorite and
+// watchlist are states on the same row. Emitted only when there is one: `undefined` keys are
+// dropped by JSON.stringify, so an unrated entry has no key rather than a misleading 0.
+function toExportWatchlistMedia(row: MediaRow) {
+  return {
+    ...toExportMedia(row),
+    ...(row.personalRating > 0 ? { personalRating: row.personalRating } : {}),
+  };
 }

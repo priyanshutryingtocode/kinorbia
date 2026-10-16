@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuthedUser } from "@/lib/session";
 import { movieRefSchema, parseMovieBody, badRequest } from "@/lib/validators";
 import { toggleMedia } from "@/features/media/userMovie";
+import { logger } from "@/lib/logger";
 
 export const POST = withAuthedUser(
   async (req, { email }) => {
@@ -33,7 +34,7 @@ export const POST = withAuthedUser(
     }
 
     if (result === "missing") {
-      console.error("Session user was not found in the database.");
+      logger.error("Session user was not found in the database.");
       return NextResponse.json({ message: "User record not found" }, { status: 404 });
     }
 

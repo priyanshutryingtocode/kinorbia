@@ -1,6 +1,6 @@
 import type { FavoriteMovie, MediaType } from "@/types";
 import { genreName } from "@/lib/genres";
-import { mediaHref, normalizeMediaType } from "@/lib/media";
+import { mediaHref, mediaKey, normalizeMediaType } from "@/lib/media";
 
 type MonthlyPoint = {
   key: string;
@@ -64,9 +64,7 @@ function utcDayStr(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-function journalKey(entry: JournalLike) {
-  return `${entry.mediaType}:${entry.movieId}`;
-}
+const journalKey = (entry: JournalLike) => mediaKey(entry.mediaType, entry.movieId);
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

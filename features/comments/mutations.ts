@@ -1,5 +1,6 @@
 import "server-only";
 
+import { logger } from "@/lib/logger";
 import dbConnect from "@/lib/dbConnect";
 import { publiclyVisible } from "@/lib/visibility";
 import { normalizeMediaType } from "@/lib/media";
@@ -63,9 +64,11 @@ export async function postComment(
       ],
       opts
     );
-  } catch {
+  } catch (error) {
     // Reported to the member as a retry rather than leaking a database message into
-    // the UI.
+    // the UI -- but not silently, which made a rejected write indistinguishable from a
+    // transient one.
+    logger.error("Error creating comment:", { error });
     return { ok: false, reason: "write-failed" };
   }
 
@@ -92,8 +95,10 @@ export async function postComment(
         ],
         opts
       );
-    } catch {
-      // A failed notification must not fail the comment.
+    } catch (error) {
+      // A failed notification must not fail the comment. Logged, because a missing
+      // notification is otherwise invisible until a member reports it.
+      logger.error("Error creating notification:", { error });
     }
   }
 

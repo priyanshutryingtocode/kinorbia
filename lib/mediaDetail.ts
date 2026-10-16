@@ -1,4 +1,11 @@
-import type { MediaType, TmdbCredit, TmdbTvCreator, TmdbTvDetails } from "@/types";
+import type {
+  MediaType,
+  MovieSummary,
+  TmdbCredit,
+  TmdbTvCreator,
+  TmdbTvDetails,
+  WatchProvider,
+} from "@/types";
 import { normalizeMediaType, starsLabel } from "@/lib/media";
 
 export type DetailIcon = "star" | "star-filled" | "calendar" | "clock" | "layers";
@@ -25,6 +32,26 @@ export type DetailSummary = {
   mediaType?: MediaType;
 };
 
+// The body every media toggle posts: TMDB's snake_case summary onto the camelCase
+// movieRefSchema. Five components used to build this by hand and had drifted --
+// ProfileFavorites omitted voteAverage, and since providedFields skips falsy values that
+// field was then never refreshed from that surface, so a rating given on /profile left the
+// title with no badge. One builder, so a field added here reaches every surface.
+//
+// Takes MovieSummary because both flow in: the four detail-page buttons get a DetailSummary
+// and ProfileFavorites a MovieSummary. MovieSummary is the wider one, so it accepts both.
+export function movieRefPayload(summary: MovieSummary) {
+  return {
+    movieId: summary.id,
+    movieTitle: summary.title,
+    posterPath: summary.poster_path,
+    voteAverage: summary.vote_average,
+    releaseDate: summary.release_date,
+    mediaType: normalizeMediaType(summary.mediaType),
+    genreIds: summary.genre_ids ?? [],
+  };
+}
+
 export type DetailModel = {
   id: string;
   mediaType: "movie" | "tv";
@@ -41,6 +68,14 @@ export type DetailModel = {
   crew: DetailCrew[];
   summary: DetailSummary;
   trailerKey: string | null;
+  // Availability for exactly this country, empty when the title has no offers there. That
+  // empty case is rendered as "not listed in <country>" rather than being quietly replaced
+  // with another country's services.
+  watchProviders: WatchProvider[];
+  // Whether TMDB answered for this title at all, which separates "not on any service where
+  // you are" from "we could not check" -- an empty list and a failed fetch look alike
+  // otherwise, and they mean different things to a viewer.
+  watchProviderData: boolean;
 };
 
 

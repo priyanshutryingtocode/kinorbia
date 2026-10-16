@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { isObjectId } from "@/lib/objectId";
 import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
 import { postComment, removeComment, MAX_COMMENT_LENGTH } from "@/features/comments/mutations";
+import { logger } from "@/lib/logger";
 
 const VALID_PARENTS = ["review", "list"];
 
@@ -76,7 +77,7 @@ export async function deleteComment(
       return withState(state, "error", "This comment is no longer available.");
     }
   } catch (error) {
-    console.error("Error deleting comment:", error);
+    logger.error("Error deleting comment:", { error: error });
     return withState(state, "error", "Your comment could not be deleted. Please try again.");
   }
 

@@ -6,6 +6,9 @@ import { mediaHref, starsLabel, yearOf } from "@/lib/media";
 import type { MovieSummary } from "@/types";
 export type MovieProp = MovieSummary;
 
+const RATING_CHIP_BASE =
+  "absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-full border border-rule px-2.5 py-1 text-xs font-bold backdrop-blur-md transition-colors";
+
 export default function MovieCard({
   movie,
   index,
@@ -31,6 +34,17 @@ export default function MovieCard({
     />
   );
 
+  // Shared by both variants below so the button and the badge cannot drift apart visually.
+  // Built from the narrowed local so the `> 0` checks below are not re-tested for undefined.
+  const { personalRating } = movie;
+  const ratingChipBody =
+    personalRating === undefined ? null : (
+      <>
+        <Star className={`w-3 h-3 ${personalRating > 0 ? "fill-current" : ""}`} />
+        <span>{personalRating > 0 ? starsLabel(personalRating) : "Rate"}</span>
+      </>
+    );
+
   return (
     <div className="group relative overflow-hidden rounded-sheet border border-rule bg-canvas shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-highlight-muted/70 hover:shadow-card-hover">
       <Link
@@ -44,21 +58,34 @@ export default function MovieCard({
         <PosterBadges year={releaseYear} rating={movie.vote_average} />
       </Link>
 
-      {movie.personalRating !== undefined && (
-        <button
-          onClick={() => onRateClick?.(movie)}
-          aria-label={`Rate ${movie.title}`}
-          aria-haspopup={onRateClick ? "dialog" : undefined}
-          className={`kin-focus absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-full border border-rule px-2.5 py-1 text-xs font-bold backdrop-blur-md transition-colors ${
-            movie.personalRating > 0
-              ? "bg-highlight/12 text-highlight hover:bg-highlight/20"
-              : "bg-scrim/55 text-on-scrim hover:bg-surface-raised hover:text-content"
-          }`}
-        >
-          <Star className={`w-3 h-3 ${movie.personalRating > 0 ? "fill-current" : ""}`} />
-          <span>{movie.personalRating > 0 ? `${starsLabel(movie.personalRating)}` : "Rate"}</span>
-        </button>
-      )}
+      {personalRating !== undefined &&
+        (onRateClick ? (
+          <button
+            onClick={() => onRateClick(movie)}
+            aria-label={`Rate ${movie.title}`}
+            aria-haspopup="dialog"
+            className={`kin-focus ${RATING_CHIP_BASE} ${
+              personalRating > 0
+                ? "bg-highlight/12 text-highlight hover:bg-highlight/20"
+                : "bg-scrim/55 text-on-scrim hover:bg-surface-raised hover:text-content"
+            }`}
+          >
+            {ratingChipBody}
+          </button>
+        ) : (
+          // A badge with no handler must not be a button. As one it was focusable, announced
+          // as "Rate <title>", and did nothing on click -- which is what the watchlist grid
+          // rendered on every card.
+          <span
+            className={`${RATING_CHIP_BASE} ${
+              personalRating > 0
+                ? "bg-highlight/12 text-highlight"
+                : "bg-scrim/55 text-on-scrim"
+            }`}
+          >
+            {ratingChipBody}
+          </span>
+        ))}
     </div>
   );
 }

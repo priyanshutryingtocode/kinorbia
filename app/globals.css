@@ -23,7 +23,14 @@
      Split out because --canvas was doing three jobs across 30 sites: the page
      ground behind content, this chrome, and the backing of poster tiles and
      inputs. Changing one of those meant changing all three. */
-  --chrome: #0a0a0a;
+    --chrome: #0a0a0a;
+    /* How opaque the fixed header and the footer are when painted over --canvas.
+       Here --chrome and --canvas are the same value, so every alpha composites to
+       the same colour and the band costs nothing in contrast -- the blur is free.
+       86% rather than lower because the header is `fixed`: a poster or hero image
+       scrolling underneath is far brighter than any token, and that case is not
+       modelled by check:contrast. Light theme has a hard ceiling, see below. */
+    --band-alpha: 86%;
 
   --content: #f5f5f5;
   --content-muted: #a3a3a3;
@@ -424,9 +431,17 @@
      previous values were tuned against #2a2a2e and --ink-subtle fell to 3.99:1
      here. Every step below is re-derived, which is why this block now overrides
      --ink-content and --ink-muted too rather than inheriting them. */
-  --chrome: #3a3b42;
-  --ink: #3a3b42;
-  --ink-raised: #34353c;
+    --chrome: #3a3b42;
+    --ink: #3a3b42;
+    --ink-raised: #34353c;
+    /* Light theme's band ceiling. Unlike dark, --chrome (#3a3b42) and --canvas
+       (#ebe9e9) are far apart, so dropping alpha lightens the band toward the bone
+       page and eats the contrast of the pale text on it. --ink-subtle is the
+       binding token: 5.41:1 opaque, 4.85 at /96, 4.61 at /94, and 4.35 at /92 --
+       past AA. So 94% is the most translucent this band can be, and the visible
+       glass in light mode is close to nil. That is why the floating surfaces carry
+       the effect instead. Verified by check:contrast, which composites this. */
+    --band-alpha: 94%;
   /* Lightened from #f5f5f5 and #a3a3a3, which are the :root values and are
      correct on dark's near-black band but reach only 4.42:1 on this graphite. */
   --ink-content: #f8fafc;
@@ -644,6 +659,44 @@ html {
   }
 }
 
+/* Windows High Contrast, and anything else forcing a palette, discards BOTH
+ * alpha backgrounds and `backdrop-filter`. Every translucent surface added for
+ * the glass treatment collapses to nothing at that moment: the header band, the
+ * footer and the sticky tab bar all lose their background, so their text sits
+ * directly on whatever scrolls beneath and their 1px separators become the only
+ * thing distinguishing one surface from the next.
+ *
+ * System colours are used rather than `forced-color-adjust: none`, which would
+ * hand back the original tokens and reintroduce the very palette the member
+ * replaced. `Canvas` / `CanvasText` are the system page pair and are guaranteed
+ * to contrast, so the band survives as a solid surface instead of a guess. */
+@media (forced-colors: active) {
+  .shell-header,
+  .kin-band,
+  .back-to-top {
+    background-color: Canvas;
+    border-color: CanvasText;
+    backdrop-filter: none;
+    color: CanvasText;
+  }
+
+  /* The tab bar sits directly on the page rather than in a band, so it needs its
+     own edge -- its border-y is what keeps it readable once the fill is gone. */
+  .kin-sticky-bar {
+    background-color: Canvas;
+    border-color: CanvasText;
+    backdrop-filter: none;
+  }
+
+  /* Everything that relied on translucency to read as a floating layer: the blur
+     is what separated these from the page, and it is gone. */
+  .premium-surface {
+    background-color: Canvas;
+    border-color: CanvasText;
+    backdrop-filter: none;
+  }
+}
+
 @keyframes shell-panel-enter {
   from { opacity: 0; transform: translateY(14px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -687,11 +740,15 @@ html {
        Tailwind v4 will not resolve a hand-written class name inside @apply --
        it drops the reference silently, which left the header painting ink
        behind light-theme text and still compiled clean. */
-    /* Opaque, not /80. At 80% the ink band composites to #403c3b over the bone
-       body, and --ink-subtle falls from 5.59:1 to 3.16:1 there -- so the tokens
-       .kin-ink-band re-points would stop describing the pixels actually painted.
-       The blur is kept for the sticky case, where content still passes beneath. */
-    @apply fixed inset-x-0 top-0 border-b border-rule bg-chrome shadow-card backdrop-blur-xl;
+    /* Translucent, but not at 80%. That was tried: the ink band composited to
+       #403c3b over the bone body and --ink-subtle fell from 5.59:1 to 3.16:1,
+       so it went opaque -- and an opaque background paints over the
+       backdrop-filter result, which left the blur doing nothing at all.
+       `kin-band` puts the alpha back as a token instead of a literal, with
+       --band-alpha set per theme: free in dark (--chrome == --canvas), capped at
+       94% in light. check:contrast now composites the band, so the ratio this
+       comment used to record by hand is the thing that regresses the build. */
+     @apply fixed inset-x-0 top-0 border-b border-rule kin-band shadow-card backdrop-blur-xl;
     z-index: var(--z-header);
   }
 
@@ -789,10 +846,23 @@ html {
   --danger: var(--accent-bright);
   --rule: var(--ink-rule);
   --rule-strong: var(--ink-rule);
-  --glass: color-mix(in srgb, var(--ink-content) 4%, transparent);
-  --glass-hover: color-mix(in srgb, var(--ink-content) 8%, transparent);
-  --surface-raised: var(--ink-raised);
-}
+    --glass: color-mix(in srgb, var(--ink-content) 4%, transparent);
+    --glass-hover: color-mix(in srgb, var(--ink-content) 8%, transparent);
+    --surface-raised: var(--ink-raised);
+  }
+
+  /* The header and footer band: --chrome at --band-alpha, so the backdrop-blur on
+     those two elements finally does something.
+     Both carried `backdrop-blur-xl` over an opaque `bg-chrome` until now, which
+     paints over the backdrop-filter result -- the blur was dead CSS. This is the
+     one place a surface is allowed to be translucent, because --band-alpha is the
+     value check:contrast composites against the band, and the light-theme ceiling
+     is documented on the token. Not `@apply bg-chrome/86`: the alpha is per-theme
+     and hardcoding it at the call site is what produced the 5.59 -> 3.16:1
+     regression that globals.css used to carry a comment about. */
+  @utility kin-band {
+    background-color: color-mix(in srgb, var(--chrome) var(--band-alpha), transparent);
+  }
 
 @layer utilities {
   .font-display {

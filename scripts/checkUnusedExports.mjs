@@ -2,6 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { walkSourceFiles } from "./walkSourceFiles.mjs";
 
 const ROOTS = ["app", "components", "lib", "features"];
+// Root-level entry points the walkers cannot reach, because they do not sit under a
+// scanned directory. Nothing is hardcoded here beyond these names, and an absent file is
+// simply dropped -- adding one to this list without creating it is a no-op.
 const ROOT_FILES = ["auth.ts", "middleware.ts"].filter((f) => existsSync(f));
 const EXPORT = /^export (?:async )?(?:function|const|let|type|class) (\w+)/gm;
 

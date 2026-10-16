@@ -53,7 +53,13 @@ function parseColor(value) {
 function parseAlpha(value) {
   const raw = String(value).trim();
   const rgb = raw.match(/^rgba?\(([^)]+)\)$/i);
-  if (!rgb) return 1;
+  if (!rgb) {
+    // A bare percentage, which is how --band-alpha is written. Without this it fell
+    // through to the alpha-1 default below, so a 94% band would have been measured
+    // as fully opaque and the gate would have agreed with a value nothing paints.
+    const pct = raw.match(/^([\d.]+)%$/);
+    return pct ? parseFloat(pct[1]) / 100 : 1;
+  }
   const parts = rgb[1].split(",").map((part) => part.trim());
   return parts.length > 3 ? parseFloat(parts[3]) : 1;
 }
@@ -244,6 +250,17 @@ for (const file of FILES) {
 const BODY_TOKENS = ["--content", "--content-muted", "--content-subtle", "--danger", "--accent-text", "--info", "--wordmark"];
 const LARGE_TOKENS = ["--accent", "--accent-hover", "--success"];
 const SURFACES = ["--canvas", "--surface", "--surface-raised"];
+
+// The tokens .kin-ink-band re-points inside the header and footer, so these are
+// exactly the ones painted on the band. --chrome and --rule are excluded: they
+// are the band, not text on it, and are checked where they are used as ink.
+const BAND_TOKENS = [
+  "--ink-content",
+  "--ink-muted",
+  "--ink-subtle",
+  "--highlight-vivid",
+  "--accent-bright",
+];
 const GOLD_FULL = "--highlight";
 const GOLD_MUTED = "--highlight-muted";
 const GOLD_MUTED_ALPHA = 1.0;
@@ -407,16 +424,41 @@ for (const [themeName, vars] of [["dark", dark], ["light", light]]) {
     ["--on-accent", "--info-solid", AA_BODY],
   ];
 
-  for (const [fg, bgToken, min] of pairs) {
-    const bg = bgToken.startsWith("#") ? bgToken : resolve(vars, bgToken);
-    const ratio = contrast(resolve(vars, fg), bg, vars);
-    if (ratio < min) {
-      failures.push(
-        `${themeName}: ${fg} (${resolve(vars, fg)}) is ${ratio.toFixed(2)}:1 on ${bg} (${bgToken}), below ${min}.`
-      );
+    for (const [fg, bgToken, min] of pairs) {
+      const bg = bgToken.startsWith("#") ? bgToken : resolve(vars, bgToken);
+      const ratio = contrast(resolve(vars, fg), bg, vars);
+      if (ratio < min) {
+        failures.push(
+          `${themeName}: ${fg} (${resolve(vars, fg)}) is ${ratio.toFixed(2)}:1 on ${bg} (${bgToken}), below ${min}.`
+        );
+      }
+    }
+
+    // The header and footer band is --chrome at --band-alpha, so what the text
+    // actually sits on is a composite, not --chrome. Every check above measures a
+    // token against a solid surface, which is why the band could be dropped to 80%
+    // once and only a hand-written comment caught it: --ink-subtle went 5.59:1 to
+    // 3.16:1 and nothing in this file could see it.
+    //
+    // The backdrop is --canvas, which is exact for the footer (a static block, page
+    // behind it) and optimistic for the header (fixed, content scrolls under). The
+    // header is held at a higher tint than it needs for that reason.
+    const bandAlpha = parseAlpha(resolve(vars, "--band-alpha"));
+    const band = composite(resolve(vars, "--chrome"), resolve(vars, "--canvas"), bandAlpha, vars);
+
+    for (const token of BAND_TOKENS) {
+      const value = resolve(vars, token);
+      if (!value) continue;
+      const ratio = contrast(value, band, vars);
+      if (ratio < AA_BODY) {
+        failures.push(
+          `${themeName}: ${token} (${value}) is ${ratio.toFixed(2)}:1 on the band ` +
+            `(${resolve(vars, "--chrome")} at ${(bandAlpha * 100).toFixed(0)}% over --canvas = ${band}), ` +
+            `below ${AA_BODY}. Lower --band-alpha, or lighten ${token} in this theme.`
+        );
+      }
     }
   }
-}
 
 const themeBlock = css.slice(css.indexOf("@theme"), css.indexOf("}", css.indexOf("@theme")));
 const referenced = [...themeBlock.matchAll(/--color-([a-z0-9-]+):\s*var\((--[a-z0-9-]+)\)/g)];

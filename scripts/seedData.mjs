@@ -340,10 +340,16 @@ async function fetchPool({ mediaType, sources, target }) {
         const releaseDate = item.release_date ?? item.first_air_date;
         if (!releaseDate) continue;
 
+        // Skip rather than substitute. Inventing "Untitled" here put a plausible-looking
+        // title into every grid, list and review that touched the entry, and made the real
+        // cause -- a key mismatch further down -- invisible instead of loud.
+        const title = item.title || item.name;
+        if (!title) continue;
+
         seen.add(movieId);
         pool.push({
           movieId,
-          title: item.title || item.name || "Untitled",
+          title,
           posterPath: item.poster_path,
           voteAverage: Number(item.vote_average.toFixed(1)),
           releaseDate,
@@ -512,7 +518,13 @@ function buildReviews(favorites, config, rng) {
       userName: config.name,
       movieId: favorite.movieId,
       mediaType: favorite.mediaType,
-      movieTitle: favorite.title,
+      // `title`, not `movieTitle`. The schema takes `title` from mediaCoreFields, so the
+      // old key was silently dropped on insert and every seeded review landed with no
+      // title at all -- blank headings on the review cards and a missing alt on the poster.
+      // buildJournal below still says `movieTitle`; that one is vestigial (journalentries
+      // was dropped with the UserMovie migration) and is read through the
+      // `doc.movieTitle || doc.title` fallback rather than by a schema.
+      title: favorite.title,
       posterPath: favorite.posterPath,
       body: template.replace("{title}", favorite.title),
       visibility: index % 5 === 1 ? "private" : "public",
@@ -806,9 +818,11 @@ function buildUserMovieDocs(users) {
         userEmail: email,
         movieId: entry.movieId,
         mediaType: entry.mediaType,
-        // Guarded like the update below: `title` is required on the schema, and a null here
-          // would insert a document the model would refuse and every grid would render blank.
-          title: entry.title || "Untitled",
+// buildJournal names this `movieTitle` while buildFavorites and buildWatchlist
+          // name it `title`, so reading only one of the two silently wrote `undefined` for
+          // every watched row -- 67 of them rendered as "Untitled". Same convention as the
+          // `doc.movieTitle || doc.title` further down.
+          title: entry.movieTitle ?? entry.title,
         posterPath: entry.posterPath ?? null,
         voteAverage: entry.voteAverage ?? 0,
         releaseDate: entry.releaseDate ?? null,
@@ -841,11 +855,14 @@ function buildUserMovieDocs(users) {
     for (const entry of user.watchlist) {
       ensure(user.email, entry).watchlist = { addedAt: entry.addedAt };
     }
-    for (const entry of user.journal) {
-      ensure(user.email, { ...entry, addedAt: entry.watchedAt }).watched = {
-        watchedAt: entry.watchedAt,
-      };
-    }
+for (const entry of user.journal) {
+        ensure(user.email, { ...entry, addedAt: entry.watchedAt }).watched = {
+          watchedAt: entry.watchedAt,
+          // Matches the seeded shareActivity: true, and is what the partial index on
+          // watched.broadcast carries. Real members only get this when they opt in.
+          broadcast: true,
+        };
+      }
   }
 
   return [...docs.values()];
@@ -882,6 +899,11 @@ function buildUserDocs(users, mediaCounters = []) {
     provider: "credentials",
     emailVerified: new Date(),
     following: user.following,
+      // On by default so the seeded accounts show activity in each other's feeds. The
+      // setting is opt-in for real members, and seeded history predates the question --
+      // stamping broadcast on the seeded rows below is the seed answering it "yes".
+      shareActivity: true,
+      shareActivityAsked: true,
     // The caps are enforced against these, so they have to be right at seed time or the
     // first member to fill a list gets told theirs is already full.
     favoritesCount: counters.get(user.email)?.favoritesCount ?? 0,

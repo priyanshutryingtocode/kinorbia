@@ -36,13 +36,7 @@ export async function buildUsernameMap(
   return usernameMapFromUsers(users);
 }
 
-export function usernameFor(
-  usernames: Map<string, string>,
-  email: string | null | undefined
-): string | undefined {
-  return email ? usernames.get(email.toLowerCase()) : undefined;
-}
-
-export function profileHref(username: string): string {
-  return `/u/${encodeURIComponent(username)}`;
-}
+// Re-exported from the model-free module so server callers keep one import path.
+// Both are model-free and live in lib/feedLookups.ts so client components can import
+// them without pulling Mongoose in. Re-exported here to keep existing call sites unchanged.
+export { profileHref, usernameFor } from "@/lib/feedLookups";

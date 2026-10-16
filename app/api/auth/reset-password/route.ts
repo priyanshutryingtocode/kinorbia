@@ -4,6 +4,7 @@ import { z } from "zod";
 import { withRateLimit } from "@/lib/rateLimit";
 import { parseBody, badRequest } from "@/lib/validators";
 import { consumeResetToken } from "@/features/auth/mutations";
+import { logger } from "@/lib/logger";
 
 const resetPasswordSchema = z.object({
   token: z.string().trim().min(1).max(256),
@@ -32,7 +33,7 @@ export const POST = withRateLimit(
 
       return NextResponse.json({ message: "Password updated. You can now sign in." });
     } catch (error) {
-      console.error("Error resetting password:", error);
+      logger.error("Error resetting password:", { error: error });
       return NextResponse.json({ message: "Error resetting password" }, { status: 500 });
     }
   },

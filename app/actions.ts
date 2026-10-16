@@ -6,11 +6,14 @@ import {
   getDiscoverMovies,
   getPopularTv,
   getDiscoverTv,
+  getTrendingMovies,
+  getTrendingTv,
   isFetchablePage,
   TMDB_PAGE_SIZE,
 } from "@/lib/tmdb";
 import { mediaKey } from "@/lib/media";
 import { fetchSearchResults, type SearchFilters } from "@/lib/search";
+import type { TrendingWindow } from "@/types";
 
 // `failed` says a page fetch was exhausted rather than empty. The browse page already
   // said "Couldn't load" on an empty grid, but it could not tell the two apart -- so a
@@ -138,6 +141,36 @@ export async function fetchMovies(args: BrowseArgs): Promise<BrowsePage> {
 
 export async function fetchTvShows(args: BrowseArgs): Promise<BrowsePage> {
   return browsePage("tv", args);
+}
+
+// --- trending --------------------------------------------------------------
+
+// Trending is a third source, not a fourth genre. It reuses loadBrowsePage wholesale because
+// TMDB's trending endpoint behaves exactly like the others that justify it: 20 per page, and
+// consecutive pages genuinely overlap (measured 12-19 new out of 20), so a bare page+1
+// would repeat titles already on screen.
+//
+// Deliberately not routed through BROWSE_SOURCES: that table is keyed popular/discover and
+// picks between them on the presence of a genre, and trending has no genre parameter at all.
+//
+// The window is validated here rather than trusted from the query string, because it is
+// interpolated into a TMDB request path.
+export async function fetchTrending({
+  page,
+  window = "week",
+  mediaType = "movie",
+  exclude = [],
+}: {
+  page: number;
+  window?: string;
+  mediaType?: string;
+  exclude?: string[];
+}): Promise<BrowsePage> {
+  const trendWindow: TrendingWindow = window === "day" ? "day" : "week";
+  const media = mediaType === "tv" ? "tv" : "movie";
+  const source = media === "movie" ? getTrendingMovies : getTrendingTv;
+
+  return loadBrowsePage(toPageNumber(page), (tmdbPage) => source(trendWindow, tmdbPage), exclude);
 }
 
 export async function fetchSearchPage({

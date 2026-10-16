@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { profileHref } from "@/lib/profileLinks";
+import { profileHref } from "@/lib/feedLookups";
 
 type UserNameLinkProps = {
   userName: string;

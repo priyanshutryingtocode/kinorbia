@@ -5,6 +5,7 @@ import { requireUser, getString, revalidateRoute } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
 import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
 import { applyFollow } from "@/features/profile/mutations";
+import { logger } from "@/lib/logger";
 
 export type FollowState = { error?: string } | undefined;
 
@@ -48,7 +49,7 @@ export async function toggleFollow(_prevState: FollowState, formData: FormData):
       operation,
     });
   } catch (error) {
-    console.error("Error toggling follow:", error);
+    logger.error("Error toggling follow:", { error: error });
     return;
   }
 

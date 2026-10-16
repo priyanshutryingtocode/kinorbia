@@ -37,6 +37,13 @@ export function formatDate(value: string | Date) {
   });
 }
 
+// "1 title" / "3 titles". Written out at four sites by hand and three of them shipped
+// "1 titles"; a plural that is wrong on exactly the case a viewer is most likely to notice
+// is worse than the duplication that caused it.
+export function countLabel(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 export function tmdbImage(path: string | null | undefined, size: string) {
   const value = path?.trim();
   if (!value) {

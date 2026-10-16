@@ -6,6 +6,7 @@ import { requireUser, getString, parseVisibility } from "@/lib/actions";
 import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
 import { isObjectId } from "@/lib/objectId";
 import { editReview, publishReview, removeReview, MAX_REVIEW_LENGTH } from "@/features/reviews/mutations";
+import { logger } from "@/lib/logger";
 
 function isTruthyCheckbox(value: string) {
   return value === "on" || value === "true" || value === "1";
@@ -54,7 +55,7 @@ export async function createReview(
       return withState(state, "error", "We couldn't publish your review. Please try again.");
     }
   } catch (error) {
-    console.error("Error creating review:", error);
+    logger.error("Error creating review:", { error: error });
     return withState(state, "error", "We couldn't publish your review. Please try again.");
   }
 
@@ -97,7 +98,7 @@ export async function updateReview(
       return withState(state, "error", "That review is no longer available.");
     }
   } catch (error) {
-    console.error("Error updating review:", error);
+    logger.error("Error updating review:", { error: error });
     return withState(state, "error", "We couldn't update your review. Please try again.");
   }
 
@@ -125,7 +126,7 @@ export async function deleteReview(
       return withState(state, "error", "That review is no longer available.");
     }
   } catch (error) {
-    console.error("Error deleting review:", error);
+    logger.error("Error deleting review:", { error: error });
     return withState(state, "error", "We couldn't delete your review. Please try again.");
   }
 

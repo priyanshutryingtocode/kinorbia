@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { mediaHref, starsLabel } from "@/lib/media";
+import { countLabel, mediaHref, starsLabel } from "@/lib/media";
 import { lookupRating } from "@/lib/reviewRatings";
 import { getMediaCommunity } from "@/features/media/queries";
 import { usernameFor } from "@/lib/profileLinks";
@@ -96,7 +96,7 @@ export default async function MovieReviewsAndLists({
                       {list.title}
                     </Link>
                   </h3>
-                  <span className="text-xs text-content-subtle">{list.movies.length} films</span>
+                  <span className="text-xs text-content-subtle">{countLabel(list.movies.length, "title")}</span>
                 </div>
                 <p className="mt-1 text-xs text-content-subtle">
                   by{" "}

@@ -211,6 +211,11 @@ async function main() {
         }
         if (typeof r.title !== "string" || !r.title.trim()) {
           fail("usermovies", `${where}: title is missing or empty, which the schema requires`);
+        } else if (r.title === "Untitled") {
+          // A seed placeholder, not a real title. It satisfies `required`, so nothing else
+          // catches it, and it renders as "Untitled" across every grid and feed. 67 rows
+          // carried it; `npm run backfill:null-titles` is the repair.
+          fail("usermovies", `${where}: title is the "Untitled" placeholder, not a real title`);
         }
         if (r.mediaType !== "movie" && r.mediaType !== "tv") {
           fail("usermovies", `${where}: mediaType is outside the enum ["movie","tv"]`);
@@ -245,6 +250,60 @@ async function main() {
 
       const probeRows = await rows.countDocuments({ userEmail: { $regex: PROBE } });
       if (probeRows > 0) fail("probe row leaked", `${probeRows} row(s) from the write-path gate survived its abort`);
+    }
+
+    // ---- reviews and lists conformance --------------------------------------
+
+    // Both carry a denormalised `title` and neither was checked until a seed bug wrote
+    // reviews under the key `movieTitle` instead: the schema takes `title` from
+    // mediaCoreFields, so the wrong key was dropped on insert and every seeded review
+    // landed with no title at all. `title` is `required`, which would normally stop that --
+    // but a required field is only enforced by a validating write, and seeding is not one.
+    //
+    // The symptom was a blank <h3> on every review card and, because `alt={review.title}`
+    // became `alt={undefined}`, next/image dropping the attribute entirely and warning once
+    // per image. Everything that renders a review reads that single field, so this is where
+    // the class of bug has to be caught.
+    if (present.includes("reviews")) {
+      const reviewRows = await db.collection("reviews").find({}).toArray();
+
+      for (const r of reviewRows) {
+        const where = `${normalize(r.userEmail)} / ${r.movieId} / ${r.mediaType}`;
+
+        if (typeof r.movieId !== "string" || !r.movieId) {
+          fail("reviews", `${where}: movieId is not a non-empty string`);
+        }
+        if (typeof r.title !== "string" || !r.title.trim()) {
+          fail("reviews", `${where}: title is missing or empty, which the schema requires`);
+        } else if (r.title === "Untitled") {
+          fail("reviews", `${where}: title is the "Untitled" placeholder, not a real title`);
+        }
+        if (r.mediaType !== "movie" && r.mediaType !== "tv") {
+          fail("reviews", `${where}: mediaType is outside the enum ["movie","tv"]`);
+        }
+        if (typeof r.body !== "string" || !r.body.trim()) {
+          fail("reviews", `${where}: body is missing or empty, which the schema requires`);
+        }
+      }
+    }
+
+    // A list's title is its own -- it is the one title in the app a member writes rather than
+    // one denormalised from TMDB -- so it gets the same checks.
+    if (present.includes("movielists")) {
+      const listRows = await db.collection("movielists").find({}).toArray();
+
+      for (const l of listRows) {
+        const where = `${normalize(l.userEmail)} / ${l.title || "<no title>"}`;
+
+        if (typeof l.title !== "string" || !l.title.trim()) {
+          fail("lists", `${where}: title is missing or empty, which the schema requires`);
+        } else if (l.title === "Untitled") {
+          fail("lists", `${where}: title is the "Untitled" placeholder, not a real title`);
+        }
+        if (!Array.isArray(l.movies)) {
+          fail("lists", `${where}: movies is not an array`);
+        }
+      }
     }
 
     // ---- members ------------------------------------------------------------
@@ -294,6 +353,46 @@ async function main() {
         if (f > MAX_FAVORITES) fail("cap exceeded", `${email} has ${f} favorites, over the ${MAX_FAVORITES} cap`);
         if (w > MAX_WATCHLIST) fail("cap exceeded", `${email} has ${w} watchlist entries, over the ${MAX_WATCHLIST} cap`);
       }
+    }
+
+    // ---- broadcast integrity -------------------------------------------------
+    //
+    // `watched.broadcast` is stamped at write time so the activity feed never has to look
+    // up a followee's preference, and turning the flag off clears it with one updateMany.
+    // Both halves of that contract depend on the flag and the rows agreeing, and nothing
+    // else would notice when they drift: the feed would keep serving a title a member
+    // believes they retracted.
+
+    if (present.includes("usermovies") && present.includes("users")) {
+      const sharers = new Set(
+        (await users.find({ shareActivity: true }, { projection: { email: 1 } }).toArray()).map((u) =>
+          normalize(u.email)
+        )
+      );
+
+      const broadcastRows = await rows
+        .aggregate([
+          { $match: { "watched.broadcast": true } },
+          { $group: { _id: "$userEmail", n: { $sum: 1 } } },
+        ])
+        .toArray();
+
+      for (const { _id: email, n } of broadcastRows) {
+        const key = normalize(email);
+        if (!key) {
+          fail("broadcast orphaned", `${n} broadcast row(s) have no owning email`);
+        } else if (!sharers.has(key)) {
+          // The retract path is the only thing that clears these, so this means either it
+          // did not run, or the flag was turned back on without clearing.
+          fail(
+            "broadcast without consent",
+            `${n} row(s) shared for ${key}, whose shareActivity is off`
+          );
+        }
+      }
+
+      // No inverse check. "Watched but not broadcast" is the default state for every member
+      // who has not opted in, so asserting on it would fire constantly and mean nothing.
     }
 
     // ---- report -------------------------------------------------------------

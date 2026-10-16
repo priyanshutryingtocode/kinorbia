@@ -48,7 +48,11 @@ type ToggleSocialInput = {
 //
 // Add-first toggle: the update that actually wins decides whether a notification is
 // created or cleaned up, so two concurrent toggles cannot produce duplicate or
-// orphaned notifications. Returns whether the actor now has the action set.
+// orphaned notifications. Returns whether the action was just REMOVED.
+//
+// This reads backwards from the obvious "does the actor have it" question, which is why
+// the variable was renamed: both the old name and the old doc said the opposite of what
+// the branches below compute, and the notification branch only worked because of that.
 export async function applySocialToggle(
   input: ToggleSocialInput,
   { session }: MutationOptions = {}
@@ -65,17 +69,17 @@ export async function applySocialToggle(
     opts
   );
 
-  let hasValue: boolean;
+  let wasRemoved: boolean;
 
   if (added.modifiedCount > 0) {
-    hasValue = false;
+    wasRemoved = false;
   } else {
     const removed = await Model.updateOne(
       { _id: input.targetId, ...publiclyVisible(), [field]: input.actorEmail },
       { $pull: { [field]: input.actorEmail } },
       opts
     );
-    hasValue = true;
+    wasRemoved = true;
 
     if (removed.matchedCount === 0) {
       return null;
@@ -96,7 +100,7 @@ export async function applySocialToggle(
 
   // Never notify someone of their own action.
   if (ownerEmail && ownerEmail !== input.actorEmail) {
-    if (hasValue) {
+    if (wasRemoved) {
       await Notification.deleteOne(
         {
           userEmail: ownerEmail,
@@ -125,5 +129,5 @@ export async function applySocialToggle(
     }
   }
 
-  return hasValue;
+  return wasRemoved;
 }

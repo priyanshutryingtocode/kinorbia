@@ -4,6 +4,7 @@ import {
   searchMovies,
   searchTv,
 } from "@/lib/tmdb";
+import { mediaKey } from "@/lib/media";
 import type { MovieSummary } from "@/types";
 
 export type SearchFilters = {
@@ -139,9 +140,9 @@ export async function fetchSearchResults(
 
     // The server-rendered batch and the client's cursor overlap; MovieGrid gets this from
     // seedKeys and search had no equivalent, so every click repeated a page.
-    const fresh = batch.filter((movie) => !seen.has(`${movie.mediaType ?? "movie"}:${movie.id}`));
+    const fresh = batch.filter((movie) => !seen.has(mediaKey(movie.mediaType, movie.id)));
     for (const movie of fresh) {
-      seen.add(`${movie.mediaType ?? "movie"}:${movie.id}`);
+      seen.add(mediaKey(movie.mediaType, movie.id));
     }
     const accepted = applyClientFilters(fresh, filters);
     filtered.push(...accepted);

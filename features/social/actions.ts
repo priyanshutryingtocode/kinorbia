@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getString, revalidateRoute, requireUser } from "@/lib/actions";
 import { isObjectId } from "@/lib/objectId";
 import { applySocialToggle } from "@/features/social/mutations";
+import { logger } from "@/lib/logger";
 
 const VALID_TYPES = ["review", "list"];
 const VALID_ACTIONS = ["like", "save"];
@@ -32,7 +33,7 @@ export async function toggleSocialAction(formData: FormData) {
       return;
     }
   } catch (error) {
-    console.error("Error updating social action:", error);
+    logger.error("Error updating social action:", { error: error });
     return;
   }
 

@@ -8,6 +8,7 @@ import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import { mediaKey, normalizeMediaType } from "@/lib/media";
 import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verification";
 import { createList, removeList, updateList } from "@/features/lists/mutations";
+import { logger } from "@/lib/logger";
 
 // A submitted `movieIds` value is `mediaType:id`, so a member cannot smuggle a
 // different title past the picker by editing the value.
@@ -89,7 +90,7 @@ export async function createMovieList(
       return { status: "error", message: "The list could not be created. Please try again." };
     }
   } catch (error) {
-    console.error("Error creating list:", error);
+    logger.error("Error creating list:", { error: error });
     return { status: "error", message: "The list could not be created. Please try again." };
   }
 
@@ -142,7 +143,7 @@ export async function updateMovieList(
       };
     }
   } catch (error) {
-    console.error("Error updating list:", error);
+    logger.error("Error updating list:", { error: error });
     return { status: "error", message: "The list could not be updated. Please try again." };
   }
 
@@ -171,7 +172,7 @@ export async function deleteMovieList(
       return { status: "error", message: "This list could not be found." };
     }
   } catch (error) {
-    console.error("Error deleting list:", error);
+    logger.error("Error deleting list:", { error: error });
     return { status: "error", message: "The list could not be deleted. Please try again." };
   }
 

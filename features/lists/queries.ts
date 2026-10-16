@@ -1,4 +1,5 @@
 
+import { countLabel } from "@/lib/media";
 import "server-only";
 
 import dbConnect from "@/lib/dbConnect";
@@ -84,6 +85,6 @@ export async function getListDetail(
     list,
     // One author, one lookup.
     usernames: await buildUsernameMap([list.userEmail]),
-    countLabel: `${list.movies.length} ${list.movies.length === 1 ? "title" : "titles"}`,
+    countLabel: countLabel(list.movies.length, "title"),
   };
 }

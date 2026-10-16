@@ -1,8 +1,9 @@
+import Link from "next/link";
 import {Star} from "lucide-react";
 import PosterImage from "@/components/PosterImage";
 
 import { renderRichText } from "@/lib/renderRichText";
-import { starsLabel } from "@/lib/media";
+import { formatDate, mediaHref, starsLabel } from "@/lib/media";
 import { usernameFor } from "@/lib/profileLinks";
 import type { ReviewItem } from "@/types";
 import ManageReviewForm from "./ManageReviewForm";
@@ -32,26 +33,55 @@ export default function ReviewCard({
   const body = review.spoiler ? (
     <SpoilerText text={review.body} />
   ) : (
-    <div className="whitespace-pre-wrap wrap-break-word text-sm leading-6 text-content-muted">
+    // Clamped so one long review cannot set the height for every card beside it. The
+    // spoiler path is deliberately NOT clamped: SpoilerText owns its own bordered box and
+    // reveal toggle, and truncating it would fight both.
+    <div className="line-clamp-4 whitespace-pre-wrap wrap-break-word text-xs leading-5 text-content-muted">
       {renderRichText(review.body)}
     </div>
   );
 
+  // movieId is optional on ReviewItem, so a review without one renders as plain text
+  // rather than linking to a page that does not exist.
+  const title = review.movieId ? (
+    <Link
+      href={mediaHref(review.mediaType, review.movieId)}
+      // The clamp means long titles ellipsize; the attribute keeps the full string
+      // available on hover.
+      title={review.title}
+      className="kin-focus line-clamp-2 wrap-break-word transition-colors hover:text-highlight"
+    >
+      {review.title}
+    </Link>
+  ) : (
+    <span className="line-clamp-2 wrap-break-word">{review.title}</span>
+  );
+
   return (
-    <article className="flex min-w-0 items-start overflow-hidden rounded-sheet border border-rule bg-surface/65">
-      <div className="relative aspect-2/3 w-20 shrink-0 bg-surface-raised sm:w-24">
+    // h-full because the grid stretches its items. The row direction (the default) is what
+    // keeps the poster beside the text; dropping the old `items-start` lets the poster column
+    // stretch to the full card height instead of sitting at its natural 2:3 size with bare
+    // surface beneath it.
+    <article className="flex h-full min-w-0 overflow-hidden rounded-sheet border border-rule bg-surface/65 transition-colors hover:border-rule-strong">
+      <div className="relative h-full w-32 shrink-0 bg-surface-raised sm:w-40">
         <PosterImage
           path={review.posterPath}
           width="w342"
           alt={review.title}
-          sizes="96px"
-          className="object-cover"
+          sizes="(min-width: 640px) 160px, 128px"
+          // contain, not cover: the column is far taller than a 2:3 poster, so cover
+          // scaled to the height and threw away ~52% of the image horizontally -- a centre
+          // slice of the poster rather than the poster. Contain always shows the whole
+          // image; the leftover space becomes an even matte above and below against
+          // bg-surface-raised. Shortening the text below also shortens the cards, which
+          // shrinks that matte.
+          className="object-contain"
         />
       </div>
-      <div className="min-w-0 flex-1 p-4">
+      <div className="flex min-w-0 flex-1 flex-col p-4">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="min-w-0 wrap-break-word font-display text-lg font-medium leading-tight text-content">
-            {review.title}
+          <h3 className="min-w-0 font-display text-base font-medium leading-tight text-content">
+            {title}
           </h3>
           <VisibilityBadge visibility={review.visibility} />
         </div>
@@ -64,7 +94,7 @@ export default function ReviewCard({
             />
           </span>
           <span aria-hidden="true">·</span>
-          <time dateTime={review.createdAt}>{new Date(review.createdAt).toLocaleDateString()}</time>
+          <time dateTime={review.createdAt}>{formatDate(review.createdAt)}</time>
           {rating > 0 && (
             <span className="inline-flex items-center gap-1 font-semibold text-highlight" aria-label={`${rating} out of 10`}>
               <Star className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
@@ -74,7 +104,9 @@ export default function ReviewCard({
         </div>
         <div className="mt-3">{body}</div>
         {review.visibility === "public" && (
-          <div className="mt-4 flex flex-wrap gap-2">
+          // mt-auto, not mt-4: this is the row that absorbs the leftover height so the
+          // buttons share a baseline across cards in the same grid row.
+          <div className="mt-auto flex flex-wrap gap-2 pt-4">
             <SocialActionButton
               type="review"
               id={review._id}

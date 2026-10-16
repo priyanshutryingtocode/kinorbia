@@ -1,41 +1,33 @@
-import Link from "next/link";
-import { buildPageHref } from "@/lib/pageHref";
 import { redirect } from "next/navigation";
-import {List, Star} from "lucide-react";
 import type { Metadata } from "next";
 import RouteShell from "@/components/RouteShell";
 import PageHeader from "@/components/PageHeader";
-import PosterImage from "@/components/PosterImage";
-import SpoilerText from "@/components/SpoilerText";
-import { renderRichText } from "@/lib/renderRichText";
-import { starsLabel } from "@/lib/media";
 import FeedTabs from "@/components/FeedTabs";
 import EmptyState from "@/components/EmptyState";
+import ActivityLoadMore from "@/components/ActivityLoadMore";
+import type { SerializedFeedRow } from "@/lib/feedTypes";
+import { serializeFeedRows } from "@/features/activity/serializers";
 import { auth } from "@/auth";
-import { lookupRating } from "@/lib/reviewRatings";
-import { usernameFor } from "@/lib/profileLinks";
-import UserNameLink from "@/components/UserNameLink";
-
-import NumberedPagination from "@/components/NumberedPagination";
 import { getActivityFeed } from "@/features/activity/queries";
-import { parsePage } from "@/lib/searchParams";
+import { loadMoreActivity } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Activity",
-  description: "The latest reviews and lists shared by the KinOrbia community.",
+  description: "The latest public reviews and lists shared by the KinOrbia community.",
 };
 
 type ActivityPageProps = {
-  searchParams: Promise<{ feed?: string; page?: string }> | { feed?: string; page?: string };
+  searchParams: Promise<{ feed?: string }> | { feed?: string };
 };
 
-
+// No `page` param: the feed pages by cursor now. A page number over an ever-growing
+// timeline repeats and skips rows as new activity lands between loads, and deep links to
+// `/activity?page=3` would resolve to a different set of rows every time they were opened.
 export default async function ActivityPage({ searchParams }: ActivityPageProps) {
-  const { feed, page } = await searchParams;
+  const { feed } = await searchParams;
   const isFollowingFeed = feed === "following";
-  const requestedPage = parsePage(page);
 
   const session = await auth();
   const sessionEmail = session?.user?.email ?? null;
@@ -43,20 +35,9 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
     redirect("/login");
   }
 
-  const {
-    rows: items,
-    page: currentPage,
-    totalPages,
-    total,
-    pageSize,
-    followingCount,
-    usernames,
-    ratingMaps,
-  } = await getActivityFeed({
-    isFollowingFeed,
-    sessionEmail,
-    requestedPage,
-  });
+  const feedPage = await getActivityFeed({ isFollowingFeed, sessionEmail, cursor: null });
+
+  const seed: SerializedFeedRow[] = serializeFeedRows(feedPage.rows);
 
   return (
     <RouteShell spacing="standard" width="standard">
@@ -65,8 +46,8 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
         title="Activity"
         description={
           isFollowingFeed
-            ? "Fresh reviews and lists from the members you follow."
-            : "Fresh public reviews and lists from KinOrbia members."
+            ? "Reviews, lists and watches from the members you follow."
+            : "Fresh public reviews and lists from KinOrbia members. Watches are shared only with the people who follow you."
         }
       />
 
@@ -74,145 +55,29 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
         <FeedTabs />
       </div>
 
-      {isFollowingFeed && followingCount === 0 ? (
+      {isFollowingFeed && feedPage.followingCount === 0 ? (
         <EmptyState
           compact
           headingLevel={2}
           className="mt-8"
           title="You are not following anyone yet"
-          description="Follow members from their profiles and their reviews and lists will show up here."
+          description="Follow members from their profiles and their reviews, lists and watches will show up here."
         />
-      ) : items.length > 0 ? (
-        <ol className="kin-editorial-list mt-8" aria-label="Activity feed">
-          {items.map((item) => {
-            if (item.kind === "review") {
-              const posterPath = item.review.posterPath;
-              const rating = lookupRating(ratingMaps, item.review);
-
-              return (
-                <li
-                  key={`review-${item.review._id}`}
-                  className="kin-editorial-row gap-4 transition-colors hover:bg-surface/40 sm:gap-6"
-                >
-                  <div className="relative h-24 w-16 shrink-0 overflow-hidden bg-surface-raised sm:h-32 sm:w-20 lg:h-40 lg:w-28">
-                    <PosterImage
-                      path={posterPath}
-                      width="w185"
-                      alt={item.review.title}
-                      sizes="64px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <article className="min-w-0 flex-1">
-                    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-subtle">
-                      <span className="font-semibold uppercase tracking-overline text-content-muted">
-                        <UserNameLink
-                          userName={item.review.userName}
-                          username={usernameFor(usernames, item.review.userEmail)}
-                        />{" "}
-                        reviewed
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <time dateTime={new Date(item.review.createdAt).toISOString()}>
-                        {new Date(item.review.createdAt).toLocaleDateString()}
-                      </time>
-                      {rating > 0 && (
-                        <span
-                          className="inline-flex items-center gap-1 font-semibold text-highlight"
-                          aria-label={`${rating} out of 10`}
-                        >
-                          <Star className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-                          {starsLabel(rating)} stars
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="mt-2 break-words font-display text-xl font-medium leading-tight text-content">
-                      {item.review.title}
-                    </h2>
-                    {item.review.spoiler && (
-                      <span className="mt-2 inline-flex items-center border border-highlight/25 bg-highlight-soft px-2 py-1 text-overline font-medium uppercase tracking-overline text-highlight">
-                        Spoiler
-                      </span>
-                    )}
-                    <div className="mt-3 min-w-0 break-words">
-                      {item.review.spoiler ? (
-                        <SpoilerText text={item.review.body} />
-                      ) : (
-                        // renderRichText, so **bold**, *italic* and [links](url)
-                        // render here as they do on the review cards instead of
-                        // showing their asterisks and brackets.
-                        <div className="whitespace-pre-wrap break-words text-sm leading-6 text-content-muted">
-                          {renderRichText(item.review.body)}
-                        </div>
-                      )}
-                    </div>
-                  </article>
-                </li>
-              );
-            }
-
-            const posterPath = item.list.movies?.[0]?.posterPath;
-
-            return (
-              <li
-                key={`list-${item.list._id}`}
-                className="kin-editorial-row gap-4 transition-colors hover:bg-surface/40 sm:gap-6"
-              >
-                <div className="relative h-24 w-16 shrink-0 overflow-hidden bg-surface-raised sm:h-32 sm:w-20 lg:h-40 lg:w-28">
-                  <PosterImage
-                    path={posterPath}
-                    width="w185"
-                    alt=""
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  {/* The byline sits outside the <Link> on purpose. It used to be
-                      inside, which made the author's name un-linkable -- an anchor
-                      inside an anchor is invalid HTML and unreachable by keyboard.
-                      The trade-off is that the byline row is no longer part of the
-                      click target; the title and description are. */}
-                  <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-subtle">
-                    <span className="font-semibold uppercase tracking-overline text-content-muted">
-                      <UserNameLink
-                        userName={item.list.userName}
-                        username={usernameFor(usernames, item.list.userEmail)}
-                      />{" "}
-                      created a list
-                    </span>
-                    <span aria-hidden="true">·</span>
-                    <time dateTime={new Date(item.list.createdAt).toISOString()}>
-                      {new Date(item.list.createdAt).toLocaleDateString()}
-                    </time>
-                  </div>
-                  <Link
-                    href={`/lists/${item.list._id}`}
-                    className="kin-focus group block py-0.5"
-                  >
-                    <h2 className="mt-2 flex min-w-0 items-start gap-2 break-words font-display text-xl font-medium leading-tight text-content transition-colors group-hover:text-highlight">
-                      <List className="mt-1 h-4 w-4 shrink-0 text-highlight" aria-hidden="true" />
-                      <span className="min-w-0 break-words">{item.list.title}</span>
-                    </h2>
-                    {item.list.description && (
-                      <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-content-muted">
-                        {item.list.description}
-                      </p>
-                    )}
-                  </Link>
-                </div>
-              </li>
-            );
-          })}
-          <NumberedPagination
-            label="Activity"
-            page={currentPage}
-            totalPages={totalPages}
-            total={total}
-            pageSize={pageSize}
-            buildHref={(target) => activityHref(isFollowingFeed, target)}
-          />
-        </ol>
+      ) : seed.length > 0 ? (
+        <ActivityLoadMore
+          // The tabs are client-side navigations to the same segment, so React reconciles
+          // position-for-position and keeps this component's hook state. Without a key the
+          // Following feed inherits the Community feed's cursor and its appended rows -- see
+          // useCursorFeed, which captures seed and cursor in useState.
+          key={isFollowingFeed ? "following" : "community"}
+          seed={seed}
+          seedUsernames={feedPage.usernames}
+          seedNames={feedPage.names}
+          seedRatingMaps={feedPage.ratingMaps}
+          seedCursor={feedPage.nextCursor}
+          isFollowingFeed={isFollowingFeed}
+          fetchPage={loadMoreActivity}
+        />
       ) : (
         <EmptyState
           compact
@@ -228,11 +93,4 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
       )}
     </RouteShell>
   );
-}
-
-// The `feed` param is preserved across pages, and page 1 stays on the bare path
-// so the first page of each feed keeps its canonical URL.
-function activityHref(isFollowingFeed: boolean, page: number) {
-  // The `feed` param survives across pages, so the following feed stays on itself.
-  return buildPageHref("/activity", { feed: isFollowingFeed ? "following" : undefined }, page);
 }

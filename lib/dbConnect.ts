@@ -1,4 +1,5 @@
 import mongoose, { type ConnectOptions } from "mongoose";
+import { logger } from "@/lib/logger";
 
 const mongoUri = process.env.MONGO_MONGODB_URI || process.env.MONGODB_URI;
 
@@ -98,11 +99,15 @@ async function connectWithRetry(opts: ConnectOptions) {
 
       lastError = error;
 
-      if (process.env.NODE_ENV !== "production") {
-        console.warn(
-          `MongoDB connect attempt ${attempt + 1}/${CONNECT_ATTEMPTS} failed (${errorCode(error)}); retrying.`
-        );
-      }
+        if (process.env.NODE_ENV !== "production") {
+          // Development only: a retry loop during a cold Atlas DNS blip is expected, and on a
+          // deployed instance it would be a page of warnings per failed request.
+          logger.warn("MongoDB connect attempt failed, retrying", {
+            attempt: attempt + 1,
+            of: CONNECT_ATTEMPTS,
+            cause: errorCode(error),
+          });
+        }
 
       await sleep(CONNECT_BACKOFF_MS[attempt]);
     }

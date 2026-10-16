@@ -54,10 +54,11 @@ export default function ProfileVerifyBanner({ verified }: ProfileVerifyBannerPro
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-highlight" aria-hidden="true" />
         <div className="space-y-0.5">
           <p className="text-sm font-semibold text-content">Verify your email to post publicly</p>
-          <p className="text-xs leading-5 text-content-muted">
-            Your journal, favorites, and watchlist are private either way. Public reviews, lists,
-            comments, and follows need a confirmed address.
-          </p>
+<p className="text-xs leading-5 text-content-muted">
+              Your favorites, watchlist and watch history are private unless you choose to
+              share them in Settings. Public reviews, lists, comments, and follows need a
+              confirmed address.
+            </p>
         </div>
       </div>
       <button

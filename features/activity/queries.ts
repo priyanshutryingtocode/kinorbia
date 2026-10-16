@@ -3,11 +3,19 @@ import "server-only";
 import dbConnect from "@/lib/dbConnect";
 import { emailMatch } from "@/lib/emailMatch";
 import { buildReviewerMaps } from "@/lib/reviewRatings";
-import { INDEX_PAGE_SIZES, pageBounds } from "@/lib/pagination";
+import {
+  cursorMatch,
+  decodeCursor,
+  encodeCursor,
+  FEED_PAGE_SIZE,
+  FEED_SORT,
+  type CursorKey,
+} from "@/lib/activityCursor";
 import { publiclyVisible } from "@/lib/visibility";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
 import User from "@/models/User";
+import UserMovie from "@/models/UserMovie";
 import type { MediaType } from "@/types";
 
 type FeedReview = {
@@ -33,53 +41,98 @@ type FeedList = {
   createdAt: Date;
 };
 
+// A watch carries no body or description: the row renders as a poster, a title, and who
+// watched it. `userName` is absent on a usermovies row -- it holds no denormalized name --
+// so the username map supplies it, same as the other two kinds.
+type FeedWatch = {
+  _id: { toString: () => string };
+  userEmail: string;
+  title: string;
+  posterPath?: string;
+  movieId: string;
+  mediaType: MediaType;
+  watchedAt: Date;
+};
+
 type MergedRow = {
-  kind: "review" | "list";
+  kind: "review" | "list" | "watch";
   date: Date;
   sortId: unknown;
-} & (Partial<FeedReview> & Partial<FeedList>);
+} & (Partial<FeedReview> & Partial<FeedList> & Partial<FeedWatch>);
 
-type FeedRow =
+// Exported so features/activity/serializers.ts can type the conversion that decides what
+// crosses into the client feed. It is the query's return shape, not a UI concern.
+export type FeedRow =
   | { kind: "review"; date: Date; review: FeedReview }
-  | { kind: "list"; date: Date; list: FeedList };
+  | { kind: "list"; date: Date; list: FeedList }
+  | { kind: "watch"; date: Date; watch: FeedWatch };
 
 type ActivityFeed = {
   rows: FeedRow[];
-  total: number;
-  page: number;
-  totalPages: number;
+  // Opaque cursor for the next page, or null at the end. There is no page number and no
+  // total: an activity feed grows while it is read, so both would be lies.
+  nextCursor: string | null;
   pageSize: number;
   // "Nobody followed" is a different empty state from "followed, nothing new".
   followingCount: number;
-  usernames: Map<string, string>;
-  ratingMaps: Map<string, Map<string, number>>;
+  // Plain objects, not Maps: the appended pages are fetched by a client component, and a
+  // Map does not survive the server/client boundary. Keys are normalized emails, matching
+  // the shape buildReviewerMaps resolves them into.
+  usernames: Record<string, string>;
+  // Display names, keyed by normalized email. Separate from usernames because a watch row
+  // carries no author name of its own and would otherwise print the handle.
+  names: Record<string, string>;
+  ratingMaps: Record<string, Record<string, number>>;
 };
 
-// One merged timeline across two collections, so a page is a page. Merging two capped
-// fetches in JS cannot be paged: the caps are invisible and the boundary between
-// reviews and lists moves with the data.
+// One shared scope for all three branches: the followee list on the "following" feed, empty
+// on the global one. Kept as one value rather than three so a branch cannot drift out of
+// step with the others and quietly widen.
+type FeedScope = Record<string, unknown>;
+
+// One merged timeline across three collections, so a page is a page. Merging capped
+// fetches in JS cannot be paged: the caps are invisible and the boundary between kinds
+// moves with the data.
 //
 // Each side projects flat under a `kind` discriminator, not nested under `payload`. Nesting
 // looked right and returned nothing: in `$project` a bare `{ _id: 1, ... }` projects an existing
 // path rather than building a document, so the field was dropped.
-function mergedPipeline(filter: Record<string, unknown>) {
-  // Each collection is sorted before the union rather than after, so neither side
-  // has to be read in full. The union result is re-sorted because the two sides
-  // arrive interleaved rather than concatenated.
-  const windowed = [{ $match: filter }, { $sort: { createdAt: -1, _id: -1 } }];
+//
+// Every branch carries its OWN cursor `$match` and `$limit`. That is the point of a cursor
+// here: filtering after the union would make each branch scan from the top of the timeline
+// to fill the page, so the merge cost would grow with depth rather than staying flat.
+// `includeWatches` is false on the public Community tab. Watch activity is opt-in and
+  // deliberately reaches only the people who follow the member who marked something watched,
+  // so serving it to signed-out visitors and to everyone else on a public feed is not a
+  // scope the member ever agreed to.
+  function mergedPipeline(cursor: CursorKey | null, limit: number, scope: FeedScope, includeWatches: boolean) {
+  const visibilityScope = scope;
+  const watchScope = scope;
+  // `$and`, not a spread of two objects. Both the visibility filter and the cursor are
+// `$or` clauses, and spreading them together keeps only the last one written -- which
+// silently dropped the visibility filter from page 2 onward and served other members'
+// private reviews and lists. Measured as 16 private rows leaking across a 25-page walk.
+const windowed = (
+    filter: Record<string, unknown>,
+    dateField: string,
+    kind: "review" | "list" | "watch"
+  ) => [
+    { $match: { $and: [filter, cursorMatch(cursor, dateField, kind)] } },
+    { $sort: { [dateField]: -1, _id: -1 } },
+    { $limit: limit },
+  ];
 
   return [
-    ...windowed,
+    ...windowed({ ...publiclyVisible(), ...visibilityScope }, "createdAt", "review"),
     {
       $project: {
         kind: { $literal: "review" },
         date: "$createdAt",
-        // Tiebreaker across two collections: `createdAt` alone would leave page
-        // boundaries free to shuffle rows that share a timestamp.
+        // Tiebreaker across collections: the date alone leaves page boundaries free to
+        // shuffle rows sharing a timestamp.
         sortId: "$_id",
         userName: 1,
         userEmail: 1,
-        createdAt: 1,
         title: 1,
         posterPath: 1,
         movieId: 1,
@@ -92,7 +145,7 @@ function mergedPipeline(filter: Record<string, unknown>) {
       $unionWith: {
         coll: MovieList.collection.name,
         pipeline: [
-          ...windowed,
+          ...windowed({ ...publiclyVisible(), ...visibilityScope }, "createdAt", "list"),
           {
             $project: {
               kind: { $literal: "list" },
@@ -100,7 +153,6 @@ function mergedPipeline(filter: Record<string, unknown>) {
               sortId: "$_id",
               userName: 1,
               userEmail: 1,
-              createdAt: 1,
               title: 1,
               description: 1,
               // The row renders only the first poster, so one entry is
@@ -111,46 +163,74 @@ function mergedPipeline(filter: Record<string, unknown>) {
         ],
       },
     },
-    { $sort: { date: -1, sortId: -1 } },
+    // Absent entirely rather than filtered to nothing on the Community tab: an always-false
+    // `$match` would still plan an index scan per branch and cost a round trip to prove
+    // there is nothing there.
+    ...(includeWatches
+      ? [
+          {
+            $unionWith: {
+              coll: UserMovie.collection.name,
+              pipeline: [
+                // `watched.broadcast: true` is not decoration: it is what makes the partial
+                // index eligible. Page 1 has no cursor bound, so without this predicate the
+                // planner falls back to another index and the feed gets slower the deeper it
+                // goes. Proven with explain() in scripts/checkDbIntegrity.mjs.
+                ...windowed({ ...watchScope, "watched.broadcast": true }, "watched.watchedAt", "watch"),
+                {
+                  $project: {
+                    kind: { $literal: "watch" },
+                    date: "$watched.watchedAt",
+                    sortId: "$_id",
+                    userEmail: 1,
+                    title: 1,
+                    posterPath: 1,
+                    movieId: 1,
+                    mediaType: 1,
+                  },
+                },
+              ],
+            },
+          },
+        ]
+      : []),
+    { $sort: FEED_SORT },
+    { $limit: limit },
   ];
 }
 
-// `$facet` gets the window and the total in one round-trip, which matters when
-// each one costs a network hop. `$facet` preserves input order, so the sort done
-// above is what `rows` arrives in.
-async function fetchFeedPage(filter: Record<string, unknown>, page: number) {
-  const [result] = await Review.collection
-    .aggregate<{ rows: MergedRow[]; total: { count: number }[] }>([
-      ...mergedPipeline(filter),
-      {
-        $facet: {
-          rows: [
-            { $skip: (page - 1) * INDEX_PAGE_SIZES.activity },
-            { $limit: INDEX_PAGE_SIZES.activity },
-          ],
-          total: [{ $count: "count" }],
-        },
-      },
-    ])
-    .toArray();
+// One extra row per branch is how the next page is known without a second count query.
+const FETCH_LIMIT = FEED_PAGE_SIZE + 1;
 
-  const rows = (result?.rows ?? []).map((row) =>
-    row.kind === "review"
-      ? { kind: "review" as const, date: row.date, review: row as FeedReview }
-      : { kind: "list" as const, date: row.date, list: row as FeedList }
-  );
+// No $facet: there is no total to report any more. The page number was dropped along with
+  // it -- an activity feed grows while it is read, so any count taken now is wrong by the
+  // time the next page is asked for.
+async function fetchFeedPage(cursor: CursorKey | null, scope: FeedScope, includeWatches: boolean) {
+  const rows = (await Review.collection
+    .aggregate<MergedRow>(mergedPipeline(cursor, FETCH_LIMIT, scope, includeWatches))
+    .toArray()) ?? [];
+  const hasMore = rows.length > FEED_PAGE_SIZE;
+  const page = rows.slice(0, FEED_PAGE_SIZE);
 
-  return { rows, total: result?.total?.[0]?.count ?? 0 };
+  // The cursor is the LAST row of the page just served, not of the extra row: taking the
+  // extra one would skip everything between them.
+  const last = page[page.length - 1];
+  const nextCursor =
+    hasMore && last
+      ? encodeCursor({ date: last.date, kind: last.kind, id: String(last.sortId) })
+      : null;
+
+  return { rows: page, nextCursor };
 }
 
 export async function getActivityFeed({
   isFollowingFeed,
   sessionEmail,
-  requestedPage,
+  cursor: rawCursor,
 }: {
   isFollowingFeed: boolean;
   sessionEmail: string | null;
-  requestedPage: number;
+  cursor?: string | null;
 }): Promise<ActivityFeed> {
   await dbConnect();
 
@@ -162,30 +242,39 @@ export async function getActivityFeed({
     following.push(...(currentUser?.following || []));
   }
 
-  const scope = isFollowingFeed ? { userEmail: { $in: following } } : {};
-  const feedFilter = { ...publiclyVisible(), ...scope };
+  // A malformed or hand-edited cursor starts from the top rather than erroring: it arrives
+  // from the URL, and decodeCursor already decided it was untrustworthy.
+  const cursor = decodeCursor(rawCursor);
 
-  // Clamped the same way `paginate` clamps: an out-of-range page re-reads the
-  // last real page rather than rendering an empty timeline.
-  const feedPage = await fetchFeedPage(feedFilter, requestedPage);
-  const bounds = pageBounds(feedPage.total, requestedPage, INDEX_PAGE_SIZES.activity);
-  const rows =
-    bounds.page === requestedPage ? feedPage.rows : (await fetchFeedPage(feedFilter, bounds.page)).rows;
+  // Watch rows carry no visibility field -- a watch is either broadcast or it is not, and
+  // that was decided when it was written. So the following feed scopes watches by the same
+  // followee list, while the global feed shows only broadcast watches, never all of them.
+  const scope: FeedScope = isFollowingFeed ? { userEmail: { $in: following } } : {};
+
+  // Only the Following feed carries watches; the Community feed is public and signed-out reachable.
+  const { rows, nextCursor } = await fetchFeedPage(cursor, scope, isFollowingFeed);
 
   // Byline targets and rating chips from one batched read for the whole page,
   // rather than a lookup per card plus a second read for the same users.
-  const { ratingMaps, usernames } = await buildReviewerMaps(
-    rows.map((row) => (row.kind === "review" ? row.review.userEmail : row.list.userEmail))
+  const { ratingMaps, usernames, names } = await buildReviewerMaps(
+    rows.map((row) => row.userEmail)
   );
 
   return {
-    rows,
-    total: feedPage.total,
-    page: bounds.page,
-    totalPages: bounds.totalPages,
-    pageSize: INDEX_PAGE_SIZES.activity,
+    rows: rows.map((row) =>
+      row.kind === "review"
+        ? { kind: "review" as const, date: row.date, review: row as FeedReview }
+        : row.kind === "list"
+          ? { kind: "list" as const, date: row.date, list: row as FeedList }
+          : { kind: "watch" as const, date: row.date, watch: row as FeedWatch }
+    ),
+    nextCursor,
+    pageSize: FEED_PAGE_SIZE,
     followingCount: following.length,
-    usernames,
-    ratingMaps,
+    usernames: Object.fromEntries(usernames),
+    names: Object.fromEntries(names),
+    ratingMaps: Object.fromEntries(
+      [...ratingMaps].map(([email, ratings]) => [email, Object.fromEntries(ratings)])
+    ),
   };
 }

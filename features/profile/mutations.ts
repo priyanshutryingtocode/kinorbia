@@ -7,10 +7,40 @@ import MovieList from "@/models/MovieList";
 import Notification from "@/models/Notification";
 import Review from "@/models/Review";
 import User from "@/models/User";
+import UserMovie from "@/models/UserMovie";
 
 type MutationOptions = { session?: import("mongoose").ClientSession };
 
 type UpdateProfileResult = "ok" | "no-account";
+
+// Turning sharing off has to retract what was already broadcast, not just stop new events:
+// `watched.broadcast` was stamped at write time precisely so the feed never has to consult
+// the follower's flag, which means the flag alone can no longer hide the past.
+export async function updateShareActivity(
+  email: string,
+  share: boolean,
+  { session }: MutationOptions = {}
+): Promise<UpdateProfileResult> {
+  await dbConnect();
+
+  const opts = session ? { session } : {};
+  const result = await User.findOneAndUpdate(
+    { email },
+    // `shareActivityAsked` moves with the answer so the prompt never returns.
+    { shareActivity: share, shareActivityAsked: true },
+    { projection: { shareActivity: 1 }, ...opts }
+  );
+
+  if (!result) {
+    return "no-account";
+  }
+
+  if (!share) {
+    await UserMovie.updateMany({ userEmail: email, "watched.broadcast": true }, { $set: { "watched.broadcast": false } }, opts);
+  }
+
+  return "ok";
+}
 
 export async function updateProfile(
   email: string,

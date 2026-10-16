@@ -1,15 +1,19 @@
 import { auth } from "@/auth";
 import { getPersonalMediaStatus } from "@/features/media/queries";
+import { hasBeenAskedAboutSharing } from "@/features/media/userMovie";
 import { notFound } from "next/navigation";
 import type { TmdbMovieCredits, TmdbMovieDetails } from "@/types";
 import type { Metadata } from "next";
 import MediaDetailPage from "@/components/MediaDetailPage";
 import {
-  getMovieWithStatus,
-  getMovieCredits,
-  getMovieVideos,
-  pickMainTrailer,
-} from "@/lib/tmdb";
+    getMovieWithStatus,
+    getMovieCredits,
+    getMovieProviders,
+  hasWatchProviderData,
+    getMovieVideos,
+    pickMainTrailer,
+    summarizeWatchProviders,
+  } from "@/lib/tmdb";
 import {
   crewByJob,
   crewPanel,
@@ -19,6 +23,7 @@ import {
   topCast,
 } from "@/lib/mediaDetail";
 import { yearOf } from "@/lib/media";
+import { resolveWatchRegion } from "@/lib/region.server";
 
 
 async function getMovieDetails(id: string): Promise<TmdbMovieDetails> {
@@ -40,11 +45,15 @@ async function getCredits(id: string): Promise<TmdbMovieCredits> {
   return credits || { id: Number(id), cast: [], crew: [] };
 }
 
-type Props = {
+type Params = {
   params: Promise<{ id: string }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+type Props = Params & {
+  searchParams: Promise<{ region?: string }>;
+};
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const movie = await getMovieDetails(id);
   const year = yearOf(movie.release_date, "");
@@ -57,20 +66,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function MoviePage({ params }: Props) {
+export default async function MoviePage({ params, searchParams }: Props) {
   const { id } = await params;
-  const [movie, credits, videos, session] = await Promise.all([
-    getMovieDetails(id),
-    getCredits(id),
-    getMovieVideos(id),
-    auth(),
-  ]);
-  const trailer = pickMainTrailer(videos?.results);
+  const { region: requestedRegion } = await searchParams;
+  const region = await resolveWatchRegion(requestedRegion);
+    const [movie, credits, videos, providers, session] = await Promise.all([
+      getMovieDetails(id),
+      getCredits(id),
+      getMovieVideos(id),
+      // Where to stream is a nice-to-have on a page that already has the rest of the film
+      // on it, so it rides along with the other TMDB reads rather than adding a round trip.
+      getMovieProviders(id),
+      auth(),
+    ]);
+    const trailer = pickMainTrailer(videos?.results);
 
-  const personal = await getPersonalMediaStatus(session?.user?.email, id, "movie");
+  const [personal, askAboutSharing] = await Promise.all([
+    getPersonalMediaStatus(session?.user?.email, id, "movie"),
+    hasBeenAskedAboutSharing(session?.user?.email),
+  ]);
 
   return (
     <MediaDetailPage
+      askAboutSharing={askAboutSharing}
       personal={personal}
       model={{
         id,
@@ -106,7 +124,9 @@ export default async function MoviePage({ params }: Props) {
           genreIds: movie.genres?.map((genre) => genre.id) || [],
           mediaType: "movie",
         }),
-        trailerKey: trailer?.key ?? null,
+          trailerKey: trailer?.key ?? null,
+          watchProviders: summarizeWatchProviders(providers, region),
+          watchProviderData: hasWatchProviderData(providers),
       }}
     />
   );

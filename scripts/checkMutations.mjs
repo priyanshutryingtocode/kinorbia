@@ -106,7 +106,7 @@ async function inTransaction(work) {
 //
 // No media arrays: they were dropped in favour of `usermovies`, so a probe that seeded them
 // would be asserting against fields nothing reads. Every invariant here reaches the rows.
-async function seedUser(session) {
+async function seedUser(session, extra = {}) {
   await db.collection("users").insertOne(
     {
       name: "Probe",
@@ -115,6 +115,7 @@ async function seedUser(session) {
       following: [],
       createdAt: new Date(),
       updatedAt: new Date(),
+      ...extra,
     },
     { session }
   );
@@ -167,6 +168,87 @@ function record(name, detail) {
     assert.equal(theirsAfter.read, false, "another user's notification still untouched");
 
     record("markNotificationsRead: scoped to the caller in both branches");
+  });
+}
+
+// --- watch broadcasting ------------------------------------------------------------
+// The flag is read at write time and stamped onto the row, so the feed never looks up a
+// followee's preference. That only holds if the stamp follows the flag, and if turning it
+// off retracts what was already sent.
+
+{
+  const { markWatched } = await import("../features/journal/mutations.ts");
+  const { updateShareActivity } = await import("../features/profile/mutations.ts");
+  const snapshot = { movieId: PROBE_MOVIE_ID, mediaType: "movie", movieTitle: "Probe Title", posterPath: null };
+
+  // Off by default: the probe user has no shareActivity, so a watch must stay private.
+  await inTransaction(async (session) => {
+    await seedUser(session);
+    await markWatched({ userEmail: PROBE_EMAIL, ...snapshot }, { session });
+
+    const row = await db.collection("usermovies").findOne(
+      { userEmail: PROBE_EMAIL, movieId: PROBE_MOVIE_ID },
+      { session }
+    );
+    assert.equal(row.watched.broadcast, false, "a member who never opted in must not broadcast");
+    record("markWatched: broadcasting is opt-in, so a default member stays private");
+  });
+
+  // On: the same write now stamps it.
+  await inTransaction(async (session) => {
+    await seedUser(session, { shareActivity: true, shareActivityAsked: true });
+    await markWatched({ userEmail: PROBE_EMAIL, ...snapshot }, { session });
+
+    const row = await db.collection("usermovies").findOne(
+      { userEmail: PROBE_EMAIL, movieId: PROBE_MOVIE_ID },
+      { session }
+    );
+    assert.equal(row.watched.broadcast, true, "an opted-in member broadcasts");
+    record("markWatched: an opted-in member stamps watched.broadcast");
+  });
+
+  // Turning it off retracts, which is the only thing that clears an existing stamp.
+  await inTransaction(async (session) => {
+    await seedUser(session, { shareActivity: true, shareActivityAsked: true });
+    await markWatched({ userEmail: PROBE_EMAIL, ...snapshot }, { session });
+    await updateShareActivity(PROBE_EMAIL, false, { session });
+
+    const row = await db.collection("usermovies").findOne(
+      { userEmail: PROBE_EMAIL, movieId: PROBE_MOVIE_ID },
+      { session }
+    );
+    const user = await db.collection("users").findOne({ email: PROBE_EMAIL }, { session });
+    assert.equal(row.watched.broadcast, false, "turning sharing off must retract what was already shared");
+    assert.equal(user.shareActivity, false, "the flag itself is stored");
+    assert.equal(user.shareActivityAsked, true, "and the prompt is settled, so it never returns");
+    record("updateShareActivity: turning sharing off retracts every broadcast row");
+  });
+
+  // Re-marking reflects the CURRENT flag, while the date stays first-write-wins. The two
+  // move independently on purpose: the date is what orders the feed, and restamping it
+  // would bump an old title to the top of every follower's timeline.
+  await inTransaction(async (session) => {
+    await seedUser(session, { shareActivity: false, shareActivityAsked: true });
+    await markWatched({ userEmail: PROBE_EMAIL, ...snapshot }, { session });
+    const first = await db.collection("usermovies").findOne(
+      { userEmail: PROBE_EMAIL, movieId: PROBE_MOVIE_ID },
+      { session }
+    );
+
+    await updateShareActivity(PROBE_EMAIL, true, { session });
+    await markWatched({ userEmail: PROBE_EMAIL, ...snapshot }, { session });
+    const second = await db.collection("usermovies").findOne(
+      { userEmail: PROBE_EMAIL, movieId: PROBE_MOVIE_ID },
+      { session }
+    );
+
+    assert.equal(second.watched.broadcast, true, "re-marking follows the current flag");
+    assert.equal(
+      second.watched.watchedAt.getTime(),
+      first.watched.watchedAt.getTime(),
+      "but re-marking must not move watchedAt, which is what orders the feed"
+    );
+    record("markWatched: re-marking follows the flag without restamping the date");
   });
 }
 
@@ -745,12 +827,71 @@ function record(name, detail) {
         "2026-01-01T00:00:00.000Z",
         "the watchlist view reports the watchlist date, not the favorite one"
       );
-      assert.equal(fav.personalRating, 9, "the rating travels on the favorites view");
-      assert.equal("personalRating" in toWatchlistMovie(wl), false, "a watchlist entry carries no rating");
-      assert.equal(toFavoriteMovie(fav).personalRating, 9, "the favorites projection keeps it");
-      record("UserMovie: each state reports its own date, and only favorites carry a rating");
-    });
-  }
+        assert.equal(fav.personalRating, 9, "the rating travels on the favorites view");
+        assert.equal(
+          toWatchlistMovie(wl).personalRating,
+          9,
+          "a watchlist row that is ALSO a favorite keeps the rating the member gave it"
+        );
+        assert.equal(
+          toFavoriteMovie(fav).personalRating,
+          9,
+          "the favorites projection keeps it"
+        );
+        record("UserMovie: each state reports its own date, and a rating follows the favorite state");
+      });
+    }
+
+    // The invariant the watchlist projection must never break: a rating belongs to the
+    // favorite state, so a watchlist-only row reports 0 and can never display a score the
+    // member did not give. This is the case the shared-projection bug actually produced.
+    {
+      const { listUserMedia } = await import("../features/media/userMovie.ts");
+      const { toWatchlistMovie } = await import("../lib/reviewRatings.ts");
+      const WATCHLIST_ONLY = "555000333";
+      const snap = {
+        movieId: WATCHLIST_ONLY,
+        mediaType: "movie",
+        title: "Watchlist Only",
+        posterPath: null,
+        voteAverage: 5,
+        releaseDate: null,
+        genreIds: [],
+      };
+
+      await inTransaction(async (session) => {
+        await seedUser(session);
+        await db
+          .collection("usermovies")
+          .insertOne(
+            {
+              userEmail: PROBE_EMAIL,
+              movieId: WATCHLIST_ONLY,
+              mediaType: "movie",
+              title: snap.title,
+              posterPath: null,
+              voteAverage: 5,
+              releaseDate: null,
+              genreIds: [],
+              favorite: { addedAt: null, personalRating: 0 },
+              watchlist: { addedAt: new Date("2026-02-01") },
+              watched: { watchedAt: null },
+            },
+            { session }
+          );
+
+        const asWatchlist = await listUserMedia(PROBE_EMAIL, "watchlist", { session });
+        const wl = asWatchlist.rows.find((r) => r.movieId === WATCHLIST_ONLY);
+
+        assert.ok(wl, "the watchlist-only row is returned");
+        assert.equal(
+          toWatchlistMovie(wl).personalRating,
+          0,
+          "a watchlist-only row reports 0, never a borrowed score"
+        );
+        record("UserMovie: a watchlist-only row never reports a rating");
+      });
+    }
 
   // The cap is enforced by a conditional `$inc` on the member, not by counting first, so
   // two concurrent adds cannot both observe room.

@@ -1,9 +1,9 @@
 "use client";
 
+import { movieRefPayload } from "@/lib/mediaDetail";
 import { Heart } from "lucide-react";
 import type { DetailSummary } from "@/lib/mediaDetail";
 import { MediaToggleButton, useMediaToggle } from "@/components/MediaToggle";
-import { normalizeMediaType } from "@/lib/media";
 
 const MESSAGES = {
   signIn: "Sign in to save favorites.",
@@ -20,15 +20,7 @@ interface FavButtonProps {
 export default function FavoriteButton({ movie, initialIsFavorite }: FavButtonProps) {
   const { active, loading, toggle } = useMediaToggle({
     endpoint: "/api/user/favorites",
-    payload: {
-      movieId: movie.id,
-      movieTitle: movie.title,
-      posterPath: movie.poster_path,
-      voteAverage: movie.vote_average,
-      releaseDate: movie.release_date,
-      mediaType: normalizeMediaType(movie.mediaType),
-      genreIds: movie.genre_ids || [],
-    },
+    payload: movieRefPayload(movie),
     messages: MESSAGES,
     initialActive: initialIsFavorite,
     readActive: (data) => Boolean((data as { isFavorite?: boolean })?.isFavorite),

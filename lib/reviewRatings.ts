@@ -1,5 +1,5 @@
 import User from "@/models/User";
-import type { FavoriteMovie, MediaType, WatchlistMovie } from "@/types";
+import type { FavoriteMovie, WatchlistMovie } from "@/types";
 import { mediaKey } from "@/lib/media";
 import { usernameMapFromUsers } from "@/lib/profileLinks";
 import {
@@ -8,12 +8,6 @@ import {
   type MediaRow,
 } from "@/features/media/userMovie";
 import { emailCandidates } from "@/lib/emailMatch";
-
-type ReviewForRating = {
-  userEmail: string;
-  movieId?: string;
-  mediaType?: MediaType;
-};
 
 export function buildRatingMap(
   favorites: Pick<FavoriteMovie, "movieId" | "mediaType" | "personalRating">[]
@@ -28,12 +22,8 @@ export function buildRatingMap(
   return map;
 }
 
-export function lookupRating(
-  maps: Map<string, Map<string, number>>,
-  review: ReviewForRating
-): number {
-  return maps.get(review.userEmail)?.get(mediaKey(review.mediaType, review.movieId)) || 0;
-}
+// Re-exported from the model-free module so server callers keep one import path.
+export { lookupRating } from "@/lib/feedLookups";
 
 export async function findFavoriteByMediaKey(
   email: string,
@@ -63,6 +53,10 @@ export function toFavoriteMovie(row: MediaRow): FavoriteMovie {
 // A watchlist entry is a reference without the viewer's own rating. Emitting
 // `personalRating` here is what `serializeWatchlist` used to have to invent a zero for,
 // and it is why `WatchlistMovie` was deliberately not an alias of `FavoriteMovie`.
+// A watchlist entry carries no rating of its own, but a title can be on the watchlist AND be
+// a favorite -- favorite and watchlist are states on the same usermovies row. When it is, the
+// rating is real and belongs on screen; dropping it meant a watchlist item could never show
+// a badge and the rating facet below it could only ever return empty.
 export function toWatchlistMovie(row: MediaRow): WatchlistMovie {
   return {
     movieId: row.movieId,
@@ -73,26 +67,42 @@ export function toWatchlistMovie(row: MediaRow): WatchlistMovie {
     releaseDate: row.releaseDate ?? undefined,
     genreIds: row.genreIds,
     addedAt: row.addedAt?.toISOString(),
+    personalRating: row.personalRating,
   };
 }
 
+// `names` is the DISPLAY name, which is not the same thing as `usernames` -- the latter is
+// the handle used for the profile link. Reviews and lists carry their author's display name
+// denormalized on the row, but a usermovies row carries no author name at all, so a watch
+// byline has to resolve it or it falls back to printing the handle ("leo.kim").
 export async function buildReviewerMaps(
   emails: (string | null | undefined)[]
 ): Promise<{
   ratingMaps: Map<string, Map<string, number>>;
   usernames: Map<string, string>;
+  names: Map<string, string>;
 }> {
   const candidates = emailCandidates(emails);
   if (candidates.length === 0) {
-    return { ratingMaps: new Map(), usernames: new Map() };
+    return { ratingMaps: new Map(), usernames: new Map(), names: new Map() };
   }
 
+  // `name` added to the same projection, so this stays one query rather than a second.
   const [users, ratingMaps] = await Promise.all([
     User.find({ email: { $in: candidates } })
-      .select("email username")
-      .lean<{ email: string; username?: string | null }[]>(),
+      .select("email username name")
+      .lean<{ email: string; username?: string | null; name?: string | null }[]>(),
     ratingMapsForUsers(candidates),
   ]);
 
-  return { ratingMaps, usernames: usernameMapFromUsers(users) };
+  const names = new Map<string, string>();
+  for (const user of users) {
+    // A blank display name is worse than none: falling back to the handle is what produced
+    // "leo.kim" in a byline, so only store one that is actually present.
+    if (user.name) {
+      names.set(user.email.toLowerCase(), user.name);
+    }
+  }
+
+  return { ratingMaps, usernames: usernameMapFromUsers(users), names };
 }

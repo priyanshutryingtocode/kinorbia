@@ -35,6 +35,10 @@ const UserMovieSchema = new mongoose.Schema(
 
     watched: {
       watchedAt: { type: Date },
+      // Stamped at write time from the member's `shareActivity` flag, so the activity
+      // feed never has to look up a followee's preference to decide visibility. Turning
+      // the flag off clears it across the member's rows (updateShareActivity).
+      broadcast: { type: Boolean, default: false },
       _id: false,
     },
   },
@@ -56,6 +60,17 @@ UserMovieSchema.index(
 // One per state, serving "this member's <state>, newest first".
 UserMovieSchema.index({ userEmail: 1, "favorite.addedAt": -1, _id: -1 });
 UserMovieSchema.index({ userEmail: 1, "watchlist.addedAt": -1, _id: -1 });
-UserMovieSchema.index({ userEmail: 1, "watched.watchedAt": -1, _id: -1 });
+// Serves the activity feed's watched branch: followees' broadcast titles, newest first.
+// Partial, because broadcast rows are a small fraction of all rows and the index only
+// carries the ones the feed can actually return.
+//
+// The query MUST include `watched.broadcast: true` explicitly for MongoDB to consider this
+// index -- it is not enough that the rows happen to match. On the first page there is no
+// cursor bound, so that predicate is the only thing keeping the planner off a collection
+// scan. `explain()` on the full pipeline is what verifies it; see scripts/checkIndexes.mjs.
+UserMovieSchema.index(
+  { userEmail: 1, "watched.watchedAt": -1, _id: -1 },
+  { partialFilterExpression: { "watched.broadcast": true } }
+);
 
 export default mongoose.models?.UserMovie || mongoose.model("UserMovie", UserMovieSchema);

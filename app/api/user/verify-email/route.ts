@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuthedUser } from "@/lib/session";
 import { sendEmail, buildLink } from "@/lib/email";
 import { clearVerifyToken, issueVerifyToken } from "@/features/auth/mutations";
+import { logger } from "@/lib/logger";
 
 // Issues a verification link on demand.
 export const POST = withAuthedUser(
@@ -32,7 +33,7 @@ export const POST = withAuthedUser(
         ].join("\n"),
       });
     } catch (error) {
-      console.error("Failed to send verification email:", error);
+      logger.error("Failed to send verification email:", { error: error });
       // Clear the token so a failed send doesn't leave a dead link that
       // suppresses the cooldown in issueVerifyToken and blocks a retry.
       await clearVerifyToken(email);

@@ -3,10 +3,12 @@ import LinkTabs from "@/components/LinkTabs";
 export const PROFILE_TABS = [
   { key: "overview", label: "Overview" },
   { key: "insights", label: "Insights" },
+  { key: "foryou", label: "For you" },
   { key: "favorites", label: "Favorites" },
   { key: "watchlist", label: "Watchlist" },
   { key: "reviews", label: "Reviews" },
   { key: "lists", label: "Lists" },
+  { key: "settings", label: "Settings" },
 ] as const;
 
 export type ProfileTab = (typeof PROFILE_TABS)[number]["key"];

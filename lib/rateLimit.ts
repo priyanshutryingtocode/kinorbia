@@ -1,6 +1,7 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { NextResponse } from "next/server";
 import { getRedis } from "@/lib/redis";
+import { logger } from "@/lib/logger";
 
 type LimitOptions = {
   limit: number;
@@ -44,7 +45,7 @@ export async function rateLimit(
     const { success } = await rl.limit(identifier);
     return success;
   } catch (error) {
-    console.error("Rate limit check failed, allowing request:", error);
+    logger.error("Rate limit check failed, allowing request:", { error: error });
     return true;
   }
 }
