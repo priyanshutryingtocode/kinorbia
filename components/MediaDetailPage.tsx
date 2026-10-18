@@ -167,28 +167,31 @@ export default async function MediaDetailPage({
           <section className="mt-14 border-t border-rule pt-8">
             <h2 className="font-display mb-5 text-2xl font-medium">Top Cast</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-              {model.cast.map((member) => (
-                <div key={member.id} className="rounded-sheet border border-panel-border bg-panel-surface-soft p-3 text-center">
-                  {member.profile_path ? (
-                    <Image
-                      src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
-                      alt={member.name}
-                      unoptimized
-                      width={120}
-                      height={120}
-                      className="mx-auto aspect-square rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="mx-auto flex aspect-square w-30 items-center justify-center rounded-full bg-surface-raised">
-                      <span className="text-3xl font-bold text-content-subtle">
-                        {member.name.trim().charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <p className="mt-3 text-sm font-semibold text-content">{member.name}</p>
-                  <p className="mt-1 text-xs text-highlight-muted">{member.character || "—"}</p>
-                </div>
-              ))}
+              {model.cast.map((member) => {
+                const avatar = tmdbImage(member.profile_path, "w185");
+                return (
+                  <div key={member.id} className="rounded-sheet border border-panel-border bg-panel-surface-soft p-3 text-center">
+                    {avatar ? (
+                      <Image
+                        src={avatar}
+                        alt={member.name}
+                        unoptimized
+                        width={120}
+                        height={120}
+                        className="mx-auto aspect-square rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="mx-auto flex aspect-square w-30 items-center justify-center rounded-full bg-surface-raised">
+                        <span className="text-3xl font-bold text-content-subtle">
+                          {member.name.trim().charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <p className="mt-3 text-sm font-semibold text-content">{member.name}</p>
+                    <p className="mt-1 text-xs text-highlight-muted">{member.character || "—"}</p>
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}

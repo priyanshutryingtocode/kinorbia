@@ -1,4 +1,5 @@
-import Image from "next/image";
+import ProviderLogo from "@/components/ProviderLogo";
+import { tmdbImage } from "@/lib/media";
 import type { WatchProvider } from "@/types";
 
 // Services arrive already narrowed to one country -- the caller resolves it, so two
@@ -63,15 +64,7 @@ export default function WatchProviderRow({ providers, hasData }: WatchProviderRo
                     key={`${group.kind}-${provider.name}`}
                     className="flex items-center gap-2 rounded-full border border-panel-border bg-panel-surface px-3 py-1.5"
                   >
-                    {provider.logoPath && (
-                      <Image
-                        src={`https://image.tmdb.org/t/p/w45${provider.logoPath}`}
-                        alt=""
-                        width={18}
-                        height={18}
-                        className="h-4.5 w-4.5 rounded-full"
-                      />
-                    )}
+                    <ProviderLogo src={tmdbImage(provider.logoPath, "w45")} className="h-4.5 w-4.5 rounded-full" />
                     <span className="text-sm text-content">{provider.name}</span>
                   </li>
                 ))}

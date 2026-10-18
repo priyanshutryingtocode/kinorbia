@@ -61,6 +61,13 @@ TMDB_API_KEY=your_tmdb_api_key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
+`TMDB_IMAGE_URL` is optional and defaults to `https://image.tmdb.org`. Set it to move the poster,
+backdrop, cast and provider-logo images to another CDN. A bare host is the intended value; a value
+carrying a size segment (the older `https://image.tmdb.org/t/p/original`) is still accepted and
+normalised, so an existing deployment is unaffected. Anything unparseable falls back to the default
+rather than breaking every image — and because it is read on the server, set it in Vercel's project
+environment as well as `.env.local`, which is not read in production.
+
 Optional features each need one more key:
 
 ```env
