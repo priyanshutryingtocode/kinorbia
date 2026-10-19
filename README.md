@@ -132,6 +132,7 @@ Run before committing. All are read-only except where noted.
 | `npm run check:feed` | The activity feed's cursor: every visible row served exactly once, no repeats, no ordering breaks, nothing the visibility filter excludes. |
 | `npm run check:privacy` | No member's data export carries another member's email address. Runs `--strict`, so a leak exits 1. |
 | `npm run check:export` | Every field a member owns is actually in their export: exact key sets per section, no secrets, section counts matching the database, and nothing but JSON-native values. |
+| `npm run check:class-names` | No class name is built by interpolation. Tailwind only sees literal strings, so an interpolated class is never generated as CSS — it renders in the wrong place, with the build still green. |
 | `npm run check:serialization` | No raw ObjectId or `Date` crosses into a client payload from the feed, comment threads or profile pages. |
 | `npm run lint` | ESLint, zero warnings tolerated. |
 
