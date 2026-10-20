@@ -4,7 +4,7 @@ import dbConnect from "@/lib/dbConnect";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import { mediaKey } from "@/lib/media";
 import { toFavoriteMovie } from "@/lib/reviewRatings";
-import { listUserMedia } from "@/features/media/userMovie";
+import { listUserMediaRows } from "@/features/media/userMovie";
 import Comment from "@/models/Comment";
 import MovieList from "@/models/MovieList";
 import Notification from "@/models/Notification";
@@ -15,8 +15,7 @@ import { logger } from "@/lib/logger";
 type MutationOptions = { session?: ClientSession };
 
 async function loadFavoritesForList(email: string, { session }: MutationOptions = {}) {
-  const { rows } = await listUserMedia(email, "favorite", { session });
-  return rows;
+  return listUserMediaRows(email, "favorite", { session });
 }
 
 // Reads only the six fields it copies, so it accepts the projected shape the callers

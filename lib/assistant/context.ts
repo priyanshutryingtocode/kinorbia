@@ -1,6 +1,6 @@
 import "server-only";
 
-import { listWatchHistory, listUserMedia } from "@/features/media/userMovie";
+import { listWatchHistory, listUserMediaRows } from "@/features/media/userMovie";
 
 export type UserContext = {
   favorites: { title: string; personalRating?: number }[];
@@ -16,12 +16,12 @@ export async function getUserContext(email?: string | null): Promise<UserContext
   }
 
   const [favorites, watched] = await Promise.all([
-    listUserMedia(email, "favorite", { limit: 15 }),
+    listUserMediaRows(email, "favorite", { limit: 15 }),
     listWatchHistory(email, { limit: 20 }),
   ]);
 
   return {
-    favorites: favorites.rows.map((row) => ({
+      favorites: favorites.map((row) => ({
       title: row.title,
       personalRating: row.personalRating,
     })),

@@ -29,7 +29,8 @@
     "backfill:review-titles": "node --env-file=.env.local scripts/backfillReviewTitles.mjs",
     "check:privacy": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkPrivacy.mjs --strict",
     "check:export": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkExport.mjs",
-    "check:class-names": "node scripts/checkClassNames.mjs"
+    "check:class-names": "node scripts/checkClassNames.mjs",
+    "check:queries": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkQueryCount.mjs"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2",

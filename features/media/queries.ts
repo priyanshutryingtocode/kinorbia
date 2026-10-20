@@ -3,7 +3,7 @@ import "server-only";
 import dbConnect from "@/lib/dbConnect";
 import { publiclyVisible } from "@/lib/visibility";
 import { mediaEquals } from "@/lib/media";
-import { getMediaStatus, listUserMedia, type MediaRow } from "@/features/media/userMovie";
+import { getMediaStatus, listUserMediaRows, type MediaRow } from "@/features/media/userMovie";
 import { buildReviewerMaps } from "@/lib/reviewRatings";
 import MovieList from "@/models/MovieList";
 import Review from "@/models/Review";
@@ -104,6 +104,6 @@ export async function getLatestFavoriteOfType(
   email: string,
   mediaType: MediaType
 ): Promise<MediaRow | null> {
-  const { rows } = await listUserMedia(email, "favorite", { mediaType, limit: 1 });
+  const rows = await listUserMediaRows(email, "favorite", { mediaType, limit: 1 });
   return rows[0] ?? null;
 }

@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import { getPersonalMediaStatus } from "@/features/media/queries";
-import { hasBeenAskedAboutSharing } from "@/features/media/userMovie";
 import { notFound } from "next/navigation";
 import type { TmdbMovieCredits, TmdbMovieDetails } from "@/types";
 import type { Metadata } from "next";
@@ -81,10 +80,15 @@ export default async function MoviePage({ params, searchParams }: Props) {
     ]);
     const trailer = pickMainTrailer(videos?.results);
 
-  const [personal, askAboutSharing] = await Promise.all([
-    getPersonalMediaStatus(session?.user?.email, id, "movie"),
-    hasBeenAskedAboutSharing(session?.user?.email),
-  ]);
+  const personal = await getPersonalMediaStatus(session?.user?.email, id, "movie");
+  // Whether to ask this member about sharing their activity -- only the first time.
+  //
+  // Read off the session, so it costs no query of its own. The flag says "has already been
+  // asked", so the prompt is for the members who have NOT been asked: the old query returned
+  // the flag itself, which is the opposite of what WatchedButton documents the prop to mean
+  // ("true only the first time this member marks anything watched"). A signed-out visitor is
+  // never asked.
+  const askAboutSharing = Boolean(session?.user?.email) && !session?.user?.shareActivityAsked;
 
   return (
     <MediaDetailPage

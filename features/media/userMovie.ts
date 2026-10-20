@@ -381,22 +381,6 @@ const EMPTY_STATUS: MemberMediaStatus = {
   isWatched: false,
 };
 
-// Whether this member has been asked about watch sharing yet. Undefined means never
-// asked, which is the only thing that should make the prompt appear -- separate from
-// getMediaStatus because this is a preference, not a state of the title.
-export async function hasBeenAskedAboutSharing(
-  userEmail: string | null | undefined
-): Promise<boolean> {
-  if (!userEmail) return true; // Signed out: never prompt.
-  await dbConnect();
-
-  const member = await User.findOne({ email: userEmail })
-    .select("shareActivityAsked")
-    .lean<{ shareActivityAsked?: boolean } | null>();
-
-  return Boolean(member?.shareActivityAsked);
-}
-
 export async function getMediaStatus(
   userEmail: string,
   ref: { movieId: string; mediaType: MediaType },
@@ -576,7 +560,6 @@ export async function listUserMedia(
   state: MediaState,
   { mediaType, skip = 0, limit = 0, session, facets }: ListOptions = {}
 ): Promise<{ rows: MediaRow[]; total: number }> {
-  await dbConnect();
   const filter = {
     userEmail: email,
     ...stateFilter(state, mediaType),
@@ -597,11 +580,45 @@ export async function listUserMedia(
   return { rows: rows.map((row) => toMediaRow(row, state)), total };
 }
 
+// The rows alone, without the total.
+//
+// Most callers never look at the count -- the favourites picker, the export, the insight
+// source, the assistant context, the reviews dropdown -- and they were all paying for a
+// `countDocuments` over the member's whole shelf to get a number nobody read. That is not
+// free even though it ran in parallel with the find: it is a second round trip and a second
+// index scan of every row the member owns.
+//
+// The count is still available, in `listUserMediaPage`, for the four callers that page with
+// it. Splitting the two functions rather than adding a `withTotal` flag keeps the return
+// type honest: there is no `total` here to be a lie about.
+export async function listUserMediaRows(
+  email: string,
+  state: MediaState,
+  { mediaType, skip = 0, limit = 0, session, facets }: ListOptions = {}
+): Promise<MediaRow[]> {
+  await dbConnect();
+  const filter = {
+    userEmail: email,
+    ...stateFilter(state, mediaType),
+    ...facetFilter(facets),
+  };
+
+  const rows = await UserMovie.find(filter)
+    .select(ROW_PROJECTION)
+    .sort(facetSort(state, facets?.sort))
+    .skip(skip)
+    .limit(limit)
+    .session(session ?? null)
+    .lean<Record<string, unknown>[]>();
+
+  return rows.map((row) => toMediaRow(row, state));
+}
+
 export async function listWatchHistory(
   email: string,
   { limit = 0, session }: Pick<ListOptions, "limit" | "session"> = {}
 ): Promise<WatchedRow[]> {
-  const { rows } = await listUserMedia(email, "watched", { limit, session });
+  const rows = await listUserMediaRows(email, "watched", { limit, session });
 
   return rows.map((row) => ({
     movieId: row.movieId,

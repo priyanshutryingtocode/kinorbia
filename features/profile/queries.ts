@@ -8,6 +8,7 @@ import { mediaKey } from "@/lib/media";
 import { publiclyVisible } from "@/lib/visibility";
 import {
   listUserMedia,
+  listUserMediaRows,
   listWatchDays,
   listWatchHistory,
   type MediaRow,
@@ -375,7 +376,7 @@ export async function getProfileOverview(email: string): Promise<ProfileOverview
 }
 
 async function loadUserFavorites(email: string): Promise<FavoriteMovie[]> {
-  const { rows } = await listUserMedia(email, "favorite");
+  const rows = await listUserMediaRows(email, "favorite");
   return rows.map(toFavoriteMovie);
 }
 
@@ -581,8 +582,8 @@ export async function buildExportBundle(email: string): Promise<ExportBundle | n
     User.findOne({ email })
       .select("-password -verifyToken -resetToken")
       .lean(),
-    listUserMedia(email, "favorite"),
-    listUserMedia(email, "watchlist"),
+    listUserMediaRows(email, "favorite"),
+    listUserMediaRows(email, "watchlist"),
     listWatchHistory(email),
     Review.aggregate([
       { $match: { userEmail: email } },
@@ -621,8 +622,8 @@ export async function buildExportBundle(email: string): Promise<ExportBundle | n
       joinedAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : "",
       updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : undefined,
     },
-    favorites: favorites.rows.map(toExportFavorite),
-    watchlist: watchlist.rows.map(toExportWatchlistMedia),
+      favorites: favorites.map(toExportFavorite),
+      watchlist: watchlist.map(toExportWatchlistMedia),
     following,
     followersCount,
     watched: watched.map(toExportWatched),

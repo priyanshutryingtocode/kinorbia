@@ -4,7 +4,7 @@ import "server-only";
 import dbConnect from "@/lib/dbConnect";
 import { visibleTo } from "@/lib/visibility";
 import { buildReviewerMaps } from "@/lib/reviewRatings";
-import { listUserMedia } from "@/features/media/userMovie";
+import { listUserMediaRows } from "@/features/media/userMovie";
 import { INDEX_PAGE_SIZES, paginate } from "@/lib/pagination";
 import { serializeReview, type RawReview } from "@/features/reviews/serializers";
 import Review from "@/models/Review";
@@ -48,7 +48,7 @@ export async function getReviewIndex(
       INDEX_PAGE_SIZES.reviews
     ),
     // The select lists rated favorites, which are exactly the rows carrying a rating.
-    listUserMedia(currentUserEmail, "rated").then((result) => result.rows),
+    listUserMediaRows(currentUserEmail, "rated"),
   ]);
 
   const { rows, ...bounds } = reviewPage;

@@ -3,7 +3,7 @@ import { countLabel } from "@/lib/media";
 import "server-only";
 
 import dbConnect from "@/lib/dbConnect";
-import { listUserMedia } from "@/features/media/userMovie";
+import { listUserMediaRows } from "@/features/media/userMovie";
 import { visibleTo } from "@/lib/visibility";
 import { buildUsernameMap } from "@/lib/profileLinks";
 import { INDEX_PAGE_SIZES, paginate } from "@/lib/pagination";
@@ -37,7 +37,7 @@ export async function getListIndex(
       INDEX_PAGE_SIZES.lists
     ),
     // The create-list form offers the member their favorites as pickable entries.
-    listUserMedia(currentUserEmail, "favorite").then((result) => result.rows.map(toFavoriteMovie)),
+    listUserMediaRows(currentUserEmail, "favorite").then((rows) => rows.map(toFavoriteMovie)),
   ]);
 
   const { rows, ...bounds } = listPage;

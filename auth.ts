@@ -7,6 +7,7 @@ import dbConnect, { duplicateKeyField, isDuplicateKeyError } from "@/lib/dbConne
 import { getClientIp, rateLimit } from "@/lib/rateLimit";
 import User from "@/models/User";
 import { ensureUserIdentity, slugifyUsername, usernameCandidates } from "@/lib/userIdentity";
+import { loadSessionUser } from "@/lib/sessionUser";
 
 // Compared against when no user was found, so that a wrong password for an
 // unknown address costs the same as one for a known account.
@@ -22,6 +23,9 @@ type AppToken = {
   picture?: string | null;
   iat?: number;
   sessionExpired?: boolean;
+  // Whether the member has already been asked about sharing their activity. Carried on the
+  // token because the session lookup reads it from the same document as everything else.
+  shareActivityAsked?: boolean;
 };
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -157,11 +161,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           await dbConnect();
           const dbUser = await User.findOne({ email: t.email })
-            .select("name image")
-            .lean<{ name?: string; image?: string | null } | null>();
+            .select("name image shareActivityAsked")
+            .lean<{ name?: string; image?: string | null; shareActivityAsked?: boolean } | null>();
           if (dbUser) {
             t.name = dbUser.name ?? t.name;
             t.picture = dbUser.image ?? t.picture;
+            // Set here too, not only on the steady-state path, so the very first request
+            // after signing in already carries it.
+            t.shareActivityAsked = Boolean(dbUser.shareActivityAsked);
           }
         } catch (error) {
           console.error("Failed to hydrate session token:", error);
@@ -171,15 +178,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       if (t.email) {
         try {
-          await dbConnect();
-          const dbUser = await User.findOne({ email: t.email.toLowerCase() })
-            .select("name image sessionsInvalidBefore username")
-            .lean<{
-              name?: string;
-              image?: string | null;
-              sessionsInvalidBefore?: Date | null;
-              username?: string | null;
-            } | null>();
+          const dbUser = await loadSessionUser(t.email.toLowerCase());
 
           if (!dbUser) {
             t.sessionExpired = true;
@@ -202,6 +201,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           t.sessionExpired = false;
           t.name = dbUser.name ?? t.name;
           t.picture = dbUser.image ?? t.picture;
+          // Read fresh on every request, so the consent prompt never reappears for a member
+          // who has already answered it. It used to cost a second query of this same
+          // document on every media page.
+          t.shareActivityAsked = Boolean(dbUser.shareActivityAsked);
         } catch (error) {
           console.error("Session verification failed; using cached token:", error);
         }
@@ -225,6 +228,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       if (typeof t.picture === "string" && t.picture) {
         session.user.image = t.picture;
+      }
+      if (typeof t.shareActivityAsked === "boolean") {
+        session.user.shareActivityAsked = t.shareActivityAsked;
       }
 
       return session;
