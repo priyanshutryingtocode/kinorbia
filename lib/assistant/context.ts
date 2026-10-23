@@ -7,9 +7,6 @@ export type UserContext = {
   watched: { title: string }[];
 };
 
-// The prompt quotes back only title and rating, and only the fifteen most recent. `slice(-15)` on
-// the array expressed that as position; the rows carry a real date, so it is a sort now. That
-// also fixed a latent bug: the array was never deduplicated.
 export async function getUserContext(email?: string | null): Promise<UserContext> {
   if (!email) {
     return { favorites: [], watched: [] };

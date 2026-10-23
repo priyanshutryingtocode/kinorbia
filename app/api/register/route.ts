@@ -20,9 +20,6 @@ export const POST = withRateLimit(
       return badRequest("All fields are required. Name (max 60), a valid email, and a password of at least 8 characters.");
     }
 
-    // Burned before the address is looked up, so the "already registered" branch costs
-    // the same wall-clock time as the create branch and the two cannot be told apart
-    // by their latency.
     const hashedPassword = await bcrypt.hash(body.password, 10);
 
     try {

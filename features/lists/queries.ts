@@ -36,14 +36,13 @@ export async function getListIndex(
       requestedPage,
       INDEX_PAGE_SIZES.lists
     ),
-    // The create-list form offers the member their favorites as pickable entries.
+
     listUserMediaRows(currentUserEmail, "favorite").then((rows) => rows.map(toFavoriteMovie)),
   ]);
 
   const { rows, ...bounds } = listPage;
   const lists = rows.map(serializeList);
 
-  // Byline targets for the page, in one read.
   const usernames = await buildUsernameMap(lists.map((list) => list.userEmail));
 
   return {
@@ -61,10 +60,6 @@ type ListDetail = {
   countLabel: string;
 };
 
-// One list plus the single username lookup it needs.
-//
-// The visibility filter is `visibleTo`, not `publiclyVisible`: a member opening their
-// own list from the profile must be able to see it while it is still private.
 export async function getListDetail(
   listId: string,
   currentUserEmail: string | null
@@ -83,7 +78,6 @@ export async function getListDetail(
 
   return {
     list,
-    // One author, one lookup.
     usernames: await buildUsernameMap([list.userEmail]),
     countLabel: countLabel(list.movies.length, "title"),
   };

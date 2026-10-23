@@ -131,8 +131,6 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
     }
   }, [open, loadAll]);
 
-  // Two refs, not one: the panel is rendered into a portal, so the trigger and
-  // the panel are separate elements and a press on either must keep it open.
   useDismiss({
     open,
     onDismiss: close,

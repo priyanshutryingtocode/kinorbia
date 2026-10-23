@@ -73,21 +73,12 @@ export default async function MoviePage({ params, searchParams }: Props) {
       getMovieDetails(id),
       getCredits(id),
       getMovieVideos(id),
-      // Where to stream is a nice-to-have on a page that already has the rest of the film
-      // on it, so it rides along with the other TMDB reads rather than adding a round trip.
       getMovieProviders(id),
       auth(),
     ]);
     const trailer = pickMainTrailer(videos?.results);
 
   const personal = await getPersonalMediaStatus(session?.user?.email, id, "movie");
-  // Whether to ask this member about sharing their activity -- only the first time.
-  //
-  // Read off the session, so it costs no query of its own. The flag says "has already been
-  // asked", so the prompt is for the members who have NOT been asked: the old query returned
-  // the flag itself, which is the opposite of what WatchedButton documents the prop to mean
-  // ("true only the first time this member marks anything watched"). A signed-out visitor is
-  // never asked.
   const askAboutSharing = Boolean(session?.user?.email) && !session?.user?.shareActivityAsked;
 
   return (
@@ -112,9 +103,6 @@ export default async function MoviePage({ params, searchParams }: Props) {
           mediumChip: runtimeChip(movie.runtime),
         }),
         cast: topCast(credits.cast),
-        // crewByJob is an exact match on TMDB's `job`, catching plain "Director" and "Producer"
-        // only -- Executive and Co-Producer are omitted. Widening changes every movie page,
-        // so it wants its own change.
         crew: [
           crewPanel("Director", crewByJob(credits.crew, "Director")),
           crewPanel("Producer", crewByJob(credits.crew, "Producer")),

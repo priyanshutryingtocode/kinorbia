@@ -111,9 +111,6 @@ export default async function PublicProfilePage({
                     className="kin-focus group relative block aspect-2/3 overflow-hidden rounded-sm border border-rule bg-canvas transition-colors hover:border-highlight/40"
                     aria-label={`${movie.title} (${normalizeMediaType(movie.mediaType) === "tv" ? "TV show" : "movie"})`}
                   >
-                    {/* The fallback here was a UserIcon -- a person glyph where
-                        a film poster belongs -- and it carried no aria-hidden,
-                        unlike every other site. */}
                     <PosterImage
                       path={movie.posterPath}
                       width="w342"
@@ -166,8 +163,6 @@ export default async function PublicProfilePage({
                       {review.spoiler ? (
                         <SpoilerText text={review.body} />
                       ) : (
-                        // renderRichText, matching the review cards and the
-                        // activity feed rather than printing markdown source.
                         <div className="mt-2 line-clamp-4 text-sm leading-6 text-content-muted">
                           {renderRichText(review.body)}
                         </div>

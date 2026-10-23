@@ -3,14 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// The share-watch-activity control. One component for both entry points -- the Settings tab
-// and the first-watch prompt -- because the copy is the part that matters here: it is what
-// makes "anyone who follows you" concrete rather than leaving a member to guess whether
-// followers, or everyone, can see the list.
-//
-// Wording is deliberately not "private"/"public". Sharing is not all-or-nothing: a title is
-// shared only from the moment the answer is yes, and turning it off retracts what was
-// already sent.
 export default function ShareActivityToggle({
   initialShare,
   onAnswered,

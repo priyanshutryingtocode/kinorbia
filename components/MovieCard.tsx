@@ -73,9 +73,6 @@ export default function MovieCard({
             {ratingChipBody}
           </button>
         ) : (
-          // A badge with no handler must not be a button. As one it was focusable, announced
-          // as "Rate <title>", and did nothing on click -- which is what the watchlist grid
-          // rendered on every card.
           <span
             className={`${RATING_CHIP_BASE} ${
               personalRating > 0

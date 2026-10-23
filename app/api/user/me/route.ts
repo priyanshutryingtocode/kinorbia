@@ -3,9 +3,6 @@ import { withAuthedUser } from "@/lib/session";
 import { getProfileIdentity, getRelationshipCounts } from "@/features/profile/queries";
 import { logger } from "@/lib/logger";
 
-// The signed-in member's own identity, for a client that has a session but no server
-// component to render it. Nothing here accepts an email from the query string: it is always
-// the session's own, so this cannot be pointed at another member's account.
 
 export const GET = withAuthedUser(
   async (_req, { email }) => {

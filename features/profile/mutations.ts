@@ -13,9 +13,6 @@ type MutationOptions = { session?: import("mongoose").ClientSession };
 
 type UpdateProfileResult = "ok" | "no-account";
 
-// Turning sharing off has to retract what was already broadcast, not just stop new events:
-// `watched.broadcast` was stamped at write time precisely so the feed never has to consult
-// the follower's flag, which means the flag alone can no longer hide the past.
 export async function updateShareActivity(
   email: string,
   share: boolean,
@@ -26,7 +23,6 @@ export async function updateShareActivity(
   const opts = session ? { session } : {};
   const result = await User.findOneAndUpdate(
     { email },
-    // `shareActivityAsked` moves with the answer so the prompt never returns.
     { shareActivity: share, shareActivityAsked: true },
     { projection: { shareActivity: 1 }, ...opts }
   );
@@ -60,17 +56,11 @@ export async function updateProfile(
     return "no-account";
   }
 
-  // The cascade is conditional on the stored name actually differing. Without that
-  // guard every bio-only edit would rewrite `userName` on every collection that stores it.
-  //
-  // Watch history is absent because a usermovies row carries no name -- the name was
-  // denormalized onto the row that already holds the title.
   if (result.name !== profile.name) {
     await Promise.all([
       Comment.updateMany({ userEmail: email }, { $set: { userName: profile.name } }, opts),
       MovieList.updateMany({ userEmail: email }, { $set: { userName: profile.name } }, opts),
       Review.updateMany({ userEmail: email }, { $set: { userName: profile.name } }, opts),
-      // Notifications key the actor by email, so this one follows `actorEmail`.
       Notification.updateMany({ actorEmail: email }, { $set: { actorName: profile.name } }, opts),
     ]);
   }
@@ -90,9 +80,6 @@ type FollowOutcome =
   | { outcome: "changed"; actorUsername?: string | null; targetUsername?: string | null }
   | { outcome: "unchanged" | "no-target" };
 
-// Applies a follow or unfollow and reconciles the notification. Returns "no-target" rather
-// than throwing when the target or actor is missing: the action treats all three outcomes
-// alike, and distinguishing them would leak account existence into a UI path.
 export async function applyFollow(
   input: FollowInput,
   { session }: MutationOptions = {}
@@ -103,9 +90,6 @@ export async function applyFollow(
   const [target, actor] = await Promise.all([
     User.findById(input.targetUserId)
       .select("_id email name username")
-      // `.lean({ session })` silently drops the session in this Mongoose version --
-      // the query then reads outside the transaction and finds nothing. `.session(s)`
-      // is the form that actually binds it.
       .session(session ?? null)
       .lean<{
         _id: { toString: () => string };
@@ -124,9 +108,6 @@ export async function applyFollow(
   }
 
   const targetEmail = target.email.toLowerCase();
-
-  // Following yourself is not a thing, and the notification it would create would be
-  // the member notifying themselves.
   if (targetEmail === input.actorEmail) {
     return { outcome: "no-target" };
   }

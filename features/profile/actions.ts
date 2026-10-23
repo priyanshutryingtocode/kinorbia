@@ -33,8 +33,6 @@ export async function toggleFollow(_prevState: FollowState, formData: FormData):
     return;
   }
 
-  // A follow puts your name in someone else's public follower list, so it is gated like any
-  // other public appearance. Unfollow is never gated: a member must always be able to withdraw.
   if (operation === "follow" && !(await isEmailVerified(email))) {
     return { error: VERIFICATION_REQUIRED_MESSAGE };
   }
@@ -65,8 +63,6 @@ export async function toggleFollow(_prevState: FollowState, formData: FormData):
   addUserPaths(relevantPaths, outcome.targetUsername);
 
   for (const path of relevantPaths) {
-    // Entries are either derived from the two usernames or supplied by the
-    // caller, so both go through the same check rather than trusting the Set.
     revalidateRoute(path);
   }
   revalidatePath("/activity");

@@ -34,8 +34,6 @@ export const POST = withAuthedUser(
       });
     } catch (error) {
       logger.error("Failed to send verification email:", { error: error });
-      // Clear the token so a failed send doesn't leave a dead link that
-      // suppresses the cooldown in issueVerifyToken and blocks a retry.
       await clearVerifyToken(email);
       return NextResponse.json({ message: "Could not send the verification email. Try again." }, { status: 502 });
     }

@@ -9,9 +9,6 @@ import { INDEX_PAGE_SIZES, paginate } from "@/lib/pagination";
 import { serializeReview, type RawReview } from "@/features/reviews/serializers";
 import Review from "@/models/Review";
 
-// The select of rated favorites is built from these four fields only; the page
-// never reads the rest of a favorite, so the projection is deliberately narrow
-// and the type says so rather than pretending to be the full FavoriteMovie.
 type RatedFavorite = {
   movieId: string;
   mediaType?: string;
@@ -36,9 +33,6 @@ export async function getReviewIndex(
 ): Promise<ReviewIndex> {
   await dbConnect();
 
-  // The review window and the signed-in user's rated favorites are independent reads,
-  // so they go out together. They used to run in sequence, and against a distant
-  // cluster each round-trip is the dominant cost on this page.
   const [reviewPage, ratedFavorites] = await Promise.all([
     paginate<RawReview>(
       Review,
@@ -47,16 +41,12 @@ export async function getReviewIndex(
       requestedPage,
       INDEX_PAGE_SIZES.reviews
     ),
-    // The select lists rated favorites, which are exactly the rows carrying a rating.
     listUserMediaRows(currentUserEmail, "rated"),
   ]);
 
   const { rows, ...bounds } = reviewPage;
   const reviews = rows.map(serializeReview);
 
-  // Byline targets and rating chips come from one batched read for the page rather
-  // than a lookup per card, and no longer cost a second round-trip for the same
-  // User documents.
   const { ratingMaps, usernames } = await buildReviewerMaps(
     reviews.map((review) => review.userEmail)
   );

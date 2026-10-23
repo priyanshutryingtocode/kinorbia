@@ -10,8 +10,6 @@ import { isEmailVerified, VERIFICATION_REQUIRED_MESSAGE } from "@/lib/verificati
 import { createList, removeList, updateList } from "@/features/lists/mutations";
 import { logger } from "@/lib/logger";
 
-// A submitted `movieIds` value is `mediaType:id`, so a member cannot smuggle a
-// different title past the picker by editing the value.
 function parseMovieRef(value: string) {
   const separator = value.indexOf(":");
   if (separator < 1 || separator === value.length - 1) {

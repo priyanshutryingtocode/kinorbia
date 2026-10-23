@@ -105,9 +105,6 @@ export default async function ProfileCommunityComparison({
                 <tr key={`${item.mediaType}-${item.movieId}`}>
                   <th scope="row" className="py-3 pr-4 text-left font-normal">
                     <div className="flex min-w-0 items-center gap-3">
-                      {/* This rendered nothing when there was no poster, so a
-                          missing thumbnail silently collapsed the row and
-                          shifted every column beside it. */}
                       <div className="relative h-12 w-8 shrink-0 overflow-hidden bg-surface-raised">
                         <PosterImage
                           path={item.posterPath}

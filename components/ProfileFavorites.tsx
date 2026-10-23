@@ -16,13 +16,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
   const [selectedMovie, setSelectedMovie] = useState<MovieProp | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  // Stars, not the stored score. This control used to be ten buttons labelled 1-10 against a
-  // "Choose a score from 1 to 10" prompt, while the movie page rated on 0.5-5 stars. Seeded
-  // at 2.5 like MovieRatingControl so opening an unrated title starts in the middle rather
-  // than on the minimum.
   const [draftStars, setDraftStars] = useState(2.5);
-  // An unrated title seeds at 2.5, which maps to a real score (5 of 10). Without this, Save was
-  // live on a freshly opened dialog and one click wrote a rating the member never picked.
   const [touched, setTouched] = useState(false);
   const router = useRouter();
   const { showToast } = useToast();
@@ -49,7 +43,6 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
     setLoading(true);
     setError("");
 
-    // The wire format stays 1-10: the schema, starsLabel and the facet filter all read it.
     const rating = Math.round(stars * 2);
 
     try {
@@ -160,13 +153,7 @@ export default function ProfileFavorites({ initialFavorites }: { initialFavorite
                   Save
                 </button>
               </div>
-
-
-            {/* A status line, rendered only while a save is in flight. It used to render
-                unconditionally and state "Ratings are shown out of five stars" -- which
-                contradicted the 1-10 buttons above it, the "1 to 10" prompt, and their own
-                aria-labels. The scale belongs with the prompt, so this now says only what
-                is happening right now. */}
+              
             {loading && (
               <div className="mt-5 flex items-center justify-center gap-2 text-xs text-content-subtle">
                 <Loader2 className="h-4 w-4 animate-spin text-highlight" aria-hidden="true" />

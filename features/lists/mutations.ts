@@ -18,8 +18,6 @@ async function loadFavoritesForList(email: string, { session }: MutationOptions 
   return listUserMediaRows(email, "favorite", { session });
 }
 
-// Reads only the six fields it copies, so it accepts the projected shape the callers
-// pass in rather than requiring a whole FavoriteMovie.
 type ListOutcome = "ok" | "not-found" | "too-many" | "failed";
 
 export async function createList(
@@ -96,9 +94,6 @@ export async function updateList(
     favorites.map((movie) => [mediaKey(movie.mediaType, movie.movieId), movie])
   );
 
-  // The picker submits a membership set, not a sequence, so the stored order is the only order
-  // a list has. Rebuilding it from `favorites` reshuffled every list on every save -- even a
-  // typo fix -- so walk `existing.movies` and take each entry's data from the current favorite.
   const mergedMovies: ListMovie[] = [];
   const mergedKeys = new Set<string>();
 
@@ -109,13 +104,11 @@ export async function updateList(
     }
     const favorite = favoriteByKey.get(key);
     if (favorite) {
-      // A favorite the member unticked leaves the list.
       if (!input.selectedKeys.has(key)) {
         continue;
       }
       mergedMovies.push(toFavoriteMovie(favorite));
     } else {
-      // Not in favorites, so the picker could not have offered it. Keep it.
       mergedMovies.push(movie);
     }
     mergedKeys.add(key);
@@ -142,9 +135,6 @@ export async function updateList(
   return result.matchedCount === 1 ? "ok" : "not-found";
 }
 
-// Deletes a list, then everything that hangs off it. The cleanup is best-effort by
-// design: a list whose comments or notifications survive is untidy, whereas failing
-// the delete because the tidy-up errored leaves a member unable to remove their work.
 export async function removeList(
   input: { authorEmail: string; listId: string },
   { session }: MutationOptions = {}

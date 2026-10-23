@@ -17,11 +17,6 @@ type WriteResult = "ok" | "not-found" | "failed";
 
 type PublishReviewResult = WriteResult | "no-rated-favorite";
 
-// Publishes a review, attached to one of the member's rated favorites.
-//
-// The favorite is resolved server-side from the submitted key rather than trusting form
-// fields: a member can post about a title they never rated by editing the request, and the
-// review would exist with no rating to read back.
 export async function publishReview(
   input: {
     authorEmail: string;
@@ -59,8 +54,7 @@ export async function publishReview(
       session ? { session } : {}
     );
   } catch (error) {
-    // The member gets a generic retry, but not silently: a rejected write with no log is
-    // indistinguishable from a database blip once it is in production.
+
     logger.error("Error creating review:", { error });
     return "failed";
   }

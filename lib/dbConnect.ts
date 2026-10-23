@@ -44,8 +44,6 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
-// Only nameserver/network failures: retrying an auth error or a bad URI just
-// delays a clear message.
 const TRANSIENT_CODES = new Set([
   "ESERVFAIL",
   "EREFUSED",
@@ -56,9 +54,6 @@ const TRANSIENT_CODES = new Set([
 
 const CONNECT_ATTEMPTS = 3;
 const CONNECT_BACKOFF_MS = [250, 500];
-
-// SRV lookups for the Atlas host fail intermittently; matching on the message as well
-// as `code` covers mongoose wrapping the driver error and dropping the code.
 function isTransientConnectError(error: unknown): boolean {
   if (!(error instanceof Error)) {
     return false;
@@ -70,9 +65,6 @@ function isTransientConnectError(error: unknown): boolean {
     return true;
   }
 
-  // Mongoose wraps a failed SRV lookup in a ServerSelectionError with no `code` and a message
-  // mentioning a timeout, not DNS. Treating that wrapper as fatal meant one flaky resolver
-  // took down the request, so it is classified as transient.
   return error.name === "MongooseServerSelectionError";
 }
 
@@ -100,8 +92,6 @@ async function connectWithRetry(opts: ConnectOptions) {
       lastError = error;
 
         if (process.env.NODE_ENV !== "production") {
-          // Development only: a retry loop during a cold Atlas DNS blip is expected, and on a
-          // deployed instance it would be a page of warnings per failed request.
           logger.warn("MongoDB connect attempt failed, retrying", {
             attempt: attempt + 1,
             of: CONNECT_ATTEMPTS,
@@ -127,8 +117,6 @@ async function dbConnect() {
       serverSelectionTimeoutMS: 5000,
     };
 
-    // The retry lives inside the cached promise: concurrent callers share one connect
-    // attempt sequence rather than each amplifying a flapping resolver.
     cached!.promise = connectWithRetry(opts);
   }
 

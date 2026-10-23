@@ -11,15 +11,9 @@ export async function requireUser() {
     const user = await requireCurrentUser();
     return {
       email: user.email,
-      // `requireCurrentUser` returns a nullable name, but 11 call sites destructure
-      // `name` and four of them persist it (userName / actorName). Re-applying the
-      // fallback here keeps those writes producing "KinOrbia user" rather than null.
       name: user.name || "KinOrbia user",
     };
   } catch (error) {
-    // Only the auth failure becomes a redirect. `redirect()` signals by throwing, and
-    // it is called inside this catch so the NEXT_REDIRECT error still propagates
-    // outward to Next rather than being re-caught here.
     if (error instanceof AuthenticationRequiredError) {
       redirect("/login");
     }

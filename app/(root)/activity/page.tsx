@@ -22,9 +22,6 @@ type ActivityPageProps = {
   searchParams: Promise<{ feed?: string }> | { feed?: string };
 };
 
-// No `page` param: the feed pages by cursor now. A page number over an ever-growing
-// timeline repeats and skips rows as new activity lands between loads, and deep links to
-// `/activity?page=3` would resolve to a different set of rows every time they were opened.
 export default async function ActivityPage({ searchParams }: ActivityPageProps) {
   const { feed } = await searchParams;
   const isFollowingFeed = feed === "following";
@@ -65,10 +62,6 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
         />
       ) : seed.length > 0 ? (
         <ActivityLoadMore
-          // The tabs are client-side navigations to the same segment, so React reconciles
-          // position-for-position and keeps this component's hook state. Without a key the
-          // Following feed inherits the Community feed's cursor and its appended rows -- see
-          // useCursorFeed, which captures seed and cursor in useState.
           key={isFollowingFeed ? "following" : "community"}
           seed={seed}
           seedUsernames={feedPage.usernames}

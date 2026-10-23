@@ -9,9 +9,6 @@ import UserMovie from "@/models/UserMovie";
 import mongoose, { type ClientSession } from "mongoose";
 import type { MediaType } from "@/types";
 
-// Canonical operations on a member's relationship to one title: favorited, watchlisted,
-// watched. Unsetting a state removes just that sub-document, so un-favouriting a watched
-// title keeps the watched state.
 
 type MediaSnapshot = {
   movieId: string;
@@ -28,9 +25,6 @@ type FavoriteWrite = MediaSnapshot & {
   personalRating?: number;
 };
 
-// Runs `work` in a transaction unless the caller supplied a session: MongoDB has no nested
-// transactions, so a caller that opened one owns the commit. Claiming the counter and writing
-// the row then roll back together -- a stranded claim would refuse every later add.
 async function inTransaction<T>(
   session: ClientSession | undefined,
   work: (session: ClientSession | undefined) => Promise<T>
@@ -51,23 +45,16 @@ async function inTransaction<T>(
   }
 }
 
-// The row key every write uses. Auth already lowercases, but normalizing here keeps the
-// write paths agreeing with the read paths regardless.
 function normalizedEmail(userEmail: string) {
   return emailCandidates([userEmail])[0] ?? userEmail;
 }
 
-// `title` is required on the schema and providedFields skips a falsy one, so an upsert only
-// ever gets it from $set -- which MongoDB applies on insert too. requireTitle runs on every
-// write before its counter claim, so an insert cannot fail validation with the claim taken.
 function requireTitle(snapshot: MediaSnapshot) {
   if (!snapshot.title) {
     throw new Error(`Cannot store a media row without a title (${snapshot.mediaType}:${snapshot.movieId})`);
   }
 }
 
-// Only writes fields the caller supplied: overwriting genreIds with [] would erase a
-// favorite that predates the column.
 function providedFields(snapshot: MediaSnapshot) {
   const fields: Record<string, unknown> = {};
 
@@ -84,10 +71,6 @@ function providedFields(snapshot: MediaSnapshot) {
   return fields;
 }
 
-
-
-// False means the member is at the cap and nothing was written. The claim is a conditional
-// `$inc`, so the cap test and the increment are one atomic operation.
 export async function addFavorite(
   userEmail: string,
   write: FavoriteWrite,
@@ -107,13 +90,9 @@ export async function addFavorite(
       .lean<{ favorite?: { addedAt?: Date } } | null>();
     const alreadyFavorited = Boolean(existing?.favorite?.addedAt);
 
-    // Only a genuinely new favorite takes a slot; re-rating must not be charged to the cap.
     if (!alreadyFavorited && !(await claimSlot(email, "favorite", tx))) {
       return false;
     }
-
-    // `$min` not `$set`: the favorite date is first-write-wins, and every favorites view
-    // sorts by it, so restamping would reorder the list on a rating change alone.
     await UserMovie.updateOne(
       { userEmail: email, movieId: write.movieId, mediaType: write.mediaType },
       {
@@ -143,7 +122,6 @@ async function removeFavorite(
   const email = normalizedEmail(userEmail);
 
   await inTransaction(session, async (tx) => {
-    // Read before the unset: afterwards there is nothing left to say whether a slot is owed.
     const wasFavorited = await wasFavorite(email, ref, tx);
 
     await UserMovie.updateOne(
@@ -173,7 +151,6 @@ async function wasFavorite(
   return Boolean(row?.favorite?.addedAt);
 }
 
-// `false` means the member is at the limit and the caller must not write.
 async function claimSlot(
   email: string,
   state: "favorite" | "watchlist",
@@ -182,8 +159,6 @@ async function claimSlot(
   const counter = state === "favorite" ? "favoritesCount" : "watchlistCount";
   const max = state === "favorite" ? MAX_FAVORITES : MAX_WATCHLIST;
 
-  // `$lt` does not match an absent field, so a missing counter must be asked for
-  // explicitly or every pre-backfill member reads as full.
   const claimed = await User.updateOne(
     {
       email,
@@ -203,7 +178,6 @@ async function releaseSlot(
 ): Promise<void> {
   const counter = state === "favorite" ? "favoritesCount" : "watchlistCount";
 
-  // Guarded so a double release cannot drive the counter negative and hand out free slots.
   await User.updateOne(
     { email, [counter]: { $gt: 0 } },
     { $inc: { [counter]: -1 } },
@@ -233,7 +207,6 @@ const email = normalizedEmail(userEmail);
       return false;
     }
 
-    // `$min` not `$set`: first-write-wins, or re-adding jumps the title to the top.
     await UserMovie.updateOne(
       { userEmail: email, movieId: write.movieId, mediaType: write.mediaType },
       {
@@ -277,7 +250,6 @@ async function removeWatchlist(
   });
 }
 
-// Shared by the favorites and watchlist routes: add the title if absent, remove if present.
 export async function toggleMedia(
   {
     email,
@@ -292,7 +264,6 @@ export async function toggleMedia(
 ): Promise<"added" | "removed" | "full" | "missing"> {
   await dbConnect();
 
-  // Normalized here too: the read below must match the key the helpers write under.
   const key = normalizedEmail(email);
   const ref = { movieId: snapshot.movieId, mediaType: snapshot.mediaType };
   const existing = await UserMovie.findOne({ userEmail: key, ...ref }, { favorite: 1, watchlist: 1 })
@@ -310,7 +281,7 @@ export async function toggleMedia(
     if (added) {
       return "added";
     }
-    // Refused for the cap; fall through so a missing account still reports 404.
+
   } else if (state === "favorite") {
     await removeFavorite(key, ref, session ? { session } : {});
     return "removed";
@@ -319,8 +290,6 @@ export async function toggleMedia(
     return "removed";
   }
 
-  // Model.exists() takes no options, so a session-aware check has to be a countDocuments.
-  // Matched case-insensitively: the session email and the stored one can differ in case.
   const known = await User.countDocuments(
     { email: emailMatch(email) },
     session ? { session } : {}
@@ -338,24 +307,13 @@ export async function markWatched(
 
     requireTitle(write);
 
-    // No client-supplied date, deliberately. A backdated watch would sort into the past of
-  // every follower's feed and break keyset ordering, and `$min` would make it permanent --
-  // so the only way to change it would be a data migration. Add backdating later as its
-  // own field if it is ever wanted, rather than reusing the sort key.
   const watchedAt = new Date();
-
-    // Read here rather than passed in, so the one place that decides whether a watch is
-    // broadcast is also the place that writes it. The prompt then only has to record the
-    // answer; every subsequent watch picks it up without the caller knowing the rule.
     const member = await User.findOne({ email: userEmail })
       .select("shareActivity")
       .session(session ?? null)
       .lean<{ shareActivity?: boolean } | null>();
     const broadcast = Boolean(member?.shareActivity);
 
-  // `$min` not `$set`: first-write-wins, or re-marking moves the date the streaks are
-  // built from. `$setOnInsert` cannot carry it alone -- a title can already exist as a
-  // favorite and be watched for the first time, with no insert to ride on.
   await UserMovie.updateOne(
     { userEmail, movieId: write.movieId, mediaType: write.mediaType },
 {
@@ -416,10 +374,7 @@ export async function getMediaStatus(
     isWatched: Boolean(row.watched?.watchedAt),
   };
 }
-// --- reads ---------------------------------------------------------------------
 
-// Exported so an HTTP caller can narrow a query-string value against the same union rather
-// than casting it past the type system.
 export type MediaState = "favorite" | "watchlist" | "watched" | "rated";
 
 export type MediaRow = {
@@ -432,20 +387,16 @@ export type MediaRow = {
   genreIds: number[];
   personalRating: number;
   addedAt: Date | null;
-  // Stamped at write time from the member's shareActivity flag. A member asking for their own
-  // data is entitled to the per-row record of what they consented to share, so this is exported.
   broadcast: boolean;
 };
 
-// listUserMedia("watched") already resolves addedAt to watchedAt, so this only reshapes.
+
 export type WatchedRow = {
   movieId: string;
   mediaType: MediaType;
   title: string;
   posterPath: string | null;
   watchedAt: Date;
-  // Carried so an export is not the one place that cannot say what a watched title was, or
-  // whether it was shared. The journal and insight views read none of this.
   voteAverage: number;
   releaseDate: string | null;
   genreIds: number[];
@@ -453,16 +404,11 @@ export type WatchedRow = {
   broadcast: boolean;
 };
 
-// Facets narrow a member's own library. Deliberately not free-text: this is not
-// `/search`, it is the shape of "show me the part of my shelf I am asking for".
 export type LibrarySort = "recent" | "rating" | "title" | "year";
 
 export type LibraryFacets = {
-  /** TMDB genre id. A title counts when it carries this genre at all. */
   genre?: number;
-  /** Inclusive lower bound on the member's own 1..10 rating. */
   minRating?: number;
-  /** Release year, matched as a half-open range over the ISO date string. */
   year?: number;
   sort?: LibrarySort;
 };
@@ -494,7 +440,6 @@ function facetFilter(facets?: LibraryFacets) {
   const filter: Record<string, unknown> = {};
   if (!facets) return filter;
 
-  // Stored as an array, so equality matches "carries this genre anywhere in the list".
   if (facets.genre !== undefined) filter.genreIds = facets.genre;
 
   if (facets.minRating !== undefined) {
@@ -502,8 +447,6 @@ function facetFilter(facets?: LibraryFacets) {
   }
 
   if (facets.year !== undefined) {
-    // releaseDate is an ISO "YYYY-MM-DD..." string, so a lexicographic range is a date range
-    // and avoids needing a Date parse per row.
     filter.releaseDate = {
       $gte: `${facets.year}-01-01`,
       $lt: `${facets.year + 1}-01-01`,
@@ -513,15 +456,12 @@ function facetFilter(facets?: LibraryFacets) {
   return filter;
 }
 
-// Newest first for whichever state was fetched; `_id` decides rows sharing an addedAt.
 function stateSort(state: MediaState) {
   const path =
     state === "watchlist" ? "watchlist.addedAt" : state === "watched" ? "watched.watchedAt" : "favorite.addedAt";
   return { [path]: -1 as const, _id: -1 as const };
 }
 
-// Every sort ends in `_id` so a facet page cannot reshuffle between requests when two rows
-// tie on the sort key -- the same guarantee the feed cursor depends on.
 function facetSort(state: MediaState, sort?: LibrarySort) {
   if (sort === "rating") return { "favorite.personalRating": -1 as const, _id: -1 as const };
   if (sort === "title") return { title: 1 as const, _id: 1 as const };
@@ -529,8 +469,6 @@ function facetSort(state: MediaState, sort?: LibrarySort) {
   return stateSort(state);
 }
 
-// addedAt is the date of the state fetched FOR: a title on both lists has two real dates,
-// and reporting the wrong one labels the grid with a date it was not ordered by.
 function toMediaRow(row: Record<string, unknown>, state: MediaState): MediaRow {
   const favorite = (row.favorite ?? {}) as { addedAt?: Date; personalRating?: number };
   const watchlist = (row.watchlist ?? {}) as { addedAt?: Date };
@@ -580,17 +518,6 @@ export async function listUserMedia(
   return { rows: rows.map((row) => toMediaRow(row, state)), total };
 }
 
-// The rows alone, without the total.
-//
-// Most callers never look at the count -- the favourites picker, the export, the insight
-// source, the assistant context, the reviews dropdown -- and they were all paying for a
-// `countDocuments` over the member's whole shelf to get a number nobody read. That is not
-// free even though it ran in parallel with the find: it is a second round trip and a second
-// index scan of every row the member owns.
-//
-// The count is still available, in `listUserMediaPage`, for the four callers that page with
-// it. Splitting the two functions rather than adding a `withTotal` flag keeps the return
-// type honest: there is no `total` here to be a lie about.
 export async function listUserMediaRows(
   email: string,
   state: MediaState,
@@ -634,7 +561,6 @@ export async function listWatchHistory(
   }));
 }
 
-// Distinct watch timestamps, which is what a streak is built from.
 export async function listWatchDays(email: string, session?: ClientSession): Promise<Date[]> {
   await dbConnect();
 
@@ -666,7 +592,6 @@ export async function getUserMediaByKey(
     .session(session ?? null)
     .lean<Record<string, unknown> | null>();
 
-  // No state asked for, so report the favorite date: only a favorite carries a rating.
   return row ? toMediaRow(row, "favorite") : null;
 }
 

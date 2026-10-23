@@ -18,9 +18,6 @@ export async function countUnreadNotifications(email: string): Promise<number> {
   return Notification.countDocuments({ userEmail: email, read: false });
 }
 
-// The bell polls `?unread=1` on an interval, which is a count and nothing else -- so
-// the count is its own entry point rather than a flag threaded through a function
-// that then returns two different shapes.
 export async function getNotificationFeed(email: string): Promise<NotificationFeed> {
   await dbConnect();
 

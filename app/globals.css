@@ -1,11 +1,7 @@
 @import "tailwindcss";
 
 /* Dark is the default and lives on :root, so the app renders correctly with no
-   JavaScript at all. `app/layout.tsx` sets `data-theme` on <html> before first
-   paint; this block only overrides the palette, never the structure, which is
-   why light mode needs no changes to any component.
-   Every text value below is verified against all three surfaces; the tightest
-   is --content-subtle at 5.19:1. */
+   JavaScript at all. */
 :root {
   color-scheme: dark;
 
@@ -13,23 +9,7 @@
   --canvas: #0a0a0a;
   --surface: #111111;
   --surface-raised: #171717;
-
-  /* The chrome band: the fixed header, the footer, and the surfaces that float
-     above the page -- toasts, dialogs, the assistant and trailer panels, the
-     filter bar, the title picker. These are separated from `--canvas` only in
-     the light theme, where the ground is a paler peach than the band that frames
-     it; dark mode sets --chrome equal to --canvas, so nothing there moves.
-
-     Split out because --canvas was doing three jobs across 30 sites: the page
-     ground behind content, this chrome, and the backing of poster tiles and
-     inputs. Changing one of those meant changing all three. */
     --chrome: #0a0a0a;
-    /* How opaque the fixed header and the footer are when painted over --canvas.
-       Here --chrome and --canvas are the same value, so every alpha composites to
-       the same colour and the band costs nothing in contrast -- the blur is free.
-       86% rather than lower because the header is `fixed`: a poster or hero image
-       scrolling underneath is far brighter than any token, and that case is not
-       modelled by check:contrast. Light theme has a hard ceiling, see below. */
     --band-alpha: 86%;
 
   --content: #f5f5f5;
@@ -38,37 +18,9 @@
 
   --rule: rgba(255, 255, 255, 0.1);
   --rule-strong: rgba(255, 255, 255, 0.2);
-  /* The edge on a floating surface that sits ON the page -- the account menu, the
-     mobile nav panel, the assistant. --rule is a hairline for *dividing* things
-     and is nowhere near strong enough to define a panel that has to read as
-     detached: at 0.2 white it is 1.77:1 against this ground. WCAG 1.4.11 asks 3:1
-     for the boundary of a user-interface component, which 0.38 clears at 3.50:1.
-     Kept separate from --rule so the ~150 hairline uses across the app are
-     untouched. */
   --rule-overlay: rgba(255, 255, 255, 0.38);
-
-  /* The large centred overlay panel -- the sign-in and sign-up card. Named for
-     `rounded-overlay`, which is already the radius the dialog, the assistant
-     panel and the nav menus use.
-
-     Written as a reference rather than a copy on purpose: the card is
-     `bg-surface-raised` with a `--rule` border today, and pointing at those two
-     tokens makes it impossible for this to drift from what it replaces. It is
-     deliberately NOT `--bar-surface`, whose dark value is 70% canvas because
-     that bar sits over a hero image -- on an opaque centred card that would
-     hollow it out and let the page through. */
   --overlay-surface: var(--surface-raised);
   --overlay-border: var(--rule);
-
-    /* The media detail panels: the control bar, the crew boxes, the cast boxes.
-       Dark values are the exact equivalents of the classes they replace, so
-       nothing in this theme moves -- the colour is a light-theme addition.
-
-       They exist as tokens rather than opacity modifiers because
-       `bg-canvas/70` and `bg-surface-raised/50` cannot express a bronze fill in
-       one theme and not the other: the modifier resolves to the same token in
-       both. --highlight-muted is #c9a273 here, so `bg-highlight-muted/8` would
-       have tinted the dark panels too. */
     --bar-surface: rgba(10, 10, 10, 0.7);
     --bar-border: rgba(255, 255, 255, 0.1);
     --panel-surface: rgba(23, 23, 23, 0.5);
@@ -76,87 +28,23 @@
     --panel-border: rgba(255, 255, 255, 0.1);
 
   --accent: #dc2626;
-  /* Deeper than the base rather than brighter: #ef4444 carried near-white text
-     at 3.76:1, and a lighter hover cannot fix that. #d92626 is the same hue and
-     clears AA with white at 4.93:1. Hovering darker is also what the light
-     theme already does. */
   --accent-hover: #d92626;
-  /* Error text, and the reason it is its own token rather than a shade of
-     --accent. No existing red clears body-text AA on both themes' surfaces:
-     #dc2626 is 3.71:1 on --surface-raised in dark, #ef4444 is 3.76:1 on
-     #ffffff in light. These pair per theme instead, clearing 4.5:1 on all
-     three surfaces in both. Checked by scripts/checkContrast.mjs. */
   --danger: #ef4444;
-  /* Success icons, paired per theme for the same reason as --danger: no single
-     green clears the 3.0 icon threshold on all three surfaces in both themes.
-     #4ade80 is 1.51:1 on the light --surface. Used at icon size only, never for
-     body text. */
   --success: #22c55e;
   --highlight: #d4a574;
   --highlight-soft: rgba(212, 165, 116, 0.14);
-  /* The recessive gold, for the small `kin-overline` kickers that read as a
-     label rather than as content. Darkens toward --highlight because --highlight
-     is already light; the light theme inverts this and darkens *further*, since
-     on a pale ground a subtler colour has to be deeper to stay legible. See the
-     note on the light block's --highlight-muted for why that is not optional. */
   --highlight-muted: #c9a273;
-
-  /* The wordmark's gold, which is the one place --highlight's job could not
-     follow it into silver. Light mode points --highlight at a graphite, because
-     a warm bronze kicker on a cool silver ground vibrates and reads as a label
-     colour trying to be an accent. But "KinOrbia" is the brand, and a wordmark
-     that changes hue with the theme stops being the one fixed thing in the app.
-     So the gold gets its own token rather than being preserved by leaving
-     --highlight alone: #85571a in light, this same #d4a574 in dark. Both clear
-     body AA on all three surfaces. Only AuthShell's wordmark uses it -- the
-     Navbar and Footer wordmarks are red, which is a separate inconsistency. */
   --wordmark: #d4a574;
-
-  /* The brand red as *text*. --accent cannot serve here: at #dc2626 it measures
-     3.71:1 on --surface-raised, below body AA, which is why the app reached for
-     raw red-100 through red-400 in two dozen files instead. This is the
-     text-weight sibling of --highlight -- --accent fills a chip, --accent-text
-     labels one. 6.48:1 on --surface-raised here. */
   --accent-text: #f87171;
-
-  /* Blue: watchlist state and informational toasts. The fourth hue, and the last
-     one. It is not a shade of anything above -- it exists because "saved" and
-     "watched" are different facts about a title and want different colours. */
   --info: #60a5fa;
-
-  /* Filled chips carrying --on-accent. Separate from --success and --info
-     because those two are tuned as *icon* colours and cannot carry text:
-     --success at #22c55e holds near-white at 2.28:1. Both are checked against
-     --on-accent by scripts/checkContrast.mjs. */
   --success-solid: #047857;
   --info-solid: #2563eb;
-
-  /* Laid over artwork of unknown brightness, so it deliberately does not invert
-     -- same reasoning as --on-scrim below. Declared in :root only; the light
-     theme inherits it. One value serves dialog scrims and poster overlays, with
-     the opacity modifier choosing the strength. */
   --scrim: #000000;
-
-  /* The detail-page hero. Only the image opacity is themed: on near-black a
-     backdrop can sit at 50% and the light hero text still reads, because the
-     veil below is dark canvas. Light mode cannot do that -- a pale ground under
-     a dark backdrop leaves nowhere for either the image or a dark title to go --
-     so it declares its own opacity, veil and crossfade further down. The dark
-     veil gradient is the from/via/to pair that has always been on this element;
-     See .kin-hero-backdrop. */
   --hero-image-opacity: 0.5;
 
   /* Text sitting on a filled accent/highlight chip. Inverts, because the chip
      beneath it does. */
   --on-highlight: #0a0a0a;
-
-  /* Text sitting on a dark scrim laid over artwork. Deliberately does NOT
-     invert: the scrim stays dark in both themes so a label stays legible over
-     a poster of unknown brightness, so its text must stay light too. */
-  /* Text on a *filled* accent chip. Saturated in both themes, so unlike
-     --on-highlight this does not invert: near-white measures 4.43:1 on the dark
-     accent and 5.93:1 on the light one, while --content would drop to 2.77:1 on
-     the light accent and become unreadable. */
   --on-accent: #ffffff;
   --on-scrim: #f5f5f5;
   --on-scrim-muted: rgba(245, 245, 245, 0.72);
@@ -169,9 +57,6 @@
   --glass-strong: rgba(255, 255, 255, 0.09);
   --glass-line: rgba(255, 255, 255, 0.05);
   --glass-line-strong: rgba(255, 255, 255, 0.15);
-
-  /* 0.95-alpha black on a near-white canvas reads as a bruise, so the light
-     theme gets its own much lighter values rather than reusing these. */
   --elevation-card: 0 18px 45px -34px rgba(0, 0, 0, 0.95);
   --elevation-card-hover: 0 24px 60px -42px rgba(220, 38, 38, 0.45);
   --elevation-float: 0 24px 80px -48px rgba(0, 0, 0, 0.95);
@@ -181,24 +66,12 @@
      because bg-content does. */
   --elevation-glow: 0 12px 28px -18px rgba(255, 255, 255, 0.7);
   --grain-opacity: 0.035;
-
-  /* A near-black ground for the accents to sit on, warm rather than dead grey
-     (saturation 0.28). Theme-independent: it is dark in both, so the accents
-     that carry the brand finally have somewhere to live in light mode. Gold
-     measures 2.10:1 on the light canvas -- unusable as text or even as a
-     border -- and 8.66:1 here. */
   --ink: #120d0d;
   --ink-raised: #1c1414;
   --ink-content: #f5f5f5;
   --ink-muted: #a3a3a3;
   --ink-subtle: #8a8a8a;
   --ink-rule: rgba(255, 255, 255, 0.12);
-
-  /* The gold and red meant for dark ground. --highlight-vivid is exactly the dark
-     theme's --highlight, so the dark theme is unchanged; light mode's --highlight
-     is a dark bronze chosen for contrast on white and reads as mud on ink.
-     --accent-bright is lighter than --accent because red at #dc2626 measures only
-     3.99:1 on ink, while this clears 5.12:1. */
   --highlight-vivid: #d4a574;
   --accent-bright: #ef4444;
 
@@ -226,41 +99,9 @@
    the editorial label colour -- is a deep graphite rather than the gold it used
    to be. That is the substantive change: a warm bronze at 10px on a cool silver
    ground is a muddy brown, and the gold was only ever legible because the ground
-   was warm enough to sit under.
-
-   What that costs, and why it is still right. Light mode is no longer "the same
-   design, warm" -- it is silver, graphite and red, with the gold surviving in
-   exactly two places: the band, via --highlight-vivid, and the wordmark, via
-   --wordmark. Dark mode is untouched, so the app still reads as ink, gold and
-   red there.
-
-   The ground is a tint rather than a metal, and every value here is set by what
-   that costs. Darkening the ground lowers every text ratio at once, so the two
-   semantic colours that had little margin -- --danger and --wordmark -- were
-   deepened with it rather than left on fractions of a point. What is left as the
-   tightest 4.5:1 value in this block is --info at 4.87:1, with --danger and
-   --wordmark next at 5.13:1; the tightest value of any tier is --success at
-   3.64:1 against its 3.0 threshold. The band's own tightest step is
-   --ink-subtle at 5.41:1, which is a separate ground with a separate constraint.
-   Measured by scripts/checkContrast.mjs. */
+   was warm enough to sit under.*/
 :root[data-theme="light"] {
   color-scheme: light;
-
-  /* Warm silver. Still a neutral ramp rather than a tinted one -- the chroma here
-     is low enough that it reads as metal rather than as cream -- but warm rather
-     than blue-grey. It started cool (#e4e7ec, a true blue-tinged silver) and read
-     as clinical on a page carrying nothing but neutrals and red, so the ramp was
-     pulled a few degrees toward paper. That is also why every hairline and tint
-     below is rgba(40, 30, 20) and not the cool rgba(24, 24, 27): a blue-black
-     edge on a warm ground reads as dirt rather than as a hairline.
-
-     Depth is capped deliberately, and #e4e7ec is where it lands. This is a
-     tint, not a metal: at #d2d6db and darker the red stops clearing body AA
-     (#b91c1c falls to 4.43:1, below 4.5), so a true mid-grey ground would force a
-     different red and start spending the headroom this block has. Darkening the
-     ground also spends headroom on everything else -- it lowers every text
-     ratio at once, so --danger and --wordmark were deepened along with it rather
-     than left on 0.20 and 0.02 of margin. See their comments. */
   --canvas: #ebe9e9;
   --surface: #dedbdc;
   --surface-raised: #fcf9f2;
@@ -275,47 +116,9 @@
      than as a hairline, so the warm cast the bone ground wanted is gone. */
   --rule: rgba(40, 30, 20, 0.14);
   --rule-strong: rgba(40, 30, 20, 0.26);
-  /* See the note on the dark value. Here 0.55 clears 3:1 against the silver page;
-     0.50 only just manages 3.05, and --rule-strong at 0.26 reaches 1.70, which is
-     why a floating panel was previously invisible on this ground. */
   --rule-overlay: rgba(40, 30, 20, 0.55);
-
-  /* The sign-in / sign-up card, the app's first impression. Warm bronze over the
-     silver ground, which is what the rest of the light theme has been moving
-     toward: it composites to #f9f7f1, so the page shows faintly through and the
-     animated orb behind it stays part of the surface rather than sitting behind
-     an opaque rectangle. The border matches --bar-border so the card and the
-     detail-page control bar read as the same material.
-
-     Every token on it clears AA comfortably -- body 16.54:1, a muted field label
-     9.75:1, the bronze kicker 6.76:1. */
   --overlay-surface: rgba(252, 249, 242, 0.85);
   --overlay-border: rgba(122, 77, 20, 0.72);
-
-  /* The media detail panels. See the note on the dark value for why these are
-     tokens and not `bg-highlight-muted/N`.
-
-     Bronze is --highlight-muted. It is applied at three strengths because the
-     three boxes do different jobs: the control bar sits on the hero and needs to
-     read as a surface, the crew boxes carry text at length, and the cast boxes
-     sit behind circular portraits that should stay the loudest thing in the
-     grid.
-
-     The fills are shallow on purpose. Composited over this ground, 8% lands on
-     #e2ddd8 and 6% on #e4e0dc -- a warm shift of about 1.1:1 against the page,
-     which is felt rather than seen. Twelve percent was measurably muddier
-     (#ddd6cf) for very little extra colour. The bronze that actually registers
-     is on the small uppercase labels, which is why those move to
-     `text-highlight-muted` alongside the fill: at 5.37:1 and 5.52:1 those clear
-     the 4.5 a 10px label needs, where a deeper fill would have cost contrast
-     without buying legibility.
-
-     These are static content cards, not controls, so the fill and border are
-     decorative grouping cues -- the text is what is readable, at 13:1 and
-     above. WCAG 1.4.11 asks 3:1 for the boundary of a user-interface component,
-     and bronze cannot reach it here: even at 60% it measures 2.66:1 against
-     #ebe9e9, so a compliant edge would be a solid brown line at odds with the
-     soft editorial ground. --rule is at 1.38:1 here for the same reason. */
   --bar-surface: rgba(252, 249, 242, 0.85);
   --bar-border: rgba(122, 77, 20, 0.28);
   --panel-surface: rgba(122, 77, 20, 0.08);
@@ -324,50 +127,10 @@
 
   --accent: #b91c1c;
   --accent-hover: #991b1b;
-  /* Deepened from #b91c1c, which is still the fill in --accent above. The fill
-     tier only needs 3.0:1 and has it to spare; --danger is body text at 4.5:1,
-     and the darker ground took that from 6.10:1 to 4.70:1. That still passes,
-     but 0.20 of margin means the next nudge to the ground breaks it, so this
-     spends the headroom now rather than rediscovering it later. */
   --danger: #b01616;
   --success: #15803d;
-  /* Graphite, deepened. --highlight is the app's editorial label colour -- 84
-     text uses, 26 borders, 15 filled chips and the 10px kin-overline kickers --
-     and it was gold only because the ground was warm enough to sit under it. On
-     silver a warm bronze at the size a kicker renders is a muddy brown, so this
-     is a neutral that reads as a label rather than as a decoration. It stays
-     distinct from --accent in all 21 files that use both.
-
-     At #1f2937 it clears 10.66:1, which lets --highlight-muted go *lighter* here
-     for once instead of deeper: this block used to have to darken "muted" because
-     a pale ground needs more contrast, not less.
-
-     The cost is hierarchy. At 10.66:1 this sits only 2.21 from --content at
-     12.87:1, so a kicker and a paragraph are now much closer in weight than the
-     label/content distinction wants. That is a deliberate call; if the headers
-     read as flat, #263041 (9.65:1) puts a clear step back without giving up the
-     silver. */
   --highlight: #1f2937;
   --highlight-soft: rgba(31, 41, 55, 0.12);
-  /* The editorial layer: bronze, at FULL strength, and the /80 is gone from the
-     eight `kin-overline` kickers that use this.
-
-     The /80 was the reason this layer was grey. Compositing any hue at 80% costs
-     about a fifth of its contrast, and at 10px there is no slack for that: gold
-     had to darken to #513f2c to reach 4.5:1, at which point its chroma had
-     collapsed to 0.036 and it was no longer gold. Bronze needed #613b04 for the
-     same reason. Only neutrals had the headroom to be composited down and still
-     read, so every hue tried came out looking like the graphite it replaced.
-
-     At full strength this clears 5.26:1 against the darkest ground, and its
-     chroma of 0.098 is far enough from the neutral ramp to register as a colour
-     rather than as a slightly warm grey. That is also the reason the kicker is no
-     longer derived from --highlight: a label wants a warm hue, and --highlight is
-     what every border and chip in the app is built from.
-
-     scripts/checkContrast.mjs composited this token at /80 to match the old
-     markup. That constant is now 1.0, or the checker would be measuring a
-     rendering the app no longer produces. */
   --highlight-muted: #7a4d14;
   /* The light theme's brand red is already dark enough for body text, so
      --accent-text collapses onto --danger rather than carrying a second red --
@@ -376,34 +139,12 @@
   --info: #1d4ed8;
   --success-solid: #15803d;
   --info-solid: #1d4ed8;
-  /* The wordmark's gold. Still the dark bronze this block has always used for
-     gold, one step deeper than the #85571a it was when the ground was lighter:
-     that value measured 4.52:1 here, which passes by 0.02 and would break on the
-     next nudge to any of the three grounds. #7a4d14 gives 5.26:1 and is not
-     visibly a different gold. */
   --wordmark: #7a4d14;
 
   --on-highlight: #fafafa;
-  /* Text on a *filled* accent chip. Saturated in both themes, so unlike
-     --on-highlight this does not invert: near-white measures 4.43:1 on the dark
-     accent and 5.93:1 on the light one, while --content would drop to 2.77:1 on
-     the light accent and become unreadable. */
   --on-accent: #ffffff;
   --on-scrim: #f5f5f5;
   --on-scrim-muted: rgba(245, 245, 245, 0.72);
-
-  /* A very small bump over the shared 0.5, and 0.52 is close to the hard
-     ceiling rather than a chosen number. The title is near-black here and sits
-     over the artwork, so the canvas veil above it -- not this opacity -- is what
-     limits things. Measured worst case (the darkest artwork, at the title's
-     position in the gradient): 4.98:1 at 0.50, 4.73:1 at 0.52, 4.60:1 at 0.53,
-     then it falls away -- 4.36:1 at 0.55 and 3.74:1 at 0.58. So anything past
-     about 0.53 fails on a dark backdrop.
-
-     The lever that would actually buy a stronger image is strengthening the
-     canvas veil behind the title, not this value. That needs the gradient in
-     CSS, because a Tailwind alpha modifier like via-canvas/70 reads a literal
-     percentage rather than a token. */
   --hero-image-opacity: 0.52;
 
   /* Neutral tints for the translucent chrome over the silver ground: the filter
@@ -413,80 +154,25 @@
   --glass-strong: rgba(40, 30, 20, 0.08);
   --glass-line: rgba(40, 30, 20, 0.09);
   --glass-line-strong: rgba(40, 30, 20, 0.18);
-
-  /* The band. A graphite, not the near-black dark mode uses, so the chrome sits
-     in the same silver family as the page instead of inverting it. That is the
-     whole reason this block has to declare its own ramp rather than share
-     :root's: a mid-grey ground moves every contrast ratio in the band.
-
-     .kin-ink-band still does the re-pointing and needs no change -- it reads
-     var(--ink-*) and those now resolve per theme. The header and footer stay
-     legible because that utility is what makes them legible, not because the
-     band is near-black.
-
-     --ink and --chrome are the same value, as they are in dark mode, so the one
-     band token and the one card token cannot drift apart.
-
-     At #3a3b42 the whole ramp has to be lighter, not just the ground: the
-     previous values were tuned against #2a2a2e and --ink-subtle fell to 3.99:1
-     here. Every step below is re-derived, which is why this block now overrides
-     --ink-content and --ink-muted too rather than inheriting them. */
     --chrome: #3a3b42;
     --ink: #3a3b42;
     --ink-raised: #34353c;
-    /* Light theme's band ceiling. Unlike dark, --chrome (#3a3b42) and --canvas
-       (#ebe9e9) are far apart, so dropping alpha lightens the band toward the bone
-       page and eats the contrast of the pale text on it. --ink-subtle is the
-       binding token: 5.41:1 opaque, 4.85 at /96, 4.61 at /94, and 4.35 at /92 --
-       past AA. So 94% is the most translucent this band can be, and the visible
-       glass in light mode is close to nil. That is why the floating surfaces carry
-       the effect instead. Verified by check:contrast, which composites this. */
     --band-alpha: 94%;
-  /* Lightened from #f5f5f5 and #a3a3a3, which are the :root values and are
-     correct on dark's near-black band but reach only 4.42:1 on this graphite. */
   --ink-content: #f8fafc;
   --ink-muted: #c3c8d0;
-  /* And from #9a9aa2, which was itself already lifted once for light mode's
-     first graphite. Three steps now, none of them shared with :root. */
   --ink-subtle: #b0b5bd;
-  /* The gold stays gold here, but lighter: #d4a574 falls to 5.01:1 on #3a3b42 and
-     #42434c would break it outright at 4.41:1, so the band gold could not follow
-     the ground all the way up. #e8c9a1 holds 7.06:1 and keeps the warm note the
-     silver page deliberately does not have. */
   --highlight-vivid: #e8c9a1;
-  /* Red cannot clear body AA on any mid-grey. #ef4444 measures 5.12:1 on dark's
-     near-black band but only 3.80:1 on light's first graphite, and 2.96:1 here.
-     Light mode's band red is therefore its own value, and it has been lifted
-     twice now to keep pace with the band. This is the single reason the ink ramp
-     is per-theme instead of shared. */
   --accent-bright: #fca5a5;
-
-  /* The orb does not invert. A glowing orb is a light source, so drawing it as a
-     white disc on a white page killed it: `screen` blew out to nothing and the
-     `multiply` stand-in left a flat white circle. AuthShell paints on
-     bg-canvas and follows the page's own tokens, not the ink ramp. */
-  /* Against a light page the halo carries further than it does on near-black. */
   --elevation-card: 0 18px 45px -34px rgba(40, 30, 20, 0.16);
   --elevation-card-hover: 0 24px 60px -42px rgba(185, 28, 28, 0.3);
   --elevation-float: 0 24px 80px -48px rgba(40, 30, 20, 0.2);
   --elevation-poster: 0 28px 80px -44px rgba(40, 30, 20, 0.24);
   --elevation-filter: 0 18px 55px -42px rgba(40, 30, 20, 0.18);
   --elevation-glow: 0 12px 28px -18px rgba(40, 30, 20, 0.3);
-  /* Grain at the dark theme's opacity reads as dirt once the ground is light. */
   --grain-opacity: 0.018;
 }
 
 @theme inline {
-  /* Delete Tailwind's entire default palette. Every colour in the app is one of
-     the --color-* declarations below, so this makes the token set the only way to
-     express a colour: `text-red-300` now generates no rule at all rather than
-     quietly working and drifting away from the theme. The app carried 57 raw
-     palette classes across 26 files before this, including four reds used
-     interchangeably for both the brand accent and hard errors.
-
-     It does not affect `transparent`, `current` or `inherit` -- Tailwind injects
-     those into every colour utility directly, so `bg-transparent`,
-     `border-transparent`, `from-transparent` and `fill-current` are unaffected. */
   --color-*: initial;
 
   --color-canvas: var(--canvas);
@@ -588,11 +274,6 @@ html {
     outline-offset: 2px;
   }
 
-  /* Pointer is already the browser default for these, but stating it explicitly
-     means a later reset cannot silently drop it. `:where()` holds specificity at 0
-     so the `cursor-pointer` and `disabled:cursor-not-allowed` utilities, and
-     `.kin-choice` on the labels that wrap a control, all still win. Labels are
-     deliberately excluded here: 21 of them wrap no control and are not clickable. */
   :where(a[href], button:not(:disabled), summary) {
     cursor: pointer;
   }
@@ -605,21 +286,10 @@ html {
 }
 
 ::selection {
-  /* An alpha mix of --accent rather than the literal rgba(220, 38, 38, 0.35).
-     The literal was the *dark* theme's accent, so text selection stayed
-     fire-engine red over the light theme's --surface. color-mix tracks whichever
-     accent is in force. */
   background: color-mix(in srgb, var(--accent) 35%, transparent);
   color: var(--on-accent);
 }
 
-/* The 2D orb's motion. Four small animations, all additive on top of a static
- * drawing, and all of them safe to freeze: an arc is still an arc, a dash
- * pattern is still a ring, and the dots land at defined points on their circles.
- *
- * `transform-box: view-box` plus a 50% origin is required on every rotating
- * group. SVG's default transform origin is 0 0, which would send each dot
- * orbiting the top-left corner of the viewBox instead of the orb. */
 @keyframes auth-orb-turn {
   to { transform: rotate(360deg); }
 }
@@ -644,12 +314,6 @@ html {
 .auth-orb-orbit-rev { animation: auth-orb-turn-rev 52s linear infinite; }
 .auth-orb-dash { animation: auth-orb-dashoffset 26s linear infinite; }
 
-/* The blanket reduced-motion rule above freezes duration and iteration count,
- * which would leave each of these on its final frame. That is safe here by
- * design, but the orb is opted out entirely rather than left mid-transform: with
- * `animation: none` the authored geometry shows through, which is a complete
- * globe. These rules sit after the blanket block so they win at equal
- * specificity. */
 @media (prefers-reduced-motion: reduce) {
   .auth-orb-arc,
   .auth-orb-orbit,
@@ -659,17 +323,6 @@ html {
   }
 }
 
-/* Windows High Contrast, and anything else forcing a palette, discards BOTH
- * alpha backgrounds and `backdrop-filter`. Every translucent surface added for
- * the glass treatment collapses to nothing at that moment: the header band, the
- * footer and the sticky tab bar all lose their background, so their text sits
- * directly on whatever scrolls beneath and their 1px separators become the only
- * thing distinguishing one surface from the next.
- *
- * System colours are used rather than `forced-color-adjust: none`, which would
- * hand back the original tokens and reintroduce the very palette the member
- * replaced. `Canvas` / `CanvasText` are the system page pair and are guaranteed
- * to contrast, so the band survives as a solid surface instead of a guess. */
 @media (forced-colors: active) {
   .shell-header,
   .kin-band,
@@ -727,27 +380,11 @@ html {
 }
 
 @layer components {
-  /* The detail-page hero image's opacity, in place of a hardcoded `opacity-50`.
-     That is the only part of the hero light mode needs to differ: its veil is
-     plain Tailwind gradient stops over --canvas, which is the correct thing on a
-     silver ground, and the hero keeps its near-black text. */
   .kin-hero-backdrop {
     opacity: var(--hero-image-opacity);
   }
 
   .shell-header {
-    /* `kin-ink-band` is added in Navbar's markup rather than @applied here.
-       Tailwind v4 will not resolve a hand-written class name inside @apply --
-       it drops the reference silently, which left the header painting ink
-       behind light-theme text and still compiled clean. */
-    /* Translucent, but not at 80%. That was tried: the ink band composited to
-       #403c3b over the bone body and --ink-subtle fell from 5.59:1 to 3.16:1,
-       so it went opaque -- and an opaque background paints over the
-       backdrop-filter result, which left the blur doing nothing at all.
-       `kin-band` puts the alpha back as a token instead of a literal, with
-       --band-alpha set per theme: free in dark (--chrome == --canvas), capped at
-       94% in light. check:contrast now composites the band, so the ratio this
-       comment used to record by hand is the thing that regresses the build. */
      @apply fixed inset-x-0 top-0 border-b border-rule kin-band shadow-card backdrop-blur-xl;
     z-index: var(--z-header);
   }
@@ -814,27 +451,6 @@ html {
   }
 }
 
-/* Re-point the palette at the ink ramp for anything sitting on the dark band.
-   Registered with @utility rather than as a plain rule in @layer components
-   because v4 only emits those when it detects the class in source, and because
-   @apply cannot resolve them at all -- it drops the name silently and still
-   compiles clean, which is how the header came to paint ink behind light-theme
-   text without a single build error.
-
-   This works at all because `@theme inline` emits `var(--content)` rather than a
-   literal -- `.text-content` really is `color: var(--content)` -- so redeclaring
-   the variables here reaches every descendant with no component edits. Navbar
-   and ThemeToggle carry about fifty colour classes between them and none of them
-   needed changing.
-
-   --accent is included because Navbar and Footer have no white-on-accent fill
-   (zero `text-on-accent` in either), only `bg-accent/10`, `ring-accent/25`,
-   `border-accent/20` and `text-accent` on the wordmark -- all of which want the
-   brighter red on dark ground. --danger folds in for the same reason: the
-   sign-out labels are the only other red in the band.
-
-   Every value is already contrast-checked against --ink by
-   scripts/checkContrast.mjs: 17.69, 7.64, 5.59, 8.66 and 5.12:1. */
 @utility kin-ink-band {
   --content: var(--ink-content);
   --content-muted: var(--ink-muted);
@@ -851,15 +467,6 @@ html {
     --surface-raised: var(--ink-raised);
   }
 
-  /* The header and footer band: --chrome at --band-alpha, so the backdrop-blur on
-     those two elements finally does something.
-     Both carried `backdrop-blur-xl` over an opaque `bg-chrome` until now, which
-     paints over the backdrop-filter result -- the blur was dead CSS. This is the
-     one place a surface is allowed to be translucent, because --band-alpha is the
-     value check:contrast composites against the band, and the light-theme ceiling
-     is documented on the token. Not `@apply bg-chrome/86`: the alpha is per-theme
-     and hardcoding it at the call site is what produced the 5.59 -> 3.16:1
-     regression that globals.css used to carry a comment about. */
   @utility kin-band {
     background-color: color-mix(in srgb, var(--chrome) var(--band-alpha), transparent);
   }
@@ -935,20 +542,11 @@ html {
     padding-right: 7rem;
   }
 
-  /* The auth forms (login, signup, reset, forgot) each put a leading icon
-     inside the field. They used to hand-roll the whole input -- a darker
-     background, a 0.75rem radius and a mouse-focus ring -- so those four pages
-     looked like a different product from every other form in the app. This
-     follows the kin-search-input idiom: declared after .kin-input, so the
-     padding overrides its px-3.5, and the rest comes from the shared class. */
   .kin-input-affix {
     padding-left: 3rem;
     padding-right: 1rem;
   }
 
-  /* For a password field with a reveal toggle on the trailing edge. Declared after
-     .kin-input-affix so it wins at equal specificity, the same way
-     .kin-search-input overrides .kin-input's padding above. */
   .kin-input-affix-end {
     padding-right: 2.75rem;
   }
@@ -967,18 +565,6 @@ html {
     }
   }
 
-  /* A floating panel: the account menu, the mobile nav panel, the assistant.
-     Both halves of this used to be wrong in light mode.
-     `bg-canvas/80` was the background, which is a no-op -- canvas composited
-     over a canvas page returns the canvas, so the panel was the same colour as
-     what it sat on and the only separator was a 1.31:1 hairline. It now uses
-     --surface-raised, which is a genuinely different value from --canvas.
-     `border-rule-overlay` replaces --rule because a panel edge has to identify
-     the component; a divider does not, and the two want very different weights.
-     The translucency is kept deliberately -- the blur only does anything once
-     these panels are portalled out of .shell-header, which is itself a
-     backdrop-filter element and therefore a backdrop root that would otherwise
-     leave the blur sampling the header's flat background instead of the page. */
   .premium-surface {
     @apply border border-rule-overlay bg-surface-raised/85 shadow-float backdrop-blur-xl;
   }
@@ -987,14 +573,6 @@ html {
     @apply relative overflow-hidden rounded-sheet border border-rule bg-canvas;
   }
 
-  /* The masthead wash, and the one place real gold reaches light mode. Gradients
-     and washes carry no contrast requirement, so this is the only place the
-     palette can be the luminous #d4a574 rather than a bronze that has to be dark
-     enough to read at 10px. The stops were raised from 7.5%/2.5% because a warm
-     wash over a peach ground is nearly invisible -- the ground is already the
-     same hue as the wash. `--highlight-vivid` is used for the gold stop rather
-     than `--highlight` for exactly that reason: it is the theme-independent
-     light gold, and here there is no legibility cost to paying for it. */
   .profile-wash {
     background: linear-gradient(
       105deg,

@@ -73,21 +73,12 @@ export default async function TvPage({ params, searchParams }: Props) {
     getTvDetails(id),
     getCredits(id),
     getTvVideos(id),
-    // Rides along with the other TMDB reads rather than adding a round trip; see the
-    // movie page for why a missing answer here is not an error.
     getTvProviders(id),
     auth(),
   ]);
   const trailer = pickMainTrailer(videos?.results);
 
   const personal = await getPersonalMediaStatus(session?.user?.email, id, "tv");
-  // Whether to ask this member about sharing their activity -- only the first time.
-  //
-  // Read off the session, so it costs no query of its own. The flag says "has already been
-  // asked", so the prompt is for the members who have NOT been asked: the old query returned
-  // the flag itself, which is the opposite of what WatchedButton documents the prop to mean
-  // ("true only the first time this member marks anything watched"). A signed-out visitor is
-  // never asked.
   const askAboutSharing = Boolean(session?.user?.email) && !session?.user?.shareActivityAsked;
 
   return (
@@ -112,9 +103,6 @@ export default async function TvPage({ params, searchParams }: Props) {
           mediumChip: seasonsChip(tv.number_of_seasons),
         }),
         cast: topCast(credits.cast),
-        // This used to be a bare `crew: []`, on the reasoning that a show has no equivalent of
-        // a film's director. The payload disagrees: `created_by` and `networks` both arrive on
-        // the `tv` fetch above and are each dropped. See creatorPanel below.
         crew: [creatorPanel(tv.created_by), networkPanel(tv.networks)].filter(
           (panel) => panel !== null
         ),

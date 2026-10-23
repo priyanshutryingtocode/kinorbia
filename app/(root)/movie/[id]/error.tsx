@@ -2,9 +2,6 @@
 
 import StatusState from "@/components/StatusState";
 
-// This route had no error boundary, so a TMDB failure reached Next's bare default error
-// document. Not hypothetical: getMovieDetails throws on every non-404 problem and also runs
-// from generateMetadata. Sibling routes -- reviews, lists, activity -- always had one.
 export default function MovieDetailError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <StatusState

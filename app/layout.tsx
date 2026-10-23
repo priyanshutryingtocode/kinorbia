@@ -28,9 +28,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // `suppressHydrationWarning` because the script above mutates <html>
-    // before React hydrates it, so the server and client markup differ by
-    // design.
     <html
       lang="en"
       data-scroll-behavior="smooth"

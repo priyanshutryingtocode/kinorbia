@@ -178,5 +178,4 @@ export default async function ReviewsPage({
   );
 }
 
-// Page 1 stays at the bare path so the first page keeps its canonical URL.
 const reviewsHref = (page: number) => buildPageHref("/reviews", {}, page);

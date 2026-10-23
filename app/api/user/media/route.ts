@@ -9,18 +9,10 @@ import {
 import { logger } from "@/lib/logger";
 import type { MediaType } from "@/types";
 
-// Read access to the signed-in member's own library.
-//
-// The browser never needed this: its server components query MongoDB directly, so a read
-// had no HTTP path at all. Anything else talking to this app -- a second client, a script,
-// a test -- does, and the logic underneath is unchanged. This is a transport wrapper, not
-// new behaviour: every filter, sort and shape here already existed in listUserMedia.
 
 const STATES: readonly MediaState[] = ["favorite", "watchlist", "watched", "rated"];
 const SORTS: readonly LibrarySort[] = ["recent", "rating", "title", "year"];
 
-// Free rather than capped low: this is a browse surface the member pulls through, not a
-// write. The write routes keep their tight limits, which is where the abuse risk is.
 export const GET = withAuthedUser(
   async (req, { email }) => {
     const { searchParams } = new URL(req.url);
@@ -38,7 +30,6 @@ export const GET = withAuthedUser(
     if (typeParam && typeParam !== "movie" && typeParam !== "tv") {
       return NextResponse.json({ message: "type must be movie or tv" }, { status: 400 });
     }
-    // Bounded so one request cannot ask for the whole 5000-row library in a single page.
     if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
       return NextResponse.json({ message: "limit must be between 1 and 200" }, { status: 400 });
     }
@@ -49,8 +40,6 @@ export const GET = withAuthedUser(
     const state = stateParam as MediaState;
     const sortParam = searchParams.get("sort") as LibrarySort | null;
 
-    // Each facet is validated on its own range rather than by Number() alone, because
-    // Number("") is 0 and Number(undefined) is NaN -- both would silently become a filter.
     const genre = searchParams.get("genre");
     const minRating = searchParams.get("minRating");
     const year = searchParams.get("year");
@@ -72,7 +61,6 @@ export const GET = withAuthedUser(
     }
     if (year !== null) {
       const parsed = Number(year);
-      // 1870..2100: wide enough for the oldest surviving film and a far-future title.
       if (!Number.isInteger(parsed) || parsed < 1870 || parsed > 2100) {
         return NextResponse.json({ message: "year must be between 1870 and 2100" }, { status: 400 });
       }
@@ -95,8 +83,6 @@ export const GET = withAuthedUser(
         limit,
         facets,
       });
-      // `total` is the count AFTER faceting, so a client can page a narrowed result set
-      // without knowing how many titles matched before the facets were applied.
       return NextResponse.json({ rows, total, state, skip, limit, facets });
     } catch (error) {
       logger.error("library read failed", { state, typeParam, error });

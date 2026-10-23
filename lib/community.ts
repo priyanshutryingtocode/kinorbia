@@ -54,8 +54,6 @@ export async function buildCommunityComparison(
         $group: {
           _id: { movieId: "$movieId", mediaType: "$mediaType" },
           avg: { $avg: "$favorite.personalRating" },
-          // One row per member per title now, so this is a count of people rather than
-          // a count of array entries.
           count: { $sum: 1 },
         },
       },

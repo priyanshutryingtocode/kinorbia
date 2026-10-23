@@ -20,14 +20,8 @@ export function parseYear(value: string | string[] | undefined) {
   return year >= 1900 && year <= 2200 ? year : undefined;
 }
 
-// --- library facets -------------------------------------------------------------
-//
-// Parsed in one place so the profile page, the filter bar and the pagination links all
-// agree on what a facet param means. Each returns undefined for anything malformed rather
-// than throwing: a hand-edited query string should narrow nothing, not break the page.
 
 export const LIBRARY_SORTS = ["recent", "rating", "title", "year"] as const;
-// Internal: `LibraryFacetParams` below is the shape consumers actually pass around.
 type LibrarySortParam = (typeof LIBRARY_SORTS)[number];
 
 export type LibraryFacetParams = {
@@ -53,8 +47,6 @@ export function parseLibraryFacets(params: {
   const minRatingRaw = firstValue(params.minRating)?.trim();
   if (minRatingRaw) {
     const minRating = Number(minRatingRaw);
-    // 1..10, since 0 means "unrated" in this app and rating a facet of 0 would mean
-    // "show me everything I have not rated", which is not what anyone means by it.
     if (Number.isFinite(minRating) && minRating >= 1 && minRating <= 10) {
       facets.minRating = minRating;
     }
@@ -76,8 +68,6 @@ export function parseLibraryFacets(params: {
   return facets;
 }
 
-// Rebuilds the facet portion of a query string, skipping empties. Used by the pagination
-// links so that paging a narrowed library keeps the narrowing instead of resetting it.
 export function libraryFacetQuery(facets: LibraryFacetParams) {
   const params = new URLSearchParams();
   if (facets.genre !== undefined) params.set("genre", String(facets.genre));

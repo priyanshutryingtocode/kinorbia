@@ -57,9 +57,6 @@ function parseTab(value: string | string[] | undefined): ProfileTab {
     : "overview";
 }
 
-// One place for both shelves: a shelf narrowed to zero by a filter must not claim to be
-// empty, because the member's own next move (widen the filter, not add titles) depends
-// on which of the two it is.
 function ShelfEmpty({ filtered, emptyTitle, emptyDescription }: { filtered: boolean; emptyTitle: string; emptyDescription: string }) {
   return filtered ? (
     <EmptyState compact title="Nothing matches your filters" description="Try widening or clearing them." />
@@ -99,8 +96,6 @@ function WatchedCard({ item }: { item: JournalItem }) {
 
 function CompactReview({ review }: { review: ReviewItem }) {
   return (
-    // A container, not a link: it used to be a <Link>, putting the spoiler's reveal
-    // <button> inside an <a> -- invalid HTML, unreachable by keyboard. The title navigates.
     <div className="group border-b border-rule py-4 transition-colors last:border-b-0 hover:bg-surface-raised/25">
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-display text-lg font-semibold">
@@ -207,9 +202,6 @@ function WatchlistGrid({ items }: { items: WatchlistMovie[] }) {
             poster_path: movie.posterPath,
             vote_average: movie.voteAverage,
               release_date: movie.releaseDate,
-                // A watchlist title that is also a favorite shows its badge. Unrated rows pass
-                // undefined so MovieCard omits the chip: it guards on `!== undefined`, so a
-                // plain 0 rendered a "Rate" button here with no onRateClick behind it.
                 personalRating: movie.personalRating || undefined,
                 mediaType: normalizeMediaType(movie.mediaType),
           }}
@@ -243,11 +235,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   let panel;
   let selectedYear: number | undefined;
 
-  // Library facets only apply to the two tabs that read a personal shelf. Parsed once here
-  // so the filter bar, the query and the pagination links all see the same narrowed set.
   const facets = parseLibraryFacets(params);
-  // Any facet that narrows to nothing makes the shelf empty without it being empty. Saying
-  // "your watchlist is empty" to someone holding 30 titles is a lie they can act on wrongly.
   const shelfFiltered = libraryFacetQuery(facets).size > 0;
 
   if (tab === "overview") {
@@ -312,9 +300,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     const result = await getWatchlistPage(email, requestedPage, facets);
     panel = (
       <ProfilePanel id="watchlist" eyebrow="Up next" title="Watchlist" description="The movies and shows you are planning to watch next.">
-        {/* A rating filter stays visible even when nothing is rated: otherwise the control
-            vanishes, the pill with it, and the filter runs invisibly against a shelf it
-            cannot match. Better the member can see it and take it off. */}
         <LibraryFilters tab={tab} facets={facets} showRating={(result.ratedCount ?? 0) > 0 || facets.minRating !== undefined} />
         {result.total ? <WatchlistGrid items={result.items} /> : <ShelfEmpty filtered={shelfFiltered} emptyTitle="Your watchlist is empty" emptyDescription="Add titles from any movie or show page." />}
         <ProfilePagination tab={tab} page={result.page} totalPages={result.totalPages} total={result.total} pageSize={PROFILE_PAGE_SIZES.watchlist} facets={facets} />
@@ -322,7 +307,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     );
   } else if (tab === "reviews") {
     const result = await getReviewPage(email, requestedPage);
-    // Every row on this tab is the viewer's own, so the lookup is a single key.
     const usernames = await buildUsernameMap([email]);
     panel = (
       <ProfilePanel id="reviews" eyebrow="Writing archive" title="Reviews" description="Your public and private reviews across every title.">

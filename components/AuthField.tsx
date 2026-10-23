@@ -16,8 +16,6 @@ type AuthFieldProps = {
   placeholder?: string;
   autoComplete?: string;
   minLength?: number;
-  // A short line under the field. Used on sign-up to state the password rule the
-  // browser enforces natively but says nothing about.
   hint?: string;
 };
 

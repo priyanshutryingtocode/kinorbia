@@ -3,10 +3,6 @@ import { withAuthedUser } from "@/lib/session";
 import { getActivityFeed } from "@/features/activity/queries";
 import { logger } from "@/lib/logger";
 
-// The activity feed over HTTP.
-//
-// `cursor` is opaque and passed straight through -- the client never parses it. `feed`
-// mirrors the tab: the public Community feed, or the members this one follows.
 
 export const GET = withAuthedUser(
   async (req, { email }) => {

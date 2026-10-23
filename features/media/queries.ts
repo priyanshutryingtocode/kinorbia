@@ -37,9 +37,6 @@ type MediaCommunity = {
   ratingMaps: Map<string, Map<string, number>>;
 };
 
-// The two panels a movie detail page shows under the fold. Returns null when there
-// is nothing public to show, which the caller renders as "render no section at all"
-// rather than an empty one.
 export async function getMediaCommunity({
   movieId,
   mediaType,
@@ -85,11 +82,7 @@ export type PersonalMediaStatus = {
   isWatched: boolean;
 };
 
-// Reads the member's relationship to one title from the normalised collection.
-//
-// This used to read the User document's two embedded arrays plus a second query against
-// the journal: three reads, with a fallback folding a legacy null `mediaType` in with
-// "movie". One row now answers all four questions.
+
 export async function getPersonalMediaStatus(
   email: string | null | undefined,
   id: string,
@@ -98,8 +91,6 @@ export async function getPersonalMediaStatus(
   return getMediaStatus(email ?? "", { movieId: id, mediaType });
 }
 
-// The member's most recently added favorite of one media type. Filtering before taking
-// one, not after: a fixed-width window would hide a single old show behind 100 movies.
 export async function getLatestFavoriteOfType(
   email: string,
   mediaType: MediaType

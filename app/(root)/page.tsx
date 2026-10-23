@@ -12,21 +12,12 @@ export const metadata: Metadata = {
   description: "What everyone is watching this week.",
 };
 
-// Trending is the landing page, so it answers "what's worth watching" before asking anyone
-// to pick a shelf. It is the one page on the site that renders identically for a signed-out
-// visitor -- nothing here reads the viewer's library.
-//
-// Genre browsing is a different question and lives at /movies and /shows; the Recommendations
-// strip is a third and rides on those pages, because it needs the viewer's own history.
-
 type Props = {
   searchParams: Promise<{ type?: string; window?: string }>;
 };
 
 function parseFilters(params: { type?: string; window?: string }): TrendingFilters {
   return {
-    // Anything unrecognised falls back to the default rather than erroring: a mistyped
-    // query string should still render a usable page.
     mediaType: params.type === "tv" ? "tv" : "movie",
     window: params.window === "day" ? "day" : "week",
   };
@@ -62,8 +53,6 @@ export default async function TrendingPage({ searchParams }: Props) {
 
       {results.length > 0 ? (
         <MovieGrid
-          // Remounts the grid when a filter changes so the previous view's titles and
-          // load-more page cursor are discarded rather than appended to.
           key={`${filters.mediaType}-${filters.window}`}
           initialItems={results as MovieSummary[]}
           action={fetchTrending}

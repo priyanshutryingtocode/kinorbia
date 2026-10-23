@@ -11,9 +11,6 @@ import type { MovieSummary } from "@/types";
 type SearchLoadMoreProps = {
   action: (args: SearchFilters & { page: number; exclude?: string[] }) => Promise<SearchPage>;
   args: SearchFilters;
-  // The TMDB page the server-rendered batch ended on, and the titles it already showed.
-  // One server page can span several TMDB pages now, so the client resumes from `initialPage`
-  // and excludes `seed` rather than assuming the next click starts one page further on.
   initialPage: number;
   seed: MovieSummary[];
 };

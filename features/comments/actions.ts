@@ -33,8 +33,6 @@ export async function createComment(
     return withState(state, "error", "Comments must be 500 characters or fewer.");
   }
 
-  // Every commentable parent is public by definition (the mutation's lookup matches
-  // only what `publiclyVisible` allows), so a comment is always public content.
   if (!(await isEmailVerified(email))) {
     return withState(state, "error", VERIFICATION_REQUIRED_MESSAGE);
   }

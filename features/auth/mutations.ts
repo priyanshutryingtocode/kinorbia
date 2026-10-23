@@ -15,8 +15,6 @@ type TokenIssue =
   | { outcome: "already-pending" }
   | { outcome: "no-account" };
 
-// Mints a single-use verification token and stores only its hash, so a dump of the
-// collection never yields a usable link. The caller owns the send.
 export async function issueVerifyToken(
   email: string,
   { session }: MutationOptions = {}
@@ -32,7 +30,6 @@ export async function issueVerifyToken(
     return { outcome: "already-verified" };
   }
 
-  // Don't re-send while a link is live: a second email creates two ways to fail.
   if (user?.verifyToken?.expiresAt && user.verifyToken.expiresAt > new Date()) {
     return { outcome: "already-pending" };
   }
@@ -55,8 +52,6 @@ export async function issueVerifyToken(
 
 type VerifyConsume = "verified" | "already-verified" | "invalid";
 
-// Consumes a verification link. The expiry check is load-bearing: without it an old
-// mailed link would keep working indefinitely.
 export async function consumeVerifyToken(
   token: string,
   { session }: MutationOptions = {}
@@ -74,7 +69,6 @@ export async function consumeVerifyToken(
     } | null>();
 
   if (user?.emailVerified) {
-    // Clearing stops a second click on a stale link from re-arming it.
     await User.updateOne({ _id: user._id }, { $unset: { verifyToken: 1 } }, opts);
     return "already-verified";
   }
@@ -88,14 +82,10 @@ export async function consumeVerifyToken(
     return "verified";
   }
 
-  // Unknown token, or one that has expired.
   return "invalid";
 }
 
 type ResetIssue = { outcome: "issued"; token: string; expiresAt: Date } | { outcome: "skipped" };
-
-// Issues a password-reset token. `skipped` covers both "no such account" and "not a
-// credentials account" so the response cannot be used to enumerate addresses.
 export async function issueResetToken(
   email: string,
   { session }: MutationOptions = {}
@@ -122,8 +112,6 @@ export async function issueResetToken(
 
 type ResetConsume = "reset" | "invalid";
 
-// Redeems a reset link, which is itself proof of inbox control, so it doubles as
-// verification.
 export async function consumeResetToken(
   token: string,
   hashedPassword: string,
@@ -131,10 +119,12 @@ export async function consumeResetToken(
 ): Promise<ResetConsume> {
   await dbConnect();
   const opts = session ? { session } : {};
+  const tokenHash = hashToken(token);
+  const now = new Date();
 
   const user = await User.findOne({
-    "resetToken.token": hashToken(token),
-    "resetToken.expiresAt": { $gt: new Date() },
+    "resetToken.token": tokenHash,
+    "resetToken.expiresAt": { $gt: now },
   })
     .select("emailVerified")
     .session(session ?? null)
@@ -144,24 +134,26 @@ export async function consumeResetToken(
     return "invalid";
   }
 
-  await User.updateOne(
-    { _id: user._id },
+  const result = await User.updateOne(
+    {
+      _id: user._id,
+      "resetToken.token": tokenHash,
+      "resetToken.expiresAt": { $gt: now },
+    },
     {
       $set: {
         password: hashedPassword,
-        emailVerified: user.emailVerified ?? new Date(),
-        // Without this a stolen session cookie survives the change made to revoke it.
-        sessionsInvalidBefore: new Date(),
+        emailVerified: user.emailVerified ?? now,
+        sessionsInvalidBefore: now,
       },
       $unset: { resetToken: 1 },
     },
     opts
   );
 
-  return "reset";
+  return result.modifiedCount === 1 ? "reset" : "invalid";
 }
-// Clears a stored verify token without touching `emailVerified`, so a failed send does
-// not suppress the cooldown and block a retry.
+
 export async function clearVerifyToken(
   email: string,
   { session }: MutationOptions = {}
@@ -172,9 +164,6 @@ export async function clearVerifyToken(
 
 type RegisterResult = "created" | "already-exists";
 
-// Creates an account with an unused username derived from the member's name. The
-// check-then-insert race is absorbed by the unique index, which surfaces as the same
-// generic "already-exists" answer so the endpoint cannot probe which addresses exist.
 export async function registerUser(
   account: { name: string; email: string; password: string; baseUsername: string },
   { session }: MutationOptions = {}
@@ -194,7 +183,6 @@ export async function registerUser(
   let username: string | undefined;
 
   for (const candidate of usernameCandidates(account.baseUsername)) {
-    // Model.exists() takes no options, so a session-aware check has to be a findOne.
     if (!(await User.findOne({ username: candidate }).select("_id").session(session ?? null))) {
       username = candidate;
       break;
@@ -202,7 +190,6 @@ export async function registerUser(
   }
 
   if (!username) {
-    // Every candidate taken: a random suffix beats refusing over a name collision.
     username = `${account.baseUsername}-${randomBytes(3).toString("hex")}`;
   }
 

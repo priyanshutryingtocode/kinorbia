@@ -3,14 +3,6 @@ import type { MediaType } from "@/types";
 import { CURATED_GENRES, curatedGenreName } from "@/lib/genres";
 
 const BASE_PATHS: Record<MediaType, string> = { movie: "/movies", tv: "/shows" };
-
-// Server component, not a client one.
-//
-// This used to be `<button>`s driven by useRouter, which meant a genre had no URL of its
-// own: nothing to share, middle-click or prefetch, and no link for a crawler to follow. It
-// is a plain list of links now, and the active genre arrives as a prop from the page that
-// already read it out of searchParams -- so the highlight stays correct without the bar
-// having to read the URL itself.
 export default function GenreFilter({
   mediaType,
   currentGenre = "",
@@ -26,8 +18,6 @@ export default function GenreFilter({
     })),
   ];
 
-  // "All" drops the param entirely rather than setting genre="", so the unfiltered view has
-  // one canonical URL instead of two that render the same thing.
   function genreHref(genreId: string) {
     return genreId ? `${BASE_PATHS[mediaType]}?genre=${genreId}` : BASE_PATHS[mediaType];
   }

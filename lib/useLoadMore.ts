@@ -7,9 +7,6 @@ export type LoadMorePage<T> = { results: T[]; hasMore: boolean; nextPage?: numbe
 type UseLoadMoreOptions<T> = {
   keyOf?: (item: T) => string;
   seedKeys?: string[];
-  // Where the first fetch should start. Defaults to 1. Callers that render an initial batch
-  // server-side pass the page that batch actually ended on, since one batch can span several
-  // upstream pages and resuming one page later would repeat titles already on screen.
   initialPage?: number;
 };
 

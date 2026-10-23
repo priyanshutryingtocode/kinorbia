@@ -44,11 +44,6 @@ export default function LoginPage() {
 
   return (
     <AuthShell>
-      {/* No `text-center` on this wrapper. It used to sit here so the header and
-          footer inherited centring, but that meant the form needed `text-left` to
-          counteract it -- two opposing utilities where neither was needed. The
-          header block below declares its own centring instead, and the form's
-          left alignment is now just the inherited default. */}
       <div className="mx-auto w-full max-w-64">
         <div className="mb-5 text-center">
           <p className="kin-overline mb-1.5 text-highlight-muted">Welcome back</p>

@@ -33,21 +33,14 @@ export default function ReviewCard({
   const body = review.spoiler ? (
     <SpoilerText text={review.body} />
   ) : (
-    // Clamped so one long review cannot set the height for every card beside it. The
-    // spoiler path is deliberately NOT clamped: SpoilerText owns its own bordered box and
-    // reveal toggle, and truncating it would fight both.
     <div className="line-clamp-4 whitespace-pre-wrap wrap-break-word text-xs leading-5 text-content-muted">
       {renderRichText(review.body)}
     </div>
   );
 
-  // movieId is optional on ReviewItem, so a review without one renders as plain text
-  // rather than linking to a page that does not exist.
   const title = review.movieId ? (
     <Link
       href={mediaHref(review.mediaType, review.movieId)}
-      // The clamp means long titles ellipsize; the attribute keeps the full string
-      // available on hover.
       title={review.title}
       className="kin-focus line-clamp-2 wrap-break-word transition-colors hover:text-highlight"
     >
@@ -58,10 +51,6 @@ export default function ReviewCard({
   );
 
   return (
-    // h-full because the grid stretches its items. The row direction (the default) is what
-    // keeps the poster beside the text; dropping the old `items-start` lets the poster column
-    // stretch to the full card height instead of sitting at its natural 2:3 size with bare
-    // surface beneath it.
     <article className="flex h-full min-w-0 overflow-hidden rounded-sheet border border-rule bg-surface/65 transition-colors hover:border-rule-strong">
       <div className="relative h-full w-32 shrink-0 bg-surface-raised sm:w-40">
         <PosterImage
@@ -69,12 +58,6 @@ export default function ReviewCard({
           width="w342"
           alt={review.title}
           sizes="(min-width: 640px) 160px, 128px"
-          // contain, not cover: the column is far taller than a 2:3 poster, so cover
-          // scaled to the height and threw away ~52% of the image horizontally -- a centre
-          // slice of the poster rather than the poster. Contain always shows the whole
-          // image; the leftover space becomes an even matte above and below against
-          // bg-surface-raised. Shortening the text below also shortens the cards, which
-          // shrinks that matte.
           className="object-contain"
         />
       </div>
@@ -104,8 +87,6 @@ export default function ReviewCard({
         </div>
         <div className="mt-3">{body}</div>
         {review.visibility === "public" && (
-          // mt-auto, not mt-4: this is the row that absorbs the leftover height so the
-          // buttons share a baseline across cards in the same grid row.
           <div className="mt-auto flex flex-wrap gap-2 pt-4">
             <SocialActionButton
               type="review"

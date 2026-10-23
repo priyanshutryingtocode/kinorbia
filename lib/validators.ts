@@ -21,9 +21,6 @@ export const updateProfileSchema = z.object({
 });
 
 export const shareActivitySchema = z.object({
-  // Its own endpoint rather than a field on updateProfileSchema: changing who sees your
-  // watch history does not require resubmitting a name and bio, and the one-time prompt
-  // has no name to send.
   share: z.coerce.boolean(),
 });
 

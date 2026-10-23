@@ -42,9 +42,6 @@ export type InsightsData = {
   topGenre: string | null;
 };
 
-// One watched title. `movieId` is required, which is why journalKey below is a single
-// lookup rather than the three-branch fallback it used to be: `movieRefSchema` validates it
-// on the way in, and the unique index means the same title cannot appear twice for a member.
 type JournalLike = {
   watchedAt: string | Date;
   mediaType: MediaType;

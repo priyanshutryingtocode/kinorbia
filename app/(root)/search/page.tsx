@@ -55,12 +55,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const selectedSort = typeof sort === "string" ? sort : "";
   const mediaType = type === "tv" ? "tv" : "movie";
   const isTv = mediaType === "tv";
-// One object, read twice: the fetch below and the `args` handed to SearchLoadMore. Two
-    // hand-written copies let page 1 and page 2+ query different filters, so "load more"
-    // would append results from a different search.
-    //
-    // `sort` counts towards hasNoFilters: the page always sends one, so a sort-only visit
-    // is a real search. Without it `?sort=rating.desc` fell through to "Start discovering".
   const filters: SearchFilters = {
     query,
     year: releaseYear,
@@ -87,9 +81,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     });
 
   const data = await fetchSearchResults(filters, 1);
-  // Already filtered by the action, so each page arrives ready to render. A
-  // client-side filter here would hide matches from the appended pages while
-  // leaving the "load more" control unable to tell that upstream still has some.
   const movies = data.results;
 
   return (
@@ -235,9 +226,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           description={`Type a ${isTv ? "show" : "movie"} title or choose filters to begin.`}
         />
       ) : data.failed ? (
-        // Ahead of the empty state on purpose. TMDB being unreachable is not the same as
-        // the title not existing, and saying "no movies found" for a film that does is
-        // worse than saying nothing useful at all.
         <EmptyState
           compact
           headingLevel={2}
@@ -284,15 +272,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               />
             ))}
           </ul>
-
-          {/* No `!hasNoFilters` guard needed: this sits inside the arm reached
-              only when `hasNoFilters` is already false, so the check was always
-              true. */}
           <SearchLoadMore
-            // Derived from `filters` rather than hand-listing the values. The key used to
-              // omit minRating and maxRuntime, so changing only "Minimum rating" kept the
-              // previous filter's appended results and its page cursor. Anything that changes
-              // the query now necessarily changes the key.
               key={JSON.stringify(filters)}
             action={fetchSearchPage}
             args={filters}

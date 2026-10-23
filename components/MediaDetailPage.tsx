@@ -52,9 +52,6 @@ export default async function MediaDetailPage({
   }: {
     model: DetailModel;
     personal: PersonalMediaStatus;
-    // Whether this member has never been asked about sharing watch activity. Passed in
-    // rather than read here so the detail page owns the one extra query and this
-    // component stays a pure function of its props.
     askAboutSharing?: boolean;
   }) {
   const { summary } = model;

@@ -13,9 +13,6 @@ import { useDismiss } from "@/lib/useDismiss";
 import { ICON_BUTTON_CLASS } from "@/lib/uiClasses";
 
 const NAV_LINKS = [
-  // Trending is the landing page, so it is listed first and its href is the bare root.
-  // Movies keeps its own /movies route rather than owning "/", because "/" now answers a
-  // different question -- what everyone is watching, not the full movie catalogue.
   { name: "Trending", href: "/" },
   { name: "Movies", href: "/movies" },
   { name: "Shows", href: "/shows" },

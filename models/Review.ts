@@ -20,8 +20,6 @@ const ReviewSchema = new mongoose.Schema({
 ReviewSchema.index({ userEmail: 1 });
 ReviewSchema.index({ visibility: 1 });
 ReviewSchema.index({ movieId: 1, mediaType: 1, visibility: 1, createdAt: -1 });
-// The last two exist on the server under names an older mongoose generated. Do not drop
-// them: MongoDB will not recreate the same key under a second name (IndexOptionsConflict 85).
 ReviewSchema.index({ visibility: 1, createdAt: -1, _id: -1 });
 ReviewSchema.index({ userEmail: 1, createdAt: -1, _id: -1 });
 

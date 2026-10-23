@@ -47,7 +47,7 @@ function ListPoster({ movie }: { movie: ListMovie }) {
         />
       </div>
       <div className="p-2.5">
-        <h3 className="break-words text-sm font-medium leading-5 text-content [overflow-wrap:anywhere] transition-colors group-hover:text-highlight">
+        <h3 className="wrap-break-word text-sm font-medium leading-5 text-content transition-colors group-hover:text-highlight">
           {movie.title}
         </h3>
         <p className="mt-1 text-xs text-content-subtle">
@@ -59,9 +59,6 @@ function ListPoster({ movie }: { movie: ListMovie }) {
 }
 
 export default async function ListDetailPage({ params }: ListDetailPageProps) {
-  // Nullable, not `requireUserEmail()`. The query treats a public list as readable by anyone,
-  // but this used to redirect anonymous visitors to /login before the lookup ran, making a
-  // public list unreachable. `activity` and `u/[username]` resolve the session this way too.
   const session = await auth();
   const currentUserEmail = session?.user?.email ?? null;
 
@@ -88,7 +85,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
         Back to lists
       </Link>
       <PageHeader
-        className="mt-6 [&_h1]:[overflow-wrap:anywhere]"
+        className="mt-6 [&_h1]:wrap-anywhere"
         eyebrow="Collection"
         title={list.title}
         description={
@@ -99,7 +96,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
               {formatDate(list.createdAt)} · {countLabel}
             </p>
             {list.description && (
-              <p className="mt-2 max-w-3xl break-words [overflow-wrap:anywhere]">
+              <p className="mt-2 max-w-3xl wrap-break-word">
                 {list.description}
               </p>
             )}

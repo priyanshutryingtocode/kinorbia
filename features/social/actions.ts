@@ -37,8 +37,6 @@ export async function toggleSocialAction(formData: FormData) {
     return;
   }
 
-  // The caller tells us which surface it was triggered from; the helper checks
-  // that against the routes this app actually owns.
   revalidateRoute(path);
 
   if (type === "list") {

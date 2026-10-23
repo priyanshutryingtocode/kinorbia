@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { assistantPromptSchema, parseBody, badRequest } from "@/lib/validators";
 import { withRateLimit } from "@/lib/rateLimit";
-import { searchMovies, searchTv, getRecommendations } from "@/lib/tmdb";
+import {
+  searchMovies,
+  searchTv,
+  getRecommendations,
+  getPopularMovies,
+  getPopularTv,
+} from "@/lib/tmdb";
 import { getGeminiPlan } from "@/lib/assistant/gemini";
 import { getReferencedTitle, hasQualifier, isTvRequest } from "@/lib/assistant/intent";
 import { getUserContext } from "@/lib/assistant/context";
@@ -29,6 +35,31 @@ async function searchTmdbTitle(title: string, mediaType: "movie" | "tv" = "movie
 async function getTmdbRecommendations(id: string, mediaType: "movie" | "tv" = "movie") {
   const data = await getRecommendations(id, mediaType);
   return (data?.results || []).slice(0, 6);
+}
+
+async function getFallbackRecommendations(
+  mediaType: "movie" | "tv",
+  referenceMovies: MovieSummary[],
+  watchedTitles: string[]
+) {
+  const watched = new Set(watchedTitles.map((title) => title.trim().toLowerCase()));
+  const selected = new Map<string, MovieSummary>();
+  const addUnwatched = (candidates: MovieSummary[]) => {
+    for (const movie of candidates) {
+      if (!watched.has(movie.title.trim().toLowerCase())) {
+        selected.set(movie.id.toString(), movie);
+      }
+      if (selected.size >= 6) break;
+    }
+  };
+
+  addUnwatched(referenceMovies);
+  if (selected.size < 6) {
+    const popular = mediaType === "tv" ? await getPopularTv() : await getPopularMovies();
+    addUnwatched(popular?.results || []);
+  }
+
+  return [...selected.values()];
 }
 
 function serializeMessages(messages: unknown[] = []) {
@@ -103,15 +134,51 @@ export const POST = withRateLimit(
 
       const history = await getHistory(email);
 
-      const plan = await getGeminiPlan(
-        prompt,
-        history,
-        context,
-        { title: referencedMovie?.title },
-        mediaType
-      );
+      let plan: Awaited<ReturnType<typeof getGeminiPlan>>;
+      try {
+        plan = await getGeminiPlan(
+          prompt,
+          history,
+          context,
+          { title: referencedMovie?.title },
+          mediaType
+        );
+      } catch (error) {
+        logger.warn("Gemini unavailable; using TMDB fallback", {
+          error: error instanceof Error ? error.message : String(error),
+        });
 
-      const settled = await Promise.allSettled(plan.titles.map((title) => searchTmdbTitle(title, mediaType)));
+        let movies: MovieSummary[];
+        try {
+          movies = await getFallbackRecommendations(
+            mediaType,
+            referenceMovies,
+            context.watched.map((item) => item.title)
+          );
+        } catch (fallbackError) {
+          logger.warn("TMDB assistant fallback failed", {
+            error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+          });
+          movies = [];
+        }
+        if (movies.length > 0) {
+          const noun = mediaType === "tv" ? "shows" : "films";
+          const reply = referencedMovie
+            ? `I couldn't personalize picks right now, but here are some titles similar to "${referencedMovie.title}".`
+            : `I couldn't personalize picks right now, but here are some popular ${noun} you might enjoy.`;
+          await persistConversation(email, prompt, reply, movies);
+          return NextResponse.json({ reply, movies, fallback: true });
+        }
+
+        return NextResponse.json(
+          { message: "The assistant is unavailable and no recommendations could be loaded. Please try again shortly." },
+          { status: 503 }
+        );
+      }
+
+      const settled = await Promise.allSettled(
+        plan.titles.map((title) => searchTmdbTitle(title, mediaType))
+      );
       const rawMovies = settled.map((result) => (result.status === "fulfilled" ? result.value : null));
       const seen = new Set<string>();
       let movies = rawMovies.filter((movie): movie is MovieSummary => {
@@ -133,13 +200,6 @@ export const POST = withRateLimit(
       return NextResponse.json({ reply, movies });
     } catch (error) {
       logger.error("Movie assistant error:", { error: error });
-
-      if (error instanceof Error && error.message === "Missing GEMINI_API_KEY") {
-        return NextResponse.json(
-          { message: "Gemini is not configured. Add GEMINI_API_KEY to .env.local." },
-          { status: 503 }
-        );
-      }
 
       return NextResponse.json(
         { message: "The assistant could not recommend movies right now." },

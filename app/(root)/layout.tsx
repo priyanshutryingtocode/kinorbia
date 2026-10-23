@@ -12,7 +12,7 @@ export default function MainLayout({
     <>
       <a
         href="#main"
-        className="kin-focus sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-control focus:bg-content focus:px-4 focus:py-2 focus:text-canvas focus:outline-none"
+        className="kin-focus sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-(--z-toast) focus:rounded-control focus:bg-content focus:px-4 focus:py-2 focus:text-canvas focus:outline-none"
       >
         Skip to content
       </a>

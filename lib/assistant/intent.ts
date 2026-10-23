@@ -1,6 +1,3 @@
-// Prompt-intent heuristics: regexes over English phrasing that decide what to do before
-// spending a Gemini call. They live apart from the Gemini client so that changing the wording
-// rules does not mean touching the request builder.
 
 export function getReferencedTitle(prompt: string) {
   const quoted = prompt.match(/["“]([^"”]+)["”]/)?.[1];

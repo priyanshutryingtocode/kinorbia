@@ -16,7 +16,6 @@ export default function PagerEdge({
 }: PagerEdgeProps) {
   const isPrevious = direction === "previous";
   const label = isPrevious ? "Previous" : "Next";
-  // The chevron points outward on both sides: left of Previous, right of Next.
   const Icon = isPrevious ? ChevronLeft : ChevronRight;
   const labelClass = href ? "hidden sm:inline" : "sr-only sm:not-sr-only";
   const iconNode = <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />;

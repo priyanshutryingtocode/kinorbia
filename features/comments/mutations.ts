@@ -18,8 +18,6 @@ type CreateCommentResult =
   | { ok: true; commentId: string }
   | { ok: false; reason: "parent-unavailable" | "write-failed" };
 
-// Posts a comment and notifies the parent author. The parent lookup matches only what
-// `publiclyVisible` allows, so the comment itself needs no visibility flag.
 export async function postComment(
   input: {
     authorEmail: string;
@@ -50,8 +48,6 @@ export async function postComment(
 
   let created: Array<{ _id: { toString: () => string } }>;
   try {
-    // The array form is the only one that accepts options; the bare form reads the
-    // second argument as a second document to insert.
     created = await Comment.create(
       [
         {
@@ -65,16 +61,12 @@ export async function postComment(
       opts
     );
   } catch (error) {
-    // Reported to the member as a retry rather than leaking a database message into
-    // the UI -- but not silently, which made a rejected write indistinguishable from a
-    // transient one.
     logger.error("Error creating comment:", { error });
     return { ok: false, reason: "write-failed" };
   }
 
   const commentId = created[0]._id.toString();
 
-  // Never notify someone of a comment on their own post.
   if (parent.userEmail !== input.authorEmail) {
     try {
       await Notification.create(
@@ -96,8 +88,6 @@ export async function postComment(
         opts
       );
     } catch (error) {
-      // A failed notification must not fail the comment. Logged, because a missing
-      // notification is otherwise invisible until a member reports it.
       logger.error("Error creating notification:", { error });
     }
   }
@@ -107,10 +97,6 @@ export async function postComment(
 
 type DeleteCommentResult = "deleted" | "not-found" | "write-failed";
 
-// Deletes a comment the caller owns, then removes the notification it produced.
-//
-// Two deletes, not one: notifications written before `commentId` existed hold an empty string,
-// and matching only the exact id would strand them forever.
 export async function removeComment(
   input: { actorEmail: string; commentId: string },
   { session }: MutationOptions = {}

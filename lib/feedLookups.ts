@@ -1,13 +1,3 @@
-// Pure lookups over already-fetched maps, with no model imports.
-//
-// These live apart from lib/reviewRatings.ts and lib/profileLinks.ts because those reach
-// for Mongoose, and a "use client" component cannot import them: doing so pulls the whole
-// model layer -- and node:async_hooks -- into the browser bundle, which fails the build
-// with "server-only cannot be imported from a Client Component module".
-//
-// Both accept a Map or a plain object, because the server-rendered page holds Maps while
-// the appended pages arrive from a server action as objects.
-
 import { mediaKey } from "@/lib/media";
 import type { MediaType } from "@/types";
 

@@ -77,9 +77,6 @@ export default function AuthOrb() {
       <g className="auth-orb-orbit">
         <circle cx={C} cy={C - R} r={4.5} fill="var(--highlight)" />
       </g>
-      {/* Capped at r=252 so it stays inside the viewBox. An earlier draft used
-          278, which put the dot 23px outside a 520-unit box and clipped it for
-          part of every orbit. */}
       <g className="auth-orb-orbit-rev">
         <circle cx={C} cy={C - 250} r={3.5} fill="var(--accent)" />
       </g>

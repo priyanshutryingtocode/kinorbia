@@ -49,11 +49,6 @@ export default function SignUpPage() {
 
   return (
     <AuthShell>
-      {/* No `text-center` on this wrapper -- it made the header inherit centring and
-          forced the form to counteract it with `text-left`. The header now
-          declares its own centring, and the form relies on the left default.
-          The registered-success card keeps `text-center` because it is genuinely
-          all centred copy. */}
       <div className="mx-auto w-full max-w-64">
         {!registered && (
           <div className="mb-5 text-center">

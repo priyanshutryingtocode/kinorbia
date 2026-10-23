@@ -57,9 +57,6 @@ export async function persistConversation(
 }
 
 
-// The full stored thread, unfiltered. `getHistory` returns only the tail the prompt
-// needs; this is for the GET endpoint, which sends the whole thing back to the client
-// to redraw the panel.
 export async function getConversationMessages(
   email: string
 ): Promise<{ messages?: unknown[] } | null> {

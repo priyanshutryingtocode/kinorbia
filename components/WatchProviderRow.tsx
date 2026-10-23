@@ -2,14 +2,6 @@ import ProviderLogo from "@/components/ProviderLogo";
 import { tmdbImage } from "@/lib/media";
 import type { WatchProvider } from "@/types";
 
-// Services arrive already narrowed to one country -- the caller resolves it, so two
-// countries can never be mixed in one row. No picker: an earlier uncontrolled <select>
-// changed nothing until you pressed a button, leaving dropdown and content disagreeing.
-//
-// TMDB billing variants ("Paramount Plus Premium"/"Essential" are one service) are shown
-// separately; merging by name risks naming a service a title is not on.
-
-// Enough to cover the realistic shelf without turning the row into a wall of logos.
 const PER_KIND_LIMIT = 6;
 
 const KIND_LABELS: Record<WatchProvider["kind"], string> = {
@@ -20,13 +12,10 @@ const KIND_LABELS: Record<WatchProvider["kind"], string> = {
 
 type WatchProviderRowProps = {
   providers: WatchProvider[];
-  /** False when TMDB could not be reached, which is different from "nothing here". */
   hasData: boolean;
 };
 
 export default function WatchProviderRow({ providers, hasData }: WatchProviderRowProps) {
-  // Nothing to say when the lookup failed or the title has no offers anywhere. Showing a
-  // heading over an empty list is worse than not showing the section at all.
   if (!hasData) return null;
 
 
@@ -47,7 +36,6 @@ export default function WatchProviderRow({ providers, hasData }: WatchProviderRo
       </h2>
 
       {grouped.length === 0 ? (
-        // A real answer, not an error: TMDB lists no service in this country for this title.
         <p className="text-sm text-content-muted">
           No streaming services are listed.
         </p>

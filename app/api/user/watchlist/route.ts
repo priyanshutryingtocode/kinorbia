@@ -16,9 +16,6 @@ export const POST = withAuthedUser(
       snapshot: {
         movieId: body.movieId,
         mediaType: body.mediaType,
-        // genreIds was dropped by Mongoose's strict mode while the sub-schema lacked the
-        // field. The schema declares it now, so a watchlist entry carries the same genres a
-        // favorite does -- as data seeded via the raw driver always has.
         title: body.movieTitle,
         posterPath: body.posterPath,
         voteAverage: body.voteAverage,

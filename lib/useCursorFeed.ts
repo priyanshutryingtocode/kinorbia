@@ -3,12 +3,6 @@
 import { useCallback, useRef, useState } from "react";
 import type { FeedKind } from "@/lib/feedTypes";
 
-// Cursor paging for the activity feed.
-//
-// The server hands back an opaque `nextCursor` and there is no page number, so appending is
-// a plain cursor walk. Dedupe on the (kind, id) key anyway: the same event can appear twice
-// if a member marks something watched between two loads, and a repeated card is the one
-// artefact a reader would notice immediately.
 type CursorFeedItem = { kind: FeedKind; id: string };
 
 type CursorPage<T extends CursorFeedItem> = {
@@ -33,8 +27,6 @@ export function useCursorFeed<T extends CursorFeedItem>(
   const [error, setError] = useState<string | null>(null);
 
   const seen = useRef(new Set(initial.map(keyOf)));
-  // Seed and seedCursor both change when the tabs or the signed-in member change, which
-  // remounts this component, so the initial value is correct rather than stale.
   const canLoad = cursor !== null;
 
   const loadMore = useCallback(async () => {

@@ -19,10 +19,6 @@ type MovieGridProps = {
   initialItems: MovieSummary[];
   action: (args: BrowseArgs) => Promise<LoadMorePage<MovieSummary>>;
   args?: { genre?: string; mediaType?: MediaType; window?: TrendingWindow };
-  // Where the server-side batch actually ended. One batch can span several upstream pages
-  // (loadBrowsePage fills past posterless titles), so resuming at page 1 would re-request a
-  // page already on screen. The exclusion list still makes that harmless, but it costs a
-  // TMDB request per load-more to achieve nothing.
   initialPage?: number;
 };
 

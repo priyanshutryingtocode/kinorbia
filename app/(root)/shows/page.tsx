@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   description: "Browse popular TV shows across genres on KinOrbia.",
 };
 
-// The shows vocabulary. Everything structural is shared with /movies.
 const COPY: BrowseCopy = {
   headingNoun: "Shows",
   ledeGenre: "Explore TV shows in your selected genre.",

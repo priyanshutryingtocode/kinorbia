@@ -17,10 +17,6 @@ const MESSAGES = {
 type WatchedButtonProps = {
   movie: DetailSummary;
   initialIsWatched: boolean;
-  // True only the first time this member marks anything watched. The dialog resolves the
-  // preference BEFORE the write, because markWatched stamps `watched.broadcast` from the
-  // stored flag at write time -- asking afterwards would retroactively broadcast a watch
-  // the member was told was private.
   askAboutSharing?: boolean;
 };
 
@@ -35,7 +31,6 @@ export default function WatchedButton({ movie, initialIsWatched, askAboutSharing
     lockWhenActive: true,
   });
 
-  // Answered either way once the dialog closes, so it never reappears.
   const onToggle = useCallback(async () => {
     if (askAboutSharing && !initialIsWatched) {
       setAsking(true);
@@ -43,8 +38,7 @@ export default function WatchedButton({ movie, initialIsWatched, askAboutSharing
     }
     await toggle();
   }, [askAboutSharing, initialIsWatched, toggle]);
-
-  // The answer is already persisted by the toggle itself; the dialog only needs closing.
+  
   const finish = useCallback(async () => {
     setAsking(false);
     await toggle();

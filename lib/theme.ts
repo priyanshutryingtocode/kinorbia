@@ -59,8 +59,6 @@ function setTheme(theme: Theme) {
   try {
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {
-    // Private browsing and blocked storage both throw. The theme still applies
-    // for this page view; it just will not be remembered.
   }
 
   notify();

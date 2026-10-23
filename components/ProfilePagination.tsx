@@ -7,8 +7,6 @@ type ProfilePaginationProps = {
   totalPages: number;
   total: number;
   pageSize: number;
-  // Carried into the links so paging a narrowed library keeps the narrowing. Without this,
-  // page 2 of a genre filter would quietly become page 2 of the whole library.
   facets?: LibraryFacetParams;
 };
 

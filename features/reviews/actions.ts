@@ -86,8 +86,6 @@ export async function updateReview(
   }
 
   try {
-    // Flipping a private review to public is the moment it becomes visible, so
-    // that is where the check belongs rather than on create alone.
     if (visibility === "public" && !(await isEmailVerified(email))) {
       return withState(state, "error", VERIFICATION_REQUIRED_MESSAGE);
     }

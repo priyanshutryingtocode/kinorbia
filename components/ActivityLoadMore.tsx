@@ -27,8 +27,6 @@ type ActivityLoadMoreProps = {
   fetchPage: (args: { cursor: string | null; isFollowingFeed: boolean }) => Promise<AppendedPage>;
 };
 
-// Client half of the feed. The server renders the first page; this appends the rest by
-// walking the cursor, so no page number or total appears anywhere in the flow.
 export default function ActivityLoadMore({
   seed,
   seedUsernames,
@@ -40,10 +38,6 @@ export default function ActivityLoadMore({
 }: ActivityLoadMoreProps) {
   const keyOf = useCallback((item: SerializedFeedRow) => `${item.kind}:${item.id}`, []);
 
-  // Each page carries the usernames and ratings for the people in it, and is kept with its
-  // own rows rather than merged into one map: a later page's map only covers its own rows,
-  // so a single merged map would be correct but a row still needs the right one for its
-  // byline and rating chip.
   const { items, loading, hasMore, error, loadMore } = useCursorFeed<SerializedFeedRow & { usernames: Names; names: DisplayNames; ratingMaps: Ratings }>(
     async ({ cursor }) => {
       const page = await fetchPage({ cursor, isFollowingFeed });

@@ -18,8 +18,6 @@ type MovieRatingControlProps = {
 export default function MovieRatingControl({ movie, initialRating, isWatched }: MovieRatingControlProps) {
   const [rating, setRating] = useState(initialRating);
   const [draftStars, setDraftStars] = useState(initialRating > 0 ? initialRating / 2 : 2.5);
-  // An unrated title seeds at 2.5, which maps to a real score (5 of 10). Without this, Save was
-  // live on load and one click wrote a rating the member never picked.
   const [touched, setTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();

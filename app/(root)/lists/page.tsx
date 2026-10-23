@@ -78,7 +78,7 @@ function ListRow({
         <h3 className="mt-2 font-display text-xl font-medium leading-tight text-content">
           <Link
             href={`/lists/${list._id}`}
-            className="kin-focus rounded-sm break-words [overflow-wrap:anywhere] transition-colors hover:text-highlight"
+            className="kin-focus rounded-sm wrap-break-word transition-colors hover:text-highlight"
           >
             {list.title}
           </Link>
@@ -297,10 +297,6 @@ export default async function ListsPage({
               title="No favorites yet"
               description="Add movies and shows to your favorites before creating a list."
             >
-              {/* Hovers *into* the muted gold rather than toward plain
-                  `text-highlight/80`. On a light ground a fainter colour is a
-                  less legible one, so softening that way walks the link down to
-                  roughly 3.2:1 on hover -- the same trap the kickers had. */}
               <Link
                 href="/movies"
                 className="kin-focus rounded-sm text-sm font-semibold text-highlight hover:text-highlight-muted"
@@ -352,5 +348,4 @@ export default async function ListsPage({
   );
 }
 
-// Page 1 stays at the bare path so the first page keeps its canonical URL.
 const listsHref = (page: number) => buildPageHref("/lists", {}, page);

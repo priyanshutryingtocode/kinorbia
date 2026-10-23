@@ -22,7 +22,6 @@ export function buildRatingMap(
   return map;
 }
 
-// Re-exported from the model-free module so server callers keep one import path.
 export { lookupRating } from "@/lib/feedLookups";
 
 export async function findFavoriteByMediaKey(
@@ -34,8 +33,6 @@ export async function findFavoriteByMediaKey(
   return row ? toFavoriteMovie(row) : undefined;
 }
 
-// The row already carries the six fields a FavoriteMovie has, so the hand-written
-// mapping that used to sit in lists/actions.ts lives here once instead.
 export function toFavoriteMovie(row: MediaRow): FavoriteMovie {
   return {
     movieId: row.movieId,
@@ -50,13 +47,6 @@ export function toFavoriteMovie(row: MediaRow): FavoriteMovie {
   };
 }
 
-// A watchlist entry is a reference without the viewer's own rating. Emitting
-// `personalRating` here is what `serializeWatchlist` used to have to invent a zero for,
-// and it is why `WatchlistMovie` was deliberately not an alias of `FavoriteMovie`.
-// A watchlist entry carries no rating of its own, but a title can be on the watchlist AND be
-// a favorite -- favorite and watchlist are states on the same usermovies row. When it is, the
-// rating is real and belongs on screen; dropping it meant a watchlist item could never show
-// a badge and the rating facet below it could only ever return empty.
 export function toWatchlistMovie(row: MediaRow): WatchlistMovie {
   return {
     movieId: row.movieId,
@@ -71,10 +61,6 @@ export function toWatchlistMovie(row: MediaRow): WatchlistMovie {
   };
 }
 
-// `names` is the DISPLAY name, which is not the same thing as `usernames` -- the latter is
-// the handle used for the profile link. Reviews and lists carry their author's display name
-// denormalized on the row, but a usermovies row carries no author name at all, so a watch
-// byline has to resolve it or it falls back to printing the handle ("leo.kim").
 export async function buildReviewerMaps(
   emails: (string | null | undefined)[]
 ): Promise<{
@@ -87,7 +73,6 @@ export async function buildReviewerMaps(
     return { ratingMaps: new Map(), usernames: new Map(), names: new Map() };
   }
 
-  // `name` added to the same projection, so this stays one query rather than a second.
   const [users, ratingMaps] = await Promise.all([
     User.find({ email: { $in: candidates } })
       .select("email username name")
@@ -97,8 +82,6 @@ export async function buildReviewerMaps(
 
   const names = new Map<string, string>();
   for (const user of users) {
-    // A blank display name is worse than none: falling back to the handle is what produced
-    // "leo.kim" in a byline, so only store one that is actually present.
     if (user.name) {
       names.set(user.email.toLowerCase(), user.name);
     }

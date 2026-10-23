@@ -4,10 +4,6 @@ import { getTasteRecommendations } from "@/features/media/recommendations";
 import { logger } from "@/lib/logger";
 
 // Taste-based recommendations for the signed-in member.
-//
-// Distinct from /api/user/feed: this answers "what should I watch next, from what I have
-// actually watched", not "what has my network done". It reads the member's own library and
-// never exposes another member's data.
 
 export const GET = withAuthedUser(
   async (_req, { email }) => {

@@ -19,16 +19,6 @@ export interface CarouselMovie {
 const CAROUSEL_SCROLL_BUTTON_CLASS =
   "kin-focus absolute top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-rule bg-scrim/70 text-on-scrim opacity-0 shadow-card backdrop-blur-md transition-all duration-300 hover:border-rule-strong hover:bg-surface-raised focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 md:flex";
 
-// The class names are written out in full rather than built as `${side}-0`. Tailwind's scanner
-// reads literal strings out of source files, so an interpolated class name never becomes a CSS
-// rule: `right-0` was not generated at all, which left the right arrow with no horizontal
-// positioning. As an absolutely positioned element with `left: auto; right: auto` it fell back
-// to its static position -- the left edge of the carousel -- so both arrows sat there, 32px
-// apart. The left one only worked because `left-0` happens to appear in the source of two
-// unrelated components.
-//
-// `npm run check:class-names` fails on this pattern. If you need a computed class name, force it
-// with `@source inline(...)` in app/globals.css rather than interpolating it here.
 function scrollButtonClass(side: "left" | "right") {
   return side === "left"
     ? `${CAROUSEL_SCROLL_BUTTON_CLASS} left-0 -translate-x-4`

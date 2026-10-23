@@ -1,17 +1,37 @@
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
 import { withAuthedUser } from "@/lib/session";
+import { isObjectId } from "@/lib/objectId";
 import { markNotificationsRead } from "@/features/social/mutations";
 
 export const POST = withAuthedUser(
   async (req, { email }) => {
-    const body = await req.json().catch(() => null);
-    const rawId = typeof body?.id === "string" ? body.id.trim() : "";
-    const id = mongoose.isValidObjectId(rawId) ? rawId : "";
+    const rawBody = await req.text();
+    let body: unknown = null;
 
-    // No valid id means "mark everything", which is the same call with no id rather
-    // than a second code path.
-    await markNotificationsRead(email, id || undefined);
+    if (rawBody.trim()) {
+      try {
+        body = JSON.parse(rawBody);
+      } catch {
+        return NextResponse.json({ message: "Invalid request body." }, { status: 400 });
+      }
+
+      if (body === null) {
+        return NextResponse.json({ message: "Invalid request body." }, { status: 400 });
+      }
+    }
+
+    if (body !== null && (typeof body !== "object" || Array.isArray(body))) {
+      return NextResponse.json({ message: "Invalid request body." }, { status: 400 });
+    }
+
+    const hasId = body !== null && Object.hasOwn(body, "id");
+    const rawId = body && "id" in body && typeof body.id === "string" ? body.id.trim() : "";
+    if (hasId && !isObjectId(rawId)) {
+      return NextResponse.json({ message: "A valid notification ID is required." }, { status: 400 });
+    }
+
+    const id = hasId ? rawId : undefined;
+    await markNotificationsRead(email, id);
 
     return NextResponse.json({ ok: true });
   },

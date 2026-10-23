@@ -43,8 +43,6 @@ export default function Footer() {
 
         <div>
           <h2 className="kin-overline mb-4 text-highlight">Credits</h2>
-          {/* No mt-6 here: it beat the heading's mb-4 through sibling margin collapsing and
-              dropped this column below the other three by ~8px. */}
           <p className="text-xs leading-5 text-content-muted">
             &copy; {new Date().getFullYear()} KinOrbia. <br /> Data provided by TMDB. <br /> Made by Priyanshu Srivastava
           </p>
