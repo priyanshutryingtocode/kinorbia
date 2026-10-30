@@ -78,7 +78,7 @@ EMAIL_FROM=KinOrbia <onboarding@resend.dev>
 UPSTASH_REDIS_REST_URL=...      # rate limiting
 UPSTASH_REDIS_REST_TOKEN=...
 GEMINI_API_KEY=...              # the assistant
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
 Then:

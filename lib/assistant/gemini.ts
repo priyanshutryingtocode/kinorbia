@@ -36,7 +36,7 @@ function parseGeminiJson(text: string): GeminiPlan {
   }
 }
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
 type GeminiPlan = {
   reply: string;
@@ -107,7 +107,6 @@ export async function getGeminiPlan(
           },
         ],
         generationConfig: {
-          temperature: 0.45,
           maxOutputTokens: 1200,
           responseMimeType: "application/json",
           responseSchema: {
