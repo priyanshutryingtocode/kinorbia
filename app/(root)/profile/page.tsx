@@ -14,7 +14,6 @@ import { buildInsights, yearsFromJournal } from "@/lib/insights";
 import { countLabel, formatDate, mediaHref, mediaKey, normalizeMediaType } from "@/lib/media";
 import { firstValue, libraryFacetQuery, parseLibraryFacets, parsePage, parseYear } from "@/lib/searchParams";
 
-import { buildUsernameMap } from "@/lib/profileLinks";
 import EmptyState from "@/components/EmptyState";
 import MovieCard from "@/components/MovieCard";
 import ProfileActions from "@/components/profileActions";
@@ -307,7 +306,10 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     );
   } else if (tab === "reviews") {
     const result = await getReviewPage(email, requestedPage);
-    const usernames = await buildUsernameMap([email]);
+    const usernames = new Map<string, string>();
+    if (identity.username) {
+      usernames.set(email.toLowerCase(), identity.username);
+    }
     panel = (
       <ProfilePanel id="reviews" eyebrow="Writing archive" title="Reviews" description="Your public and private reviews across every title.">
         {result.total ? <div className="grid gap-4 xl:grid-cols-2">{result.items.map((review) => <ReviewCard key={review._id} review={review} rating={result.ratingMap.get(mediaKey(review.mediaType, review.movieId)) || 0} currentUserEmail={email} path="/profile" usernames={usernames} />)}</div> : <EmptyState compact title="No reviews yet" description="Write your first review from a movie or show page." />}

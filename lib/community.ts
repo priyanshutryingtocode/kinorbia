@@ -43,13 +43,21 @@ export async function buildCommunityComparison(
 
   await dbConnect();
 
+  const ratedIds = [...new Set(rated.map((favorite) => favorite.movieId))];
+
   const rows = await UserMovie.aggregate<{
     _id: { movieId: string; mediaType: string };
     avg: number;
     count: number;
   }>(
     [
-      { $match: { "favorite.personalRating": { $gt: 0 }, ...(userEmail ? { userEmail: { $ne: userEmail } } : {}) } },
+      {
+        $match: {
+          "favorite.personalRating": { $gt: 0 },
+          movieId: { $in: ratedIds },
+          ...(userEmail ? { userEmail: { $ne: userEmail } } : {}),
+        },
+      },
       {
         $group: {
           _id: { movieId: "$movieId", mediaType: "$mediaType" },

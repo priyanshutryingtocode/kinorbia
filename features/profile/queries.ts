@@ -11,10 +11,11 @@ import {
   listUserMediaRows,
   listWatchDays,
   listWatchHistory,
+  ratingMapForEntries,
   type MediaRow,
   type WatchedRow,
 } from "@/features/media/userMovie";
-import { buildRatingMap, toFavoriteMovie, toWatchlistMovie } from "@/lib/reviewRatings";
+import { toFavoriteMovie, toWatchlistMovie } from "@/lib/reviewRatings";
 import { PEOPLE_PAGE_SIZE, PROFILE_PAGE_SIZES } from "@/features/profile/constants";
 import { serializeList, type RawMovieList } from "@/features/lists/serializers";
 import { serializeReview, type RawReview } from "@/features/reviews/serializers";
@@ -88,6 +89,7 @@ export async function getPublicProfileData({
     followerCount,
     followingCount,
     currentUser,
+    favoritePage,
   ] = await Promise.all([
     Review.countDocuments({ userEmail: targetEmail, ...publiclyVisible() }),
     MovieList.countDocuments({ userEmail: targetEmail, ...publiclyVisible() }),
@@ -116,15 +118,16 @@ export async function getPublicProfileData({
     isSelf || !currentEmail
       ? Promise.resolve(null)
       : User.findOne({ email: currentEmail }).select("following").lean<{ following?: string[] } | null>(),
+    listUserMedia(targetEmail, "favorite", { limit: PREVIEW_LIMIT }),
   ]);
 
-  const { rows: allFavorites, total: favoriteCount } = await listUserMedia(targetEmail, "favorite");
+  const ratingMap = await ratingMapForEntries(targetEmail, reviews);
 
   return {
     user: { ...user, email: targetEmail },
-    favorites: allFavorites.slice(0, PREVIEW_LIMIT).map(toFavoriteMovie),
-    favoriteCount,
-    ratingMap: buildRatingMap(allFavorites),
+    favorites: favoritePage.rows.map(toFavoriteMovie),
+    favoriteCount: favoritePage.total,
+    ratingMap,
     publicReviewCount,
     publicListCount,
     reviews,
@@ -401,44 +404,39 @@ async function mediaPage(
   facets?: LibraryFacetParams
 ): Promise<ProfilePage<FavoriteMovie | WatchlistMovie>> {
   const options = { facets } as const;
-  const first = await listUserMedia(email, state, {
-    ...options,
-    skip: (requestedPage - 1) * pageSize,
-    limit: pageSize,
-  });
-
-  const toItem = state === "watchlist" ? toWatchlistMovie : toFavoriteMovie;
-  const ratedCount =
+  const listOptions = (skip: number) => ({ ...options, skip, limit: pageSize });
+  const ratedCountPromise =
     state === "watchlist"
-      ? await UserMovie.countDocuments({
+      ? UserMovie.countDocuments({
           userEmail: email,
           "watchlist.addedAt": { $ne: null },
           "favorite.personalRating": { $gt: 0 },
         })
-      : undefined;
+      : Promise.resolve(undefined);
+
+  const [first, ratedCount] = await Promise.all([
+    listUserMedia(email, state, listOptions((requestedPage - 1) * pageSize)),
+    ratedCountPromise,
+  ]);
+
+  const toItem = state === "watchlist" ? toWatchlistMovie : toFavoriteMovie;
 
   const bounds = pageBounds(first.total, requestedPage, pageSize);
   if (bounds.page === requestedPage) {
     return { items: first.rows.map(toItem), ...bounds, total: first.total, ratedCount };
   }
 
-  const last = await listUserMedia(email, state, {
-    ...options,
-    skip: (bounds.page - 1) * pageSize,
-    limit: pageSize,
-  });
+  const last = await listUserMedia(email, state, listOptions((bounds.page - 1) * pageSize));
   return { items: last.rows.map(toItem), ...bounds, total: last.total, ratedCount };
 }
 
 export async function getReviewPage(email: string, requestedPage: number) {
-  const [page, favorites] = await Promise.all([
-    paginate<RawReview>(Review, { userEmail: email }, { createdAt: -1, _id: -1 }, requestedPage, PROFILE_PAGE_SIZES.reviews),
-    loadUserFavorites(email),
-  ]);
-  const { rows, ...bounds } = page;
+  const { rows, ...bounds } = await paginate<RawReview>(Review, { userEmail: email }, { createdAt: -1, _id: -1 }, requestedPage, PROFILE_PAGE_SIZES.reviews);
+  const items = rows.map(serializeReview);
+  const ratingMap = await ratingMapForEntries(email, items);
   return {
-    items: rows.map(serializeReview),
-    ratingMap: buildRatingMap(favorites),
+    items,
+    ratingMap,
     ...bounds,
   };
 }

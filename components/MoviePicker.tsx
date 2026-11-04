@@ -3,13 +3,13 @@
 import { useId, useMemo, useState } from "react";
 import { MAX_LIST_MOVIES } from "@/lib/bounds";
 import { mediaKey, yearOf } from "@/lib/media";
-import type { FavoriteMovie } from "@/types";
+import type { PickerItem } from "@/types";
 
 const PAGE_SIZE = 50;
 
 type MoviePickerProps = {
   name: string;
-  favorites: FavoriteMovie[];
+  favorites: PickerItem[];
   defaultSelected?: string[];
   max?: number;
   label?: string;
@@ -35,7 +35,7 @@ export default function MoviePicker({
   const [limitMessage, setLimitMessage] = useState("");
 
   const movies = useMemo(() => {
-    const uniqueMovies = new Map<string, FavoriteMovie>();
+    const uniqueMovies = new Map<string, PickerItem>();
     favorites.forEach((movie) => {
       const key = mediaKey(movie.mediaType, movie.movieId);
       if (!uniqueMovies.has(key)) {

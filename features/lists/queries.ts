@@ -9,12 +9,11 @@ import { buildUsernameMap } from "@/lib/profileLinks";
 import { INDEX_PAGE_SIZES, paginate } from "@/lib/pagination";
 import { serializeList, type RawMovieList } from "@/features/lists/serializers";
 import MovieList from "@/models/MovieList";
-import type { FavoriteMovie, MovieListItem } from "@/types";
-import { toFavoriteMovie } from "@/lib/reviewRatings";
+import type { MovieListItem, PickerItem } from "@/types";
 
 type ListIndex = {
   lists: MovieListItem[];
-  favorites: FavoriteMovie[];
+  favorites: PickerItem[];
   usernames: Map<string, string>;
   page: number;
   totalPages: number;
@@ -37,7 +36,14 @@ export async function getListIndex(
       INDEX_PAGE_SIZES.lists
     ),
 
-    listUserMediaRows(currentUserEmail, "favorite").then((rows) => rows.map(toFavoriteMovie)),
+    listUserMediaRows(currentUserEmail, "favorite").then((rows) =>
+      rows.map(({ movieId, mediaType, title, releaseDate }) => ({
+        movieId,
+        mediaType,
+        title,
+        releaseDate: releaseDate ?? undefined,
+      }))
+    ),
   ]);
 
   const { rows, ...bounds } = listPage;

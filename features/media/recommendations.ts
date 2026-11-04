@@ -78,13 +78,20 @@ export async function getTasteRecommendations(
     return { recommendations: [], profile: summarise(profile) };
   }
 
+  const candidatePages = await Promise.all(
+    (["movie", "tv"] as MediaType[]).flatMap((type) =>
+      Array.from({ length: CANDIDATE_PAGES }, (_, index) =>
+        (type === "movie" ? discoverMovies("", index + 1) : discoverTv("", index + 1)).then(
+          (found) => ({ type, found })
+        )
+      )
+    )
+  );
+
   const candidates: MovieSummary[] = [];
-  for (const type of ["movie", "tv"] as MediaType[]) {
-    for (let page = 1; page <= CANDIDATE_PAGES; page += 1) {
-      const found = type === "movie" ? await discoverMovies("", page) : await discoverTv("", page);
-      for (const item of found?.results ?? []) {
-        candidates.push({ ...item, mediaType: type });
-      }
+  for (const { type, found } of candidatePages) {
+    for (const item of found?.results ?? []) {
+      candidates.push({ ...item, mediaType: type });
     }
   }
 

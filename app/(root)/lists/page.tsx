@@ -24,7 +24,7 @@ import NumberedPagination from "@/components/NumberedPagination";
 import { parsePage } from "@/lib/searchParams";
 
 type ListsSearchParams = { page?: string };
-import type { FavoriteMovie, ListMovie, MovieListItem } from "@/types";
+import type { ListMovie, MovieListItem, PickerItem } from "@/types";
 import { createMovieList, deleteMovieList, updateMovieList } from "@/features/lists/actions";
 
 export const metadata: Metadata = {
@@ -59,7 +59,7 @@ function ListRow({
   usernames,
 }: {
   list: MovieListItem;
-  favorites: FavoriteMovie[];
+  favorites: PickerItem[];
   currentUserEmail: string;
   usernames: Map<string, string>;
 }) {

@@ -35,6 +35,8 @@ export type FavoriteMovie = MediaRef & {
   personalRating?: number;
 };
 
+export type PickerItem = Pick<FavoriteMovie, "movieId" | "mediaType" | "title" | "releaseDate">;
+
 // A watchlist entry is the same reference without the rating.
 //
 // Not an alias of FavoriteMovie: a watchlist entry has no `personalRating`, and

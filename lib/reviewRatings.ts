@@ -1,6 +1,5 @@
 import User from "@/models/User";
 import type { FavoriteMovie, WatchlistMovie } from "@/types";
-import { mediaKey } from "@/lib/media";
 import { usernameMapFromUsers } from "@/lib/profileLinks";
 import {
   getUserMediaByKey,
@@ -8,19 +7,6 @@ import {
   type MediaRow,
 } from "@/features/media/userMovie";
 import { emailCandidates } from "@/lib/emailMatch";
-
-export function buildRatingMap(
-  favorites: Pick<FavoriteMovie, "movieId" | "mediaType" | "personalRating">[]
-): Map<string, number> {
-  const map = new Map<string, number>();
-  for (const favorite of favorites) {
-    map.set(
-      mediaKey(favorite.mediaType, favorite.movieId),
-      favorite.personalRating || 0
-    );
-  }
-  return map;
-}
 
 export { lookupRating } from "@/lib/feedLookups";
 

@@ -94,81 +94,76 @@
    and 2.23:1 for --highlight -- the kicker on every page would disappear. These
    are separate values, each checked against all three light surfaces.
 
-   Silver and grey, with red as the only accent. The ground is cool and very
-   nearly neutral, the neutral ramp is on the same cool axis, and --highlight --
-   the editorial label colour -- is a deep graphite rather than the gold it used
-   to be. That is the substantive change: a warm bronze at 10px on a cool silver
-   ground is a muddy brown, and the gold was only ever legible because the ground
-   was warm enough to sit under.*/
+   Warm alabaster and champagne, with crimson and antique gold. The ground is
+   the paper; the text is espresso; crimson is the house colour; gold is kept
+   for badges, borders and accents, and sits on the dark band as the wordmark
+   and active states. Both reds and both golds were checked against all three
+   surfaces -- the 10px kickers use the deep antique gold, not #C5A045. */
 :root[data-theme="light"] {
   color-scheme: light;
-  --canvas: #ebe9e9;
-  --surface: #dedbdc;
-  --surface-raised: #fcf9f2;
+  --canvas: #fcfbf7;
+  --surface: #f4efe6;
+  --surface-raised: #fdfcf9;
 
-  /* Cool neutrals, unchanged -- only the ground moved. The floor is
-     --content-subtle at 5.62:1 against --surface. */
-  --content: #18181b;
-  --content-muted: #3f3f46;
-  --content-subtle: #52525b;
+  /* Warm paper text, each checked against all three light surfaces. */
+  --content: #2b2321;
+  --content-muted: #6e6561;
+  --content-subtle: #5a5049;
 
-  /* Neutral hairlines. A warm-tinted rule on a cool ground reads as muddy rather
-     than as a hairline, so the warm cast the bone ground wanted is gone. */
-  --rule: rgba(40, 30, 20, 0.14);
-  --rule-strong: rgba(40, 30, 20, 0.26);
-  --rule-overlay: rgba(40, 30, 20, 0.55);
-  --overlay-surface: rgba(252, 249, 242, 0.85);
-  --overlay-border: rgba(122, 77, 20, 0.72);
-  --bar-surface: rgba(252, 249, 242, 0.85);
-  --bar-border: rgba(122, 77, 20, 0.28);
-  --panel-surface: rgba(122, 77, 20, 0.08);
-  --panel-surface-soft: rgba(122, 77, 20, 0.06);
-  --panel-border: rgba(122, 77, 20, 0.22);
+  /* Warm sand hairlines. */
+  --rule: #e6dfd3;
+  --rule-strong: #d8d0c0;
+  --rule-overlay: rgba(43, 35, 33, 0.55);
+  --overlay-surface: rgba(253, 252, 247, 0.9);
+  --overlay-border: rgba(43, 35, 33, 0.55);
+  --bar-surface: rgba(253, 252, 247, 0.9);
+  --bar-border: rgba(43, 35, 33, 0.22);
+  --panel-surface: rgba(43, 35, 33, 0.05);
+  --panel-surface-soft: rgba(43, 35, 33, 0.035);
+  --panel-border: rgba(197, 160, 69, 0.3);
 
-  --accent: #b91c1c;
-  --accent-hover: #991b1b;
-  --danger: #b01616;
+  --accent: #b8232a;
+  --accent-hover: #9e1b21;
+  --danger: #b4231f;
   --success: #15803d;
-  --highlight: #1f2937;
-  --highlight-soft: rgba(31, 41, 55, 0.12);
-  --highlight-muted: #7a4d14;
-  /* The light theme's brand red is already dark enough for body text, so
-     --accent-text collapses onto --danger rather than carrying a second red --
-     including when --danger is deepened for margin, which it is. */
-  --accent-text: #b01616;
+  --highlight: #7c5e17;
+  --highlight-soft: rgba(197, 160, 69, 0.18);
+  --highlight-muted: #6b4e0f;
+  /* The brand crimson is dark enough for body text, so --accent-text carries it. */
+  --accent-text: #b8232a;
   --info: #1d4ed8;
   --success-solid: #15803d;
   --info-solid: #1d4ed8;
-  --wordmark: #7a4d14;
+  --wordmark: #75591a;
 
-  --on-highlight: #fafafa;
+  --on-highlight: #faf6ec;
   --on-accent: #ffffff;
-  --on-scrim: #f5f5f5;
-  --on-scrim-muted: rgba(245, 245, 245, 0.72);
+  --on-scrim: #f5efe6;
+  --on-scrim-muted: rgba(245, 239, 230, 0.72);
   --hero-image-opacity: 0.52;
 
-  /* Neutral tints for the translucent chrome over the silver ground: the filter
+  /* Warm espresso tints for the translucent chrome over the paper ground: the filter
      bar, the assistant, toasts. .kin-ink-band overrides these for the header. */
-  --glass: rgba(40, 30, 20, 0.04);
-  --glass-hover: rgba(40, 30, 20, 0.07);
-  --glass-strong: rgba(40, 30, 20, 0.08);
-  --glass-line: rgba(40, 30, 20, 0.09);
-  --glass-line-strong: rgba(40, 30, 20, 0.18);
-    --chrome: #3a3b42;
-    --ink: #3a3b42;
-    --ink-raised: #34353c;
+  --glass: rgba(43, 35, 33, 0.04);
+  --glass-hover: rgba(43, 35, 33, 0.07);
+  --glass-strong: rgba(43, 35, 33, 0.08);
+  --glass-line: rgba(43, 35, 33, 0.09);
+  --glass-line-strong: rgba(43, 35, 33, 0.18);
+    --chrome: #2b2321;
+    --ink: #2b2321;
+    --ink-raised: #251e1b;
     --band-alpha: 94%;
-  --ink-content: #f8fafc;
-  --ink-muted: #c3c8d0;
-  --ink-subtle: #b0b5bd;
-  --highlight-vivid: #e8c9a1;
-  --accent-bright: #fca5a5;
-  --elevation-card: 0 18px 45px -34px rgba(40, 30, 20, 0.16);
-  --elevation-card-hover: 0 24px 60px -42px rgba(185, 28, 28, 0.3);
-  --elevation-float: 0 24px 80px -48px rgba(40, 30, 20, 0.2);
-  --elevation-poster: 0 28px 80px -44px rgba(40, 30, 20, 0.24);
-  --elevation-filter: 0 18px 55px -42px rgba(40, 30, 20, 0.18);
-  --elevation-glow: 0 12px 28px -18px rgba(40, 30, 20, 0.3);
+  --ink-content: #f5efe6;
+  --ink-muted: #c9bfb2;
+  --ink-subtle: #a89e90;
+  --highlight-vivid: #c5a045;
+  --accent-bright: #f0757a;
+  --elevation-card: 0 18px 45px -34px rgba(43, 35, 33, 0.25);
+  --elevation-card-hover: 0 24px 60px -42px rgba(184, 35, 42, 0.35);
+  --elevation-float: 0 24px 80px -48px rgba(43, 35, 33, 0.28);
+  --elevation-poster: 0 28px 80px -44px rgba(43, 35, 33, 0.3);
+  --elevation-filter: 0 18px 55px -42px rgba(43, 35, 33, 0.25);
+  --elevation-glow: 0 12px 28px -18px rgba(43, 35, 33, 0.35);
   --grain-opacity: 0.018;
 }
 

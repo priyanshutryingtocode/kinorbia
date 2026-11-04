@@ -631,3 +631,33 @@ export async function ratingMapsForUsers(
 
   return maps;
 }
+
+export async function ratingMapForEntries(
+  email: string,
+  entries: { movieId?: string; mediaType?: MediaType }[]
+): Promise<Map<string, number>> {
+  await dbConnect();
+
+  const map = new Map<string, number>();
+  const ids = [...new Set(entries.map((entry) => entry.movieId).filter((id): id is string => Boolean(id)))];
+  if (ids.length === 0) {
+    return map;
+  }
+
+  const rows = await UserMovie.find({
+    userEmail: email,
+    movieId: { $in: ids },
+    "favorite.personalRating": { $gt: 0 },
+  })
+    .select("movieId mediaType favorite.personalRating")
+    .lean<{ movieId: string; mediaType: string; favorite?: { personalRating?: number } }[]>();
+
+  for (const row of rows) {
+    const rating = row.favorite?.personalRating || 0;
+    if (rating > 0) {
+      map.set(mediaKey(row.mediaType, row.movieId), rating);
+    }
+  }
+
+  return map;
+}

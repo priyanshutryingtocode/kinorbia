@@ -1,7 +1,9 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import MovieAssistant from "@/components/MovieAssistant";
 import BackToTop from "@/components/BackToTop";
+import dynamic from "next/dynamic";
+
+const MovieAssistant = dynamic(() => import("@/components/MovieAssistant"));
 
 export default function MainLayout({
   children,
