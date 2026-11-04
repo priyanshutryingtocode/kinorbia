@@ -110,9 +110,9 @@
   --content-muted: #6e6561;
   --content-subtle: #5a5049;
 
-  /* Warm sand hairlines. */
-  --rule: #e6dfd3;
-  --rule-strong: #d8d0c0;
+  /* Warm espresso hairlines. */
+  --rule: rgba(43, 35, 33, 0.14);
+  --rule-strong: rgba(43, 35, 33, 0.26);
   --rule-overlay: rgba(43, 35, 33, 0.55);
   --overlay-surface: rgba(253, 252, 247, 0.9);
   --overlay-border: rgba(43, 35, 33, 0.55);
