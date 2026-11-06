@@ -1,19 +1,11 @@
-type VisibilityArm = Record<string, unknown>;
-
-function publicArms(): VisibilityArm[] {
-  return [{ visibility: "public" }, { visibility: { $exists: false } }];
-}
-
 export function publiclyVisible() {
-  return { $or: publicArms() };
+  return { visibility: "public" };
 }
 
 export function visibleTo(email: string | null | undefined) {
-  const arms = publicArms();
-
-  if (email) {
-    arms.push({ userEmail: email });
+  if (!email) {
+    return { visibility: "public" };
   }
 
-  return { $or: arms };
+  return { $or: [{ visibility: "public" }, { userEmail: email }] };
 }

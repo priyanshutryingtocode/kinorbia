@@ -73,7 +73,7 @@ async function walkFeed(email) {
 async function expectedFor(email) {
   const member = await User.findOne({ email }).select("following").lean();
   const following = member?.following ?? [];
-  const publicFilter = { $or: [{ visibility: "public" }, { visibility: { $exists: false } }] };
+  const publicFilter = { visibility: "public" };
 
   const reviews = new Set(
     (

@@ -29,7 +29,7 @@ function CarouselPoster({ movie }: { movie: CarouselMovie }) {
   return (
     <PosterImage
       path={movie.poster_path}
-      width="w500"
+      width="w342"
       alt={movie.title}
       sizes="(max-width: 768px) 144px, 192px"
       className="object-cover transition duration-500 group-hover/card:scale-[1.025] group-hover/card:saturate-110"

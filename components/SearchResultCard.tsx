@@ -18,7 +18,7 @@ export default function SearchResultCard({ movie }: { movie: MovieSummary }) {
         <div className="relative aspect-2/3 overflow-hidden bg-surface-raised">
           <PosterImage
             path={movie.poster_path}
-            width="w500"
+            width="w342"
             alt=""
             sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
             className="object-cover transition-opacity group-hover:opacity-80"

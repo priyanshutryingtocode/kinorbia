@@ -15,6 +15,7 @@
     "seed:data": "node --env-file=.env.local scripts/seedData.mjs",
     "seed:data:dry": "node --env-file=.env.local scripts/seedData.mjs --dry-run",
     "backfill:verified": "node --env-file=.env.local scripts/backfillVerified.mjs",
+"backfill:visibility": "node --env-file=.env.local scripts/backfillVisibility.mjs",
     "backfill:title": "node --env-file=.env.local scripts/backfillMovieTitle.mjs",
     "backfill:null-titles": "node --env-file=.env.local scripts/backfillNullTitles.mjs",
     "check:mutations": "node --env-file=.env.local --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/registerTs.mjs scripts/checkMutations.mjs",

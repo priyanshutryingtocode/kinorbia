@@ -26,7 +26,7 @@ export default function MovieCard({
   const posterElement = (
     <PosterImage
       path={movie.poster_path}
-      width="w500"
+      width="w342"
       alt={movie.title}
       eager={isEager}
       sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
